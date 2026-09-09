@@ -9,3 +9,8 @@ export async function getAllTasks() {
 
     return tasks;
 }
+export async function getTaskById(taskId) {
+    const task = await Task.findById(taskId);
+
+    return task;
+}

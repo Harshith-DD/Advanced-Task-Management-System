@@ -1,5 +1,6 @@
 import { createTask,
-    getAllTasks
+    getAllTasks,
+    getTaskById
  } from "../services/task_services.js";
 
 export async function createTaskController(req, res) {
@@ -43,6 +44,30 @@ export async function getAllTasksController(req, res) {
         res.status(500).json({
             success: false,
             message: "Failed to fetch tasks"
+        });
+    }
+}
+export async function getTaskByIdController(req, res) {
+    try {
+        const task = await getTaskById(req.params.id);
+
+        if (!task) {
+            return res.status(404).json({
+                success: false,
+                message: "Task not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: task
+        });
+    } catch (error) {
+        console.error("Failed to fetch task:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch task"
         });
     }
 }
