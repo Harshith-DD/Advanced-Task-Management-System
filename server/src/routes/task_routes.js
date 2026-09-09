@@ -3,7 +3,8 @@ import { Router } from "express";
 import { createTaskController,
     getAllTasksController,
     getTaskByIdController,
-    updateTaskController
+    updateTaskController,
+    deleteTaskController
  } from "../controllers/task_controller.js";
 
 const router = Router();
@@ -12,5 +13,6 @@ router.post("/", createTaskController);
 router.get("/",getAllTasksController);
 router.get("/:id", getTaskByIdController);
 router.put("/:id", updateTaskController);
+router.delete("/:id", deleteTaskController);
 
 export default router;

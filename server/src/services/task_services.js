@@ -26,3 +26,9 @@ export async function updateTask(taskId, taskData) {
 
     return task;
 }
+
+export async function deleteTask(taskId) {
+    const task = await Task.findByIdAndDelete(taskId);
+
+    return task;
+}

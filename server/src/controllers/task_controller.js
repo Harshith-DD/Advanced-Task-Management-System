@@ -1,7 +1,8 @@
 import { createTask,
     getAllTasks,
     getTaskById,
-    updateTask
+    updateTask,
+    deleteTask
  } from "../services/task_services.js";
 
 export async function createTaskController(req, res) {
@@ -105,6 +106,30 @@ export async function updateTaskController(req, res) {
         res.status(500).json({
             success: false,
             message: "Failed to update task"
+        });
+    }
+}
+export async function deleteTaskController(req, res) {
+    try {
+        const task = await deleteTask(req.params.id);
+
+        if (!task) {
+            return res.status(404).json({
+                success: false,
+                message: "Task not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Task deleted successfully"
+        });
+    } catch (error) {
+        console.error("Failed to delete task:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to delete task"
         });
     }
 }
