@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-
+import taskRoutes from "./routes/task_routes.js";
 import { connectDatabase } from './config/database.js';
 
 const app=express();
@@ -14,6 +14,8 @@ res.status(200).json({
     message:"API is working fine"
 });
 });
+
+app.use("/api/tasks", taskRoutes);
 
 async function startServer(){
     try{
