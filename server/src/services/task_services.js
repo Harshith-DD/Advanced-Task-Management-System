@@ -14,3 +14,15 @@ export async function getTaskById(taskId) {
 
     return task;
 }
+export async function updateTask(taskId, taskData) {
+    const task = await Task.findByIdAndUpdate(
+        taskId,
+        taskData,
+        {
+            new: true,
+            runValidators: true
+        }
+    );
+
+    return task;
+}
