@@ -1,4 +1,6 @@
-import { createTask } from "../services/task_services.js";
+import { createTask,
+    getAllTasks
+ } from "../services/task_services.js";
 
 export async function createTaskController(req, res) {
     try {
@@ -23,6 +25,24 @@ export async function createTaskController(req, res) {
         res.status(500).json({
             success: false,
             message: "Failed to create task"
+        });
+    }
+}
+
+export async function getAllTasksController(req, res) {
+    try {
+        const tasks = await getAllTasks();
+
+        res.status(200).json({
+            success: true,
+            data: tasks
+        });
+    } catch (error) {
+        console.error("Failed to fetch tasks:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch tasks"
         });
     }
 }
