@@ -1,11 +1,15 @@
 import 'dotenv/config';
 import express from 'express';
+import cors from 'cors';
 import taskRoutes from "./routes/task_routes.js";
 import { connectDatabase } from './config/database.js';
 
 const app=express();
 const PORT=process.env.PORT;
-
+const allowedOrigin=process.env.CORS_ORIGIN;
+app.use(cors({
+    origin: allowedOrigin
+}));
 app.use(express.json());
 
 app.get("/api/health",(req,res)=>{
