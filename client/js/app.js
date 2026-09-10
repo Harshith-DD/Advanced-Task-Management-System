@@ -3,8 +3,18 @@ import {
     getTaskById,
     createTask,
     updateTask,
-    deleteTask
+    deleteTask,
+    registerUser,
+    loginUser
 } from "./api.js";
+
+import {
+    saveAuth,
+    getUser,
+    isLoggedIn,
+    logout
+} from "./auth.js";
+
 
 import {
     setTasks,
@@ -93,6 +103,40 @@ const pageNumbers =
 
 const pageLimit =
     document.querySelector("#page-limit");
+
+
+//===================================
+//AUTH ELEMENTS
+//===================================
+
+const loginForm = document.getElementById("login-form");
+const registerForm = document.getElementById("register-form");
+
+const loginContainer =
+    document.getElementById("login-container");
+
+const registerContainer =
+    document.getElementById("register-container");
+
+const userContainer =
+    document.getElementById("user-container");
+
+const authStatus =
+    document.getElementById("auth-status");
+
+const userInfo =
+    document.getElementById("user-info");
+
+const logoutButton =
+    document.getElementById("logout-button");
+
+const loginError =
+    document.getElementById("login-error");
+
+const registerError =
+    document.getElementById("register-error");
+
+
 // ========================================
 // LOAD TASKS
 // ========================================
@@ -149,10 +193,161 @@ function updateTaskStats(tasks) {
 // APPLICATION INITIALIZATION
 // ========================================
 
+
 async function initializeApp() {
+    updateAuthUI();
+
+    if (!isLoggedIn()) {
+        return;
+    }
+
     await loadTasks();
 }
 
+
+//==========================================
+//AUTH FUNC
+//==========================================
+
+function updateAuthUI() {
+    const loggedIn = isLoggedIn();
+
+    if (loggedIn) {
+        const user = getUser();
+
+        loginContainer.hidden = true;
+        registerContainer.hidden = true;
+        userContainer.hidden = false;
+
+        authStatus.textContent = "You are logged in.";
+
+        if (user) {
+            userInfo.textContent =
+                `Logged in as ${user.name} (${user.email})`;
+        }
+    } else {
+        loginContainer.hidden = false;
+        registerContainer.hidden = false;
+        userContainer.hidden = true;
+
+        authStatus.textContent =
+            "You are not logged in.";
+
+        userInfo.textContent = "";
+    }
+}
+
+if (registerForm) {
+    registerForm.addEventListener(
+        "submit",
+        async (event) => {
+            event.preventDefault();
+
+            registerError.textContent = "";
+
+            const formData =
+                new FormData(registerForm);
+
+            const name =
+                formData.get("name").trim();
+
+            const email =
+                formData.get("email").trim();
+
+            const password =
+                formData.get("password");
+
+            if (!name || !email || !password) {
+                registerError.textContent =
+                    "All fields are required.";
+
+                return;
+            }
+
+            try {
+                await registerUser({
+                    name,
+                    email,
+                    password
+                });
+
+                registerForm.reset();
+
+                registerError.textContent =
+                    "Registration successful. Please log in.";
+            } catch (error) {
+                registerError.textContent =
+                    error.message;
+            }
+        }
+    );
+}
+
+if (loginForm) {
+    loginForm.addEventListener(
+        "submit",
+        async (event) => {
+            event.preventDefault();
+
+            loginError.textContent = "";
+
+            const formData =
+                new FormData(loginForm);
+
+            const email =
+                formData.get("email").trim();
+
+            const password =
+                formData.get("password");
+
+            if (!email || !password) {
+                loginError.textContent =
+                    "Email and password are required.";
+
+                return;
+            }
+
+            try {
+                const result = await loginUser({
+                    email,
+                    password
+                });
+
+                saveAuth(result.data);
+
+                loginForm.reset();
+
+                updateAuthUI();
+
+                await loadTasks();
+
+            } catch (error) {
+                loginError.textContent =
+                    error.message;
+            }
+        }
+    );
+}
+
+if (logoutButton) {
+    logoutButton.addEventListener(
+        "click",
+        () => {
+            logout();
+
+            updateAuthUI();
+
+            setTasks([]);
+            setPagination({
+                page: 1,
+                totalPages: 1,
+                totalTasks: 0
+            });
+
+            renderTasks([]);
+        }
+    );
+}
 
 // ========================================
 // CREATE TASK

@@ -1,26 +1,44 @@
+import { getToken } from "./auth.js";
+
 const API_BASE_URL = "http://localhost:3000/api";
 
+async function request(endpoint, options = {}) {
+    const token = getToken();
 
-async function request(url, options = {}) {
-    const response = await fetch(url, options);
+    const headers = {
+        "Content-Type": "application/json",
+        ...options.headers
+    };
 
-    let result;
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(
+        `${API_BASE_URL}${endpoint}`,
+        {
+            ...options,
+            headers
+        }
+    );
+
+    let data;
 
     try {
-        result = await response.json();
+        data = await response.json();
     } catch (error) {
-        result = null;
+        data = null;
     }
 
     if (!response.ok) {
-        const message =
-            result?.message || "API request failed";
-
-        throw new Error(message);
+        throw new Error(
+            data?.message || "API request failed"
+        );
     }
 
-    return result;
+    return data;
 }
+
 
 export async function getTasks(filters = {}) {
     const params = new URLSearchParams();
@@ -67,20 +85,19 @@ export async function getTasks(filters = {}) {
 
     const queryString = params.toString();
 
-    const url = queryString
-        ? `${API_BASE_URL}/tasks?${queryString}`
-        : `${API_BASE_URL}/tasks`;
+    const endpoint = queryString
+        ? `/tasks?${queryString}`
+        : "/tasks";
 
-    const result = await request(url);
+    const result = await request(endpoint);
 
     return result;
 }
 
 
-
 export async function getTaskById(taskId) {
     const result = await request(
-        `${API_BASE_URL}/tasks/${taskId}`
+        `/tasks/${taskId}`
     );
 
     return result.data;
@@ -89,13 +106,9 @@ export async function getTaskById(taskId) {
 
 export async function createTask(taskData) {
     const result = await request(
-        `${API_BASE_URL}/tasks`,
+        "/tasks",
         {
             method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
 
             body: JSON.stringify(taskData)
         }
@@ -110,13 +123,9 @@ export async function updateTask(
     taskData
 ) {
     const result = await request(
-        `${API_BASE_URL}/tasks/${taskId}`,
+        `/tasks/${taskId}`,
         {
             method: "PUT",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
 
             body: JSON.stringify(taskData)
         }
@@ -128,9 +137,31 @@ export async function updateTask(
 
 export async function deleteTask(taskId) {
     await request(
-        `${API_BASE_URL}/tasks/${taskId}`,
+        `/tasks/${taskId}`,
         {
             method: "DELETE"
+        }
+    );
+}
+
+
+export async function registerUser(userData) {
+    return request(
+        "/auth/register",
+        {
+            method: "POST",
+            body: JSON.stringify(userData)
+        }
+    );
+}
+
+
+export async function loginUser(credentials) {
+    return request(
+        "/auth/login",
+        {
+            method: "POST",
+            body: JSON.stringify(credentials)
         }
     );
 }
