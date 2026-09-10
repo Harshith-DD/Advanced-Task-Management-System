@@ -5,37 +5,152 @@ export async function createTask(taskData) {
     return task;
 }
 export async function getAllTasks(filters = {}) {
+
+    const {
+        status,
+        priority,
+        search,
+        tag,
+        fromDate,
+        toDate,
+        sortBy = "createdAt",
+        sortOrder = "asc"
+    } = filters;
+
+
+    // ========================================================
+    // BUILD MONGODB QUERY
+    // ========================================================
+
     const query = {};
 
-    if (filters.status) {
-        query.status = filters.status;
+
+    // --------------------------------------------------------
+    // STATUS FILTER
+    // --------------------------------------------------------
+
+    if (status) {
+
+        query.status =
+            status;
     }
 
-    if (filters.priority) {
-        query.priority = filters.priority;
+
+    // --------------------------------------------------------
+    // PRIORITY FILTER
+    // --------------------------------------------------------
+
+    if (priority) {
+
+        query.priority =
+            priority;
     }
 
-    if (filters.search) {
+
+    // --------------------------------------------------------
+    // SEARCH TITLE / DESCRIPTION
+    // --------------------------------------------------------
+
+    if (search) {
+
         query.$or = [
+
             {
                 title: {
-                    $regex: filters.search,
+                    $regex: search,
                     $options: "i"
                 }
             },
+
             {
                 description: {
-                    $regex: filters.search,
+                    $regex: search,
                     $options: "i"
                 }
             }
+
         ];
     }
 
-    const tasks = await Task.find(query);
+
+    // --------------------------------------------------------
+    // TAG FILTER
+    // --------------------------------------------------------
+
+    if (tag) {
+
+        query.tags = {
+            $in: [tag]
+        };
+    }
+
+
+    // --------------------------------------------------------
+    // DATE RANGE
+    // --------------------------------------------------------
+
+    if (fromDate || toDate) {
+
+        query.dueDate = {};
+
+
+        if (fromDate) {
+
+            query.dueDate.$gte =
+                new Date(fromDate);
+        }
+
+
+        if (toDate) {
+
+            query.dueDate.$lte =
+                new Date(toDate);
+        }
+    }
+
+
+    // ========================================================
+    // SORT
+    // ========================================================
+
+    const allowedSortFields = [
+        "dueDate",
+        "priority",
+        "createdAt",
+        "updatedAt"
+    ];
+
+
+    const safeSortBy =
+        allowedSortFields.includes(sortBy)
+            ? sortBy
+            : "createdAt";
+
+
+    const safeSortOrder =
+        sortOrder === "desc"
+            ? -1
+            : 1;
+
+
+    const sort = {
+        [safeSortBy]: safeSortOrder
+    };
+
+
+    // ========================================================
+    // DATABASE QUERY
+    // ========================================================
+
+    const tasks =
+        await Task
+            .find(query)
+            .sort(sort);
+
 
     return tasks;
 }
+
 export async function getTaskById(taskId) {
     const task = await Task.findById(taskId);
 

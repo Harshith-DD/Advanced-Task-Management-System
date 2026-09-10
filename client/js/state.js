@@ -4,7 +4,12 @@ let tasks = [];
 const filters = {
     status: "",
     priority: "",
-    search: ""
+    search: "",
+    tag: "",
+    fromDate: "",
+    toDate: "",
+    sortBy: "createdAt",
+    sortOrder: "asc"
 };
 
 

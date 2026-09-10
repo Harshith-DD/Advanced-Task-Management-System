@@ -23,8 +23,14 @@ async function request(url, options = {}) {
 }
 
 export async function getTasks(filters = {}) {
-    const params = new URLSearchParams();
 
+    const params =
+        new URLSearchParams();
+
+
+    // --------------------------------------------------------
+    // STATUS
+    // --------------------------------------------------------
 
     if (filters.status) {
         params.set(
@@ -34,6 +40,10 @@ export async function getTasks(filters = {}) {
     }
 
 
+    // --------------------------------------------------------
+    // PRIORITY
+    // --------------------------------------------------------
+
     if (filters.priority) {
         params.set(
             "priority",
@@ -41,6 +51,10 @@ export async function getTasks(filters = {}) {
         );
     }
 
+
+    // --------------------------------------------------------
+    // SEARCH
+    // --------------------------------------------------------
 
     if (filters.search) {
         params.set(
@@ -50,19 +64,87 @@ export async function getTasks(filters = {}) {
     }
 
 
+    // --------------------------------------------------------
+    // TAG
+    // --------------------------------------------------------
+
+    if (filters.tag) {
+        params.set(
+            "tag",
+            filters.tag
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // FROM DATE
+    // --------------------------------------------------------
+
+    if (filters.fromDate) {
+        params.set(
+            "fromDate",
+            filters.fromDate
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // TO DATE
+    // --------------------------------------------------------
+
+    if (filters.toDate) {
+        params.set(
+            "toDate",
+            filters.toDate
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // SORT BY
+    // --------------------------------------------------------
+
+    if (filters.sortBy) {
+        params.set(
+            "sortBy",
+            filters.sortBy
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // SORT ORDER
+    // --------------------------------------------------------
+
+    if (filters.sortOrder) {
+        params.set(
+            "sortOrder",
+            filters.sortOrder
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // BUILD URL
+    // --------------------------------------------------------
+
     const queryString =
         params.toString();
 
 
-    const url = queryString
-        ? `${API_BASE_URL}/tasks?${queryString}`
-        : `${API_BASE_URL}/tasks`;
+    const url =
+        queryString
+            ? `${API_BASE_URL}/tasks?${queryString}`
+            : `${API_BASE_URL}/tasks`;
 
 
-    const result = await request(url);
+    const result =
+        await request(url);
+
 
     return result.data;
 }
+
 
 
 export async function getTaskById(taskId) {

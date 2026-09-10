@@ -65,7 +65,20 @@ const statusFilter =
 const priorityFilter =
     document.querySelector("#priority-filter");
 
+const tagFilter =
+    document.querySelector("#tag-filter");
 
+const fromDateFilter =
+    document.querySelector("#from-date-filter");
+
+const toDateFilter =
+    document.querySelector("#to-date-filter");
+
+const sortBy =
+    document.querySelector("#sort-by");
+
+const sortOrder =
+    document.querySelector("#sort-order");
 // ========================================
 // LOAD TASKS
 // ========================================
@@ -552,59 +565,92 @@ searchInput.addEventListener(
     handleFilterChange
 );
 
+tagFilter.addEventListener(
+    "input",
+    handleFilterChange
+);
+
+fromDateFilter.addEventListener(
+    "change",
+    handleFilterChange
+);
+
+toDateFilter.addEventListener(
+    "change",
+    handleFilterChange
+);
+
+sortBy.addEventListener(
+    "change",
+    handleFilterChange
+);
+
+sortOrder.addEventListener(
+    "change",
+    handleFilterChange
+);
 
 async function handleFilterChange() {
-    /*
-     * The HTML select uses:
-     *
-     * value="all"
-     *
-     * to represent "no status filter".
-     *
-     * But "all" is NOT a real status in our
-     * MongoDB model.
-     *
-     * Therefore:
-     *
-     * "all" -> ""
-     *
-     * and an empty value means:
-     *
-     * don't send the status query parameter.
-     */
+
     const status =
         statusFilter.value === "all"
             ? ""
             : statusFilter.value;
 
-    /*
-     * Same idea for priority.
-     */
+
     const priority =
         priorityFilter.value === "all"
             ? ""
             : priorityFilter.value;
 
-    /*
-     * Read the search text.
-     */
+
     const search =
         searchInput.value.trim();
 
-    /*
-     * Store the new filters in frontend state.
-     */
+
+    const tag =
+        tagFilter.value.trim();
+
+
+    const fromDate =
+        fromDateFilter.value;
+
+
+    const toDate =
+        toDateFilter.value;
+
+
+    const sortByValue =
+        sortBy.value;
+
+
+    const sortOrderValue =
+        sortOrder.value;
+
+
     setFilters({
+
         status,
+
         priority,
-        search
+
+        search,
+
+        tag,
+
+        fromDate,
+
+        toDate,
+
+        sortBy: sortByValue,
+
+        sortOrder: sortOrderValue
     });
 
-    /*
-     * Fetch tasks again using the new filters.
-     */
+
     await loadTasks();
 }
+
 
 
 // ========================================

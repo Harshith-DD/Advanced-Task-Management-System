@@ -118,7 +118,21 @@ function createTaskCard(task) {
         document.createElement("span");
 
     dueDate.textContent =
-        `Due: ${formatDate(task.dueDate)}`;
+        `Due: ${formatDateTime(task.dueDate)}`;
+
+
+const createdAt =
+    document.createElement("span");
+
+createdAt.textContent =
+    `Created: ${formatDateTime(task.createdAt)}`;
+
+
+const updatedAt =
+    document.createElement("span");
+
+updatedAt.textContent =
+    `Updated: ${formatDateTime(task.updatedAt)}`;
 
 
     const tags =
@@ -141,7 +155,11 @@ function createTaskCard(task) {
     }
 
 
-    metadata.append(dueDate);
+    metadata.append(
+    dueDate,
+    createdAt,
+    updatedAt
+);
 
 
     const footer =
@@ -220,17 +238,36 @@ function createTaskCard(task) {
 }
 
 
-function formatDate(dateValue) {
+// function formatDate(dateValue) {
+//     if (!dateValue) {
+//         return "Not set";
+//     }
+
+//     const date =
+//         new Date(dateValue);
+
+//     if (Number.isNaN(date.getTime())) {
+//         return "Invalid date";
+//     }
+
+//     return date.toLocaleDateString();
+// }
+
+function formatDateTime(dateValue) {
+
     if (!dateValue) {
         return "Not set";
     }
 
+
     const date =
         new Date(dateValue);
+
 
     if (Number.isNaN(date.getTime())) {
         return "Invalid date";
     }
 
-    return date.toLocaleDateString();
+
+    return date.toLocaleString();
 }

@@ -66,53 +66,149 @@
 
                 <div class="control-header">
                 </div>
+<div class="controls">
 
-                <div class="controls">
+    <div class="control-group">
+        <label for="search-input">
+            Search Tasks:
+        </label>
 
-                    <div class="control-group">
-                        <label for="search-input">
-                            Search Tasks:
-                        </label>
-
-                        <input
-                            id="search-input"
-                            type="search"
-                            placeholder="Search by title or description"
-                            autocomplete="off"
-                        >
-                    </div>
-
-
-                    <div class="control-group">
-                        <label for="status-filter">
-                            Status:
-                        </label>
-
-                        <select id="status-filter">
-                            <option value="all">All</option>
-                            <option value="completed">Completed</option>
-                            <option value="in-progress">
-                                In Progress
-                            </option>
-                            <option value="pending">Pending</option>
-                        </select>
-                    </div>
+        <input
+            id="search-input"
+            type="search"
+            placeholder="Search by title or description"
+            autocomplete="off"
+        >
+    </div>
 
 
-                    <div class="control-group">
-                        <label for="priority-filter">
-                            Priority:
-                        </label>
+    <div class="control-group">
+        <label for="status-filter">
+            Status:
+        </label>
 
-                        <select id="priority-filter">
-                            <option value="all">All</option>
-                            <option value="high">High</option>
-                            <option value="medium">Medium</option>
-                            <option value="low">Low</option>
-                        </select>
-                    </div>
+        <select id="status-filter">
+            <option value="all">All</option>
 
-                </div>
+            <option value="completed">
+                Completed
+            </option>
+
+            <option value="in-progress">
+                In Progress
+            </option>
+
+            <option value="pending">
+                Pending
+            </option>
+        </select>
+    </div>
+
+
+    <div class="control-group">
+        <label for="priority-filter">
+            Priority:
+        </label>
+
+        <select id="priority-filter">
+            <option value="all">All</option>
+
+            <option value="high">
+                High
+            </option>
+
+            <option value="medium">
+                Medium
+            </option>
+
+            <option value="low">
+                Low
+            </option>
+        </select>
+    </div>
+
+
+    <div class="control-group">
+        <label for="tag-filter">
+            Tag:
+        </label>
+
+        <input
+            id="tag-filter"
+            type="text"
+            placeholder="e.g. backend"
+            autocomplete="off"
+        >
+    </div>
+
+
+    <div class="control-group">
+        <label for="from-date-filter">
+            From Date:
+        </label>
+
+        <input
+            id="from-date-filter"
+            type="date"
+        >
+    </div>
+
+
+    <div class="control-group">
+        <label for="to-date-filter">
+            To Date:
+        </label>
+
+        <input
+            id="to-date-filter"
+            type="date"
+        >
+    </div>
+
+
+    <div class="control-group">
+        <label for="sort-by">
+            Sort By:
+        </label>
+
+        <select id="sort-by">
+            <option value="createdAt">
+                Created Date
+            </option>
+
+            <option value="updatedAt">
+                Updated Date
+            </option>
+
+            <option value="dueDate">
+                Due Date
+            </option>
+
+            <option value="priority">
+                Priority
+            </option>
+        </select>
+    </div>
+
+
+    <div class="control-group">
+        <label for="sort-order">
+            Sort Order:
+        </label>
+
+        <select id="sort-order">
+            <option value="asc">
+                Ascending
+            </option>
+
+            <option value="desc">
+                Descending
+            </option>
+        </select>
+    </div>
+
+</div>
+
             </div>
         </section>
 
