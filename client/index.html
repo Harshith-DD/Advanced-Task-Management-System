@@ -398,7 +398,30 @@
             </p>
 
         </section>
+<div id="pagination-container" class="pagination-container">
 
+    <button id="previous-page" type="button">
+        Previous
+    </button>
+
+    <div id="page-numbers" class="page-numbers"></div>
+
+    <button id="next-page" type="button">
+        Next
+    </button>
+
+    <div class="control-group">
+        <label for="page-limit">Tasks per page:</label>
+
+        <select id="page-limit">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+        </select>
+    </div>
+
+</div>
     </main>
 
     <script

@@ -5,7 +5,6 @@ export async function createTask(taskData) {
     return task;
 }
 export async function getAllTasks(filters = {}) {
-
     const {
         status,
         priority,
@@ -14,104 +13,63 @@ export async function getAllTasks(filters = {}) {
         fromDate,
         toDate,
         sortBy = "createdAt",
-        sortOrder = "asc"
+        sortOrder = "asc",
+        page = 1,
+        limit = 10
     } = filters;
-
-
-    // ========================================================
-    // BUILD MONGODB QUERY
-    // ========================================================
 
     const query = {};
 
-
-    // --------------------------------------------------------
-    // STATUS FILTER
-    // --------------------------------------------------------
+    // -------------------------
+    // Filtering
+    // -------------------------
 
     if (status) {
-
-        query.status =
-            status;
+        query.status = status;
     }
-
-
-    // --------------------------------------------------------
-    // PRIORITY FILTER
-    // --------------------------------------------------------
 
     if (priority) {
-
-        query.priority =
-            priority;
+        query.priority = priority;
     }
 
-
-    // --------------------------------------------------------
-    // SEARCH TITLE / DESCRIPTION
-    // --------------------------------------------------------
-
     if (search) {
-
         query.$or = [
-
             {
                 title: {
                     $regex: search,
                     $options: "i"
                 }
             },
-
             {
                 description: {
                     $regex: search,
                     $options: "i"
                 }
             }
-
         ];
     }
 
-
-    // --------------------------------------------------------
-    // TAG FILTER
-    // --------------------------------------------------------
-
     if (tag) {
-
         query.tags = {
             $in: [tag]
         };
     }
 
-
-    // --------------------------------------------------------
-    // DATE RANGE
-    // --------------------------------------------------------
-
     if (fromDate || toDate) {
-
         query.dueDate = {};
 
-
         if (fromDate) {
-
-            query.dueDate.$gte =
-                new Date(fromDate);
+            query.dueDate.$gte = new Date(fromDate);
         }
 
-
         if (toDate) {
-
-            query.dueDate.$lte =
-                new Date(toDate);
+            query.dueDate.$lte = new Date(toDate);
         }
     }
 
-
-    // ========================================================
-    // SORT
-    // ========================================================
+    // -------------------------
+    // Sorting
+    // -------------------------
 
     const allowedSortFields = [
         "dueDate",
@@ -120,35 +78,60 @@ export async function getAllTasks(filters = {}) {
         "updatedAt"
     ];
 
-
     const safeSortBy =
         allowedSortFields.includes(sortBy)
             ? sortBy
             : "createdAt";
-
 
     const safeSortOrder =
         sortOrder === "desc"
             ? -1
             : 1;
 
-
     const sort = {
         [safeSortBy]: safeSortOrder
     };
 
+    // -------------------------
+    // Pagination
+    // -------------------------
 
-    // ========================================================
-    // DATABASE QUERY
-    // ========================================================
+    const pageNumber = Math.max(
+        Number(page) || 1,
+        1
+    );
 
+    const pageLimit = Math.min(
+        Math.max(Number(limit) || 10, 1),
+        100
+    );
+
+    const skip = (pageNumber - 1) * pageLimit;
+
+    // Count matching documents
+    const totalTasks =
+        await Task.countDocuments(query);
+
+    // Fetch only the current page
     const tasks =
         await Task
             .find(query)
-            .sort(sort);
+            .sort(sort)
+            .skip(skip)
+            .limit(pageLimit);
 
+    const totalPages =
+        Math.ceil(totalTasks / pageLimit);
 
-    return tasks;
+    return {
+        tasks,
+        pagination: {
+            page: pageNumber,
+            limit: pageLimit,
+            totalTasks,
+            totalPages
+        }
+    };
 }
 
 export async function getTaskById(taskId) {

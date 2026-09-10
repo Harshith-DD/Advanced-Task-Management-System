@@ -9,7 +9,9 @@ import {
 import {
     setTasks,
     setFilters,
-    getFilters
+    getFilters,
+    getPagination,
+    setPagination
 } from "./state.js";
 
 import {
@@ -79,66 +81,70 @@ const sortBy =
 
 const sortOrder =
     document.querySelector("#sort-order");
+
+const previousPageButton =
+    document.querySelector("#previous-page");
+
+const nextPageButton =
+    document.querySelector("#next-page");
+
+const pageNumbers =
+    document.querySelector("#page-numbers");
+
+const pageLimit =
+    document.querySelector("#page-limit");
 // ========================================
 // LOAD TASKS
 // ========================================
 
 async function loadTasks() {
     try {
-        /*
-         * Get the currently selected filters
-         * from the application state.
-         */
-        const filters =
-            getFilters();
+        const filters = getFilters();
 
-        /*
-         * Send those filters to the API layer.
-         *
-         * api.js will convert them into
-         * query parameters.
-         *
-         * Example:
-         *
-         * {
-         *     status: "pending",
-         *     priority: "high",
-         *     search: "meeting"
-         * }
-         *
-         * becomes:
-         *
-         * /api/tasks?status=pending
-         *             &priority=high
-         *             &search=meeting
-         */
-        const tasks =
-            await getTasks(filters);
+        const result = await getTasks(filters);
 
-        /*
-         * Store the latest tasks in frontend state.
-         */
-        setTasks(tasks);
+        setTasks(result.data);
 
-        /*
-         * Render the tasks received from
-         * the backend.
-         */
-        renderTasks(tasks);
+        setPagination(result.pagination);
 
+        renderTasks(result.data);
+
+        renderPagination(result.pagination);
+
+        updateTaskStats(result.data);
     } catch (error) {
-        console.error(
-            "Failed to load tasks:",
-            error
-        );
-
-        showFormError(
-            "Unable to load tasks. Check the server connection."
-        );
+        console.error("Failed to load tasks:", error);
     }
 }
 
+function updateTaskStats(tasks) {
+    const totalTasks =
+        document.querySelector("#total-tasks");
 
+    const completedTasks =
+        document.querySelector("#completed-tasks");
+
+    const pendingTasks =
+        document.querySelector("#pending-tasks");
+
+    if (totalTasks) {
+        totalTasks.textContent = tasks.length;
+    }
+
+    if (completedTasks) {
+        completedTasks.textContent =
+            tasks.filter(
+                (task) => task.status === "completed"
+            ).length;
+    }
+
+    if (pendingTasks) {
+        pendingTasks.textContent =
+            tasks.filter(
+                (task) => task.status !== "completed"
+            ).length;
+    }
+}
 // ========================================
 // APPLICATION INITIALIZATION
 // ========================================
@@ -651,7 +657,108 @@ async function handleFilterChange() {
     await loadTasks();
 }
 
+//==========================
+//PAGINATION
+//=========================
+function renderPagination(pagination) {
+    const {
+        page,
+        totalPages
+    } = pagination;
 
+    pageNumbers.innerHTML = "";
+
+    previousPageButton.disabled =
+        page <= 1;
+
+    nextPageButton.disabled =
+        page >= totalPages;
+
+    if (totalPages <= 1) {
+        return;
+    }
+
+    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+        const button =
+            document.createElement("button");
+
+        button.type = "button";
+        button.textContent = pageNumber;
+
+        if (pageNumber === page) {
+            button.disabled = true;
+        }
+
+        button.addEventListener("click", () => {
+            goToPage(pageNumber);
+        });
+
+        pageNumbers.appendChild(button);
+    }
+}
+async function goToPage(pageNumber) {
+    const pagination = getPagination();
+
+    if (
+        pageNumber < 1 ||
+        pageNumber > pagination.totalPages
+    ) {
+        return;
+    }
+
+    setFilters({
+        page: pageNumber
+    });
+
+    await loadTasks();
+}
+
+previousPageButton.addEventListener(
+    "click",
+    async () => {
+        const pagination = getPagination();
+
+        if (pagination.page <= 1) {
+            return;
+        }
+
+        await goToPage(
+            pagination.page - 1
+        );
+    }
+);
+
+nextPageButton.addEventListener(
+    "click",
+    async () => {
+        const pagination = getPagination();
+
+        if (
+            pagination.page >=
+            pagination.totalPages
+        ) {
+            return;
+        }
+
+        await goToPage(
+            pagination.page + 1
+        );
+    }
+);
+pageLimit.addEventListener(
+    "change",
+    async () => {
+        const limit =
+            Number(pageLimit.value);
+
+        setFilters({
+            page: 1,
+            limit
+        });
+
+        await loadTasks();
+    }
+);
 
 // ========================================
 // START APPLICATION

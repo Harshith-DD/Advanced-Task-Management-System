@@ -23,126 +23,57 @@ async function request(url, options = {}) {
 }
 
 export async function getTasks(filters = {}) {
-
-    const params =
-        new URLSearchParams();
-
-
-    // --------------------------------------------------------
-    // STATUS
-    // --------------------------------------------------------
+    const params = new URLSearchParams();
 
     if (filters.status) {
-        params.set(
-            "status",
-            filters.status
-        );
+        params.set("status", filters.status);
     }
-
-
-    // --------------------------------------------------------
-    // PRIORITY
-    // --------------------------------------------------------
 
     if (filters.priority) {
-        params.set(
-            "priority",
-            filters.priority
-        );
+        params.set("priority", filters.priority);
     }
-
-
-    // --------------------------------------------------------
-    // SEARCH
-    // --------------------------------------------------------
 
     if (filters.search) {
-        params.set(
-            "search",
-            filters.search
-        );
+        params.set("search", filters.search);
     }
-
-
-    // --------------------------------------------------------
-    // TAG
-    // --------------------------------------------------------
 
     if (filters.tag) {
-        params.set(
-            "tag",
-            filters.tag
-        );
+        params.set("tag", filters.tag);
     }
-
-
-    // --------------------------------------------------------
-    // FROM DATE
-    // --------------------------------------------------------
 
     if (filters.fromDate) {
-        params.set(
-            "fromDate",
-            filters.fromDate
-        );
+        params.set("fromDate", filters.fromDate);
     }
-
-
-    // --------------------------------------------------------
-    // TO DATE
-    // --------------------------------------------------------
 
     if (filters.toDate) {
-        params.set(
-            "toDate",
-            filters.toDate
-        );
+        params.set("toDate", filters.toDate);
     }
-
-
-    // --------------------------------------------------------
-    // SORT BY
-    // --------------------------------------------------------
 
     if (filters.sortBy) {
-        params.set(
-            "sortBy",
-            filters.sortBy
-        );
+        params.set("sortBy", filters.sortBy);
     }
-
-
-    // --------------------------------------------------------
-    // SORT ORDER
-    // --------------------------------------------------------
 
     if (filters.sortOrder) {
-        params.set(
-            "sortOrder",
-            filters.sortOrder
-        );
+        params.set("sortOrder", filters.sortOrder);
     }
 
+    if (filters.page) {
+        params.set("page", filters.page);
+    }
 
-    // --------------------------------------------------------
-    // BUILD URL
-    // --------------------------------------------------------
+    if (filters.limit) {
+        params.set("limit", filters.limit);
+    }
 
-    const queryString =
-        params.toString();
+    const queryString = params.toString();
 
+    const url = queryString
+        ? `${API_BASE_URL}/tasks?${queryString}`
+        : `${API_BASE_URL}/tasks`;
 
-    const url =
-        queryString
-            ? `${API_BASE_URL}/tasks?${queryString}`
-            : `${API_BASE_URL}/tasks`;
+    const result = await request(url);
 
-
-    const result =
-        await request(url);
-
-
-    return result.data;
+    return result;
 }
 
 

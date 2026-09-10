@@ -34,11 +34,12 @@ export async function createTaskController(req, res) {
 
 export async function getAllTasksController(req, res) {
     try {
-        const tasks = await getAllTasks(req.query);
+        const result = await getAllTasks(req.query);
 
         res.status(200).json({
             success: true,
-            data: tasks
+            data: result.tasks,
+            pagination: result.pagination
         });
     } catch (error) {
         console.error("Failed to fetch tasks:", error);

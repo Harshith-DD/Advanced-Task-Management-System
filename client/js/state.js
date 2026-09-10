@@ -1,7 +1,6 @@
 let tasks = [];
 
-
-const filters = {
+let filters = {
     status: "",
     priority: "",
     search: "",
@@ -9,57 +8,59 @@ const filters = {
     fromDate: "",
     toDate: "",
     sortBy: "createdAt",
-    sortOrder: "asc"
+    sortOrder: "asc",
+    page: 1,
+    limit: 10
 };
 
+let pagination = {
+    page: 1,
+    limit: 10,
+    totalTasks: 0,
+    totalPages: 0
+};
+
+
+// -------------------------
+// Tasks
+// -------------------------
+
+export function getTasksState() {
+    return tasks;
+}
 
 export function setTasks(newTasks) {
     tasks = newTasks;
 }
 
 
-export function getTasksState() {
-    return tasks;
-}
-
-
-export function addTask(task) {
-    tasks.push(task);
-}
-
-
-export function replaceTask(updatedTask) {
-    tasks = tasks.map((task) => {
-        if (task._id === updatedTask._id) {
-            return updatedTask;
-        }
-
-        return task;
-    });
-}
-
-
-export function removeTask(taskId) {
-    tasks = tasks.filter((task) => {
-        return task._id !== taskId;
-    });
-}
-
-
-/*
- * Filter state
- */
-
-export function setFilters(newFilters) {
-    Object.assign(
-        filters,
-        newFilters
-    );
-}
-
+// -------------------------
+// Filters
+// -------------------------
 
 export function getFilters() {
-    return {
-        ...filters
+    return filters;
+}
+
+export function setFilters(newFilters) {
+    filters = {
+        ...filters,
+        ...newFilters
+    };
+}
+
+
+// -------------------------
+// Pagination
+// -------------------------
+
+export function getPagination() {
+    return pagination;
+}
+
+export function setPagination(newPagination) {
+    pagination = {
+        ...pagination,
+        ...newPagination
     };
 }
