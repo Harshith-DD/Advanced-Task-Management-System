@@ -4,8 +4,35 @@ export async function createTask(taskData) {
     const task=await Task.create(taskData);
     return task;
 }
-export async function getAllTasks() {
-    const tasks = await Task.find();
+export async function getAllTasks(filters = {}) {
+    const query = {};
+
+    if (filters.status) {
+        query.status = filters.status;
+    }
+
+    if (filters.priority) {
+        query.priority = filters.priority;
+    }
+
+    if (filters.search) {
+        query.$or = [
+            {
+                title: {
+                    $regex: filters.search,
+                    $options: "i"
+                }
+            },
+            {
+                description: {
+                    $regex: filters.search,
+                    $options: "i"
+                }
+            }
+        ];
+    }
+
+    const tasks = await Task.find(query);
 
     return tasks;
 }

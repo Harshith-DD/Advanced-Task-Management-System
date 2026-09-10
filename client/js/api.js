@@ -1,5 +1,6 @@
 const API_BASE_URL = "http://localhost:3000/api";
 
+
 async function request(url, options = {}) {
     const response = await fetch(url, options);
 
@@ -21,11 +22,44 @@ async function request(url, options = {}) {
     return result;
 }
 
+export async function getTasks(filters = {}) {
+    const params = new URLSearchParams();
 
-export async function getTasks() {
-    const result = await request(
-        `${API_BASE_URL}/tasks`
-    );
+
+    if (filters.status) {
+        params.set(
+            "status",
+            filters.status
+        );
+    }
+
+
+    if (filters.priority) {
+        params.set(
+            "priority",
+            filters.priority
+        );
+    }
+
+
+    if (filters.search) {
+        params.set(
+            "search",
+            filters.search
+        );
+    }
+
+
+    const queryString =
+        params.toString();
+
+
+    const url = queryString
+        ? `${API_BASE_URL}/tasks?${queryString}`
+        : `${API_BASE_URL}/tasks`;
+
+
+    const result = await request(url);
 
     return result.data;
 }
@@ -58,7 +92,10 @@ export async function createTask(taskData) {
 }
 
 
-export async function updateTask(taskId, taskData) {
+export async function updateTask(
+    taskId,
+    taskData
+) {
     const result = await request(
         `${API_BASE_URL}/tasks/${taskId}`,
         {

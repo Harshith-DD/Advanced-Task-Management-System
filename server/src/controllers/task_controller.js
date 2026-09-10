@@ -34,7 +34,7 @@ export async function createTaskController(req, res) {
 
 export async function getAllTasksController(req, res) {
     try {
-        const tasks = await getAllTasks();
+        const tasks = await getAllTasks(req.query);
 
         res.status(200).json({
             success: true,
