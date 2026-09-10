@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import taskRoutes from "./routes/task_routes.js";
+import authRoutes from "./routes/auth_routes.js";
 import { connectDatabase } from './config/database.js';
 
 const app=express();
@@ -19,6 +20,7 @@ res.status(200).json({
 });
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 
 async function startServer(){
