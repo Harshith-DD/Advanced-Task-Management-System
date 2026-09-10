@@ -71,6 +71,10 @@ const formError =
 const searchInput =
     document.querySelector("#search-input");
 
+const searchButton =
+    document.querySelector("#search-button");
+
+
 const statusFilter =
     document.querySelector("#status-filter");
 
@@ -751,45 +755,12 @@ export async function loadTask(taskId) {
 // FILTER HANDLING
 // ========================================
 
-statusFilter.addEventListener(
-    "change",
+
+searchButton.addEventListener(
+    "click",
     handleFilterChange
 );
 
-priorityFilter.addEventListener(
-    "change",
-    handleFilterChange
-);
-
-searchInput.addEventListener(
-    "input",
-    handleFilterChange
-);
-
-tagFilter.addEventListener(
-    "input",
-    handleFilterChange
-);
-
-fromDateFilter.addEventListener(
-    "change",
-    handleFilterChange
-);
-
-toDateFilter.addEventListener(
-    "change",
-    handleFilterChange
-);
-
-sortBy.addEventListener(
-    "change",
-    handleFilterChange
-);
-
-sortOrder.addEventListener(
-    "change",
-    handleFilterChange
-);
 
 async function handleFilterChange() {
 
