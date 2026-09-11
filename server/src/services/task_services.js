@@ -8,13 +8,16 @@ import taskEvents, {
 // CREATE TASK
 // ========================================
 
-export async function createTask(taskData) {
+export async function createTask(taskData, userId) {
     const task = await Task.create(taskData);
 
     taskEvents.emit(
-        TASK_EVENTS.CREATED,
-        task
-    );
+    TASK_EVENTS.CREATED,
+    {
+        task,
+        userId
+    }
+);
 
     return task;
 }
@@ -291,7 +294,8 @@ export async function getTaskById(
 
 export async function updateTask(
     taskId,
-    taskData
+    taskData,
+    userId
 ) {
     // ----------------------------------------
     // GET CURRENT TASK
@@ -333,9 +337,12 @@ export async function updateTask(
     // ----------------------------------------
 
     taskEvents.emit(
-        TASK_EVENTS.UPDATED,
-        updatedTask
-    );
+    TASK_EVENTS.UPDATED,
+    {
+        task: updatedTask,
+        userId
+    }
+);
 
 
     // ----------------------------------------
@@ -354,9 +361,12 @@ export async function updateTask(
         isCompleted
     ) {
         taskEvents.emit(
-            TASK_EVENTS.COMPLETED,
-            updatedTask
-        );
+    TASK_EVENTS.COMPLETED,
+    {
+        task: updatedTask,
+        userId
+    }
+);
     }
 
 
@@ -378,7 +388,8 @@ export async function deleteTask(
 
 export async function assignTask(
     taskId,
-    assignedTo
+    assignedTo,
+    userId
 ) {
     const task =
         await Task.findById(taskId);
@@ -410,9 +421,12 @@ export async function assignTask(
                 );
 
         taskEvents.emit(
-            TASK_EVENTS.ASSIGNED,
-            updatedTask
-        );
+    TASK_EVENTS.ASSIGNED,
+    {
+        task: updatedTask,
+        userId
+    }
+);
 
         return updatedTask;
     }
@@ -463,9 +477,12 @@ export async function assignTask(
     // ----------------------------------------
 
     taskEvents.emit(
-        TASK_EVENTS.ASSIGNED,
-        updatedTask
-    );
+    TASK_EVENTS.ASSIGNED,
+    {
+        task: updatedTask,
+        userId
+    }
+);
 
 
     return updatedTask;

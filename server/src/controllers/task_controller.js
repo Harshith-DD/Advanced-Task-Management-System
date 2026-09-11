@@ -32,7 +32,10 @@ export async function createTaskController(
 
 
         const task =
-            await createTask(taskData);
+    await createTask(
+        taskData,
+        req.user.userId
+    );
 
 
         res.status(201).json({
@@ -256,10 +259,11 @@ if (Object.keys(taskData).length === 0) {
 
 
         const updatedTask =
-            await updateTask(
-                req.params.id,
-                taskData
-            );
+    await updateTask(
+        req.params.id,
+        taskData,
+        req.user.userId
+    );
 
 
         res.status(200).json({
@@ -392,10 +396,11 @@ export async function assignTaskController(
         const { assignedTo } = req.body;
 
         const updatedTask =
-            await assignTask(
-                req.params.id,
-                assignedTo
-            );
+    await assignTask(
+        req.params.id,
+        assignedTo,
+        req.user.userId
+    );
 
         res.status(200).json({
             success: true,

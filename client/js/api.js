@@ -191,3 +191,12 @@ export async function assignTask(
 
     return result.data;
 }
+
+export async function getActivities() {
+    const result =
+        await request(
+            "/activities"
+        );
+
+    return result.data;
+}

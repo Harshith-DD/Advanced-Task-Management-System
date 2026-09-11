@@ -7,6 +7,10 @@ import taskRoutes from "./routes/task_routes.js";
 import authRoutes from "./routes/auth_routes.js";
 import userRoutes from "./routes/user_routes.js";
 
+import "./events/task_activity_listener.js";
+
+import activityRoutes from "./routes/activity_routes.js";
+
 import {
     connectDatabase
 } from "./config/database.js";
@@ -47,7 +51,10 @@ app.use(
     "/api/tasks",
     taskRoutes
 );
-
+app.use(
+    "/api/activities",
+    activityRoutes
+);
 
 async function startServer() {
     try {
