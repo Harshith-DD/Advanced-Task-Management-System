@@ -1,12 +1,20 @@
 import Task from "../models/task_model.js";
 import User from "../models/user_model.js";
 
+import taskEvents, {
+    TASK_EVENTS
+} from "../events/task_events.js";
 // ========================================
 // CREATE TASK
 // ========================================
 
 export async function createTask(taskData) {
     const task = await Task.create(taskData);
+
+    taskEvents.emit(
+        TASK_EVENTS.CREATED,
+        task
+    );
 
     return task;
 }
@@ -285,22 +293,74 @@ export async function updateTask(
     taskId,
     taskData
 ) {
-    return await Task.findByIdAndUpdate(
-        taskId,
-        taskData,
-        {
-            new: true,
-            runValidators: true
-        }
-    )
-        .populate(
-            "owner",
-            "name email"
+    // ----------------------------------------
+    // GET CURRENT TASK
+    // ----------------------------------------
+
+    const existingTask =
+        await Task.findById(taskId);
+
+    if (!existingTask) {
+        return null;
+    }
+
+
+    // ----------------------------------------
+    // UPDATE TASK
+    // ----------------------------------------
+
+    const updatedTask =
+        await Task.findByIdAndUpdate(
+            taskId,
+            taskData,
+            {
+                new: true,
+                runValidators: true
+            }
         )
-        .populate(
-            "assignedTo",
-            "name email"
+            .populate(
+                "owner",
+                "name email"
+            )
+            .populate(
+                "assignedTo",
+                "name email"
+            );
+
+
+    // ----------------------------------------
+    // TASK UPDATED EVENT
+    // ----------------------------------------
+
+    taskEvents.emit(
+        TASK_EVENTS.UPDATED,
+        updatedTask
+    );
+
+
+    // ----------------------------------------
+    // TASK COMPLETED EVENT
+    // ----------------------------------------
+
+    const wasCompleted =
+        existingTask.status === "completed";
+
+    const isCompleted =
+        updatedTask.status === "completed";
+
+
+    if (
+        !wasCompleted &&
+        isCompleted
+    ) {
+        taskEvents.emit(
+            TASK_EVENTS.COMPLETED,
+            updatedTask
         );
+    }
+
+
+    return updatedTask;
 }
 
 
@@ -327,22 +387,40 @@ export async function assignTask(
         return null;
     }
 
+
+    // ----------------------------------------
+    // REMOVE ASSIGNMENT
+    // ----------------------------------------
+
     if (!assignedTo) {
         task.assignedTo = null;
 
         await task.save();
 
-        return Task
-            .findById(taskId)
-            .populate(
-                "owner",
-                "name email role"
-            )
-            .populate(
-                "assignedTo",
-                "name email role"
-            );
+        const updatedTask =
+            await Task
+                .findById(taskId)
+                .populate(
+                    "owner",
+                    "name email role"
+                )
+                .populate(
+                    "assignedTo",
+                    "name email role"
+                );
+
+        taskEvents.emit(
+            TASK_EVENTS.ASSIGNED,
+            updatedTask
+        );
+
+        return updatedTask;
     }
+
+
+    // ----------------------------------------
+    // VERIFY ASSIGNED USER
+    // ----------------------------------------
 
     const user =
         await User.findById(assignedTo);
@@ -353,18 +431,42 @@ export async function assignTask(
         );
     }
 
+
+    // ----------------------------------------
+    // ASSIGN TASK
+    // ----------------------------------------
+
     task.assignedTo = assignedTo;
 
     await task.save();
 
-    return Task
-        .findById(taskId)
-        .populate(
-            "owner",
-            "name email role"
-        )
-        .populate(
-            "assignedTo",
-            "name email role"
-        );
+
+    // ----------------------------------------
+    // GET POPULATED TASK
+    // ----------------------------------------
+
+    const updatedTask =
+        await Task
+            .findById(taskId)
+            .populate(
+                "owner",
+                "name email role"
+            )
+            .populate(
+                "assignedTo",
+                "name email role"
+            );
+
+
+    // ----------------------------------------
+    // TASK ASSIGNED EVENT
+    // ----------------------------------------
+
+    taskEvents.emit(
+        TASK_EVENTS.ASSIGNED,
+        updatedTask
+    );
+
+
+    return updatedTask;
 }
