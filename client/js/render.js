@@ -441,19 +441,6 @@ function createTaskCard(
 
         for (const user of users) {
 
-            /*
-             * Do not allow assigning a task
-             * to its current owner.
-             */
-
-            if (
-                task.owner?._id?.toString() ===
-                user._id?.toString()
-            ) {
-                continue;
-            }
-
-
             const option =
                 document.createElement("option");
 
