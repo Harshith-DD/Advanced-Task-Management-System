@@ -200,3 +200,41 @@ export async function getActivities() {
 
     return result.data;
 }
+
+export async function getNotifications() {
+    const result =
+        await request(
+            "/notifications"
+        );
+
+    return result.data;
+}
+
+
+export async function markNotificationAsRead(
+    notificationId
+) {
+    const result =
+        await request(
+            `/notifications/${notificationId}/read`,
+            {
+                method: "PATCH"
+            }
+        );
+
+    return result.data;
+}
+
+
+export async function markAllNotificationsAsRead() {
+    const result =
+        await request(
+            "/notifications/read-all",
+            {
+                method: "PATCH"
+            }
+        );
+
+    return result.data;
+}
+

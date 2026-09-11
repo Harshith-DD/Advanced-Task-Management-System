@@ -8,8 +8,11 @@ import authRoutes from "./routes/auth_routes.js";
 import userRoutes from "./routes/user_routes.js";
 
 import "./events/task_activity_listener.js";
+import "./events/task_notification_listener.js";
 
 import activityRoutes from "./routes/activity_routes.js";
+import notificationRoutes
+    from "./routes/notification_routes.js";
 
 import {
     connectDatabase
@@ -54,6 +57,10 @@ app.use(
 app.use(
     "/api/activities",
     activityRoutes
+);
+app.use(
+    "/api/notifications",
+    notificationRoutes
 );
 
 async function startServer() {

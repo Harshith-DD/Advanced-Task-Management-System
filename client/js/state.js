@@ -21,6 +21,7 @@ let pagination = {
     totalPages: 0
 };
 
+let notifications = [];
 
 // -------------------------
 // Tasks
@@ -74,4 +75,18 @@ export function setUsers(
     newUsers
 ) {
     users = newUsers;
+}
+
+// -------------------------
+// Notifications
+// -------------------------
+
+export function getNotificationsState() {
+    return notifications;
+}
+
+export function setNotifications(
+    newNotifications
+) {
+    notifications = newNotifications;
 }
