@@ -7,10 +7,6 @@ import {
 } from "../services/notification_services.js";
 
 
-// ========================================
-// GET RELEVANT USERS
-// ========================================
-
 function getRelevantUsers(
     task,
     actorId
@@ -42,62 +38,56 @@ function getRelevantUsers(
 }
 
 
-// ========================================
-// CREATE NOTIFICATIONS FOR TASK EVENT
-// ========================================
-
 async function handleTaskNotification(
     eventData,
     eventType
 ) {
-    const {
-        task,
-        userId
-    } = eventData;
-
-    if (!task || !userId) {
-        console.error(
-            "Invalid task notification event payload"
-        );
-
-        return;
-    }
-
-    const recipients =
-        getRelevantUsers(
+    try {
+        const {
             task,
             userId
-        );
+        } = eventData;
 
-    if (recipients.length === 0) {
-        return;
-    }
+        if (!task || !userId) {
+            console.error(
+                "Invalid task notification event payload"
+            );
 
-
-    let message;
-
-    switch (eventType) {
-        case TASK_EVENTS.ASSIGNED:
-            message =
-                `Task "${task.title}" has been assigned to you`;
-            break;
-
-        case TASK_EVENTS.COMPLETED:
-            message =
-                `Task "${task.title}" has been completed`;
-            break;
-
-        case TASK_EVENTS.PRIORITY_CHANGED:
-            message =
-                `Priority of task "${task.title}" was changed from ${eventData.previousPriority} to ${eventData.newPriority}`;
-            break;
-
-        default:
             return;
-    }
+        }
 
+        const recipients =
+            getRelevantUsers(
+                task,
+                userId
+            );
 
-    try {
+        if (recipients.length === 0) {
+            return;
+        }
+
+        let message;
+
+        switch (eventType) {
+            case TASK_EVENTS.ASSIGNED:
+                message =
+                    `Task "${task.title}" has been assigned to you`;
+                break;
+
+            case TASK_EVENTS.COMPLETED:
+                message =
+                    `Task "${task.title}" has been completed`;
+                break;
+
+            case TASK_EVENTS.PRIORITY_CHANGED:
+                message =
+                    `Priority of task "${task.title}" was changed from ${eventData.previousPriority} to ${eventData.newPriority}`;
+                break;
+
+            default:
+                return;
+        }
+
         await Promise.all(
             recipients.map(
                 (recipientId) =>
@@ -119,24 +109,23 @@ async function handleTaskNotification(
 }
 
 
-// ========================================
-// ASSIGNMENT
-// ========================================
-
 taskEvents.on(
     TASK_EVENTS.ASSIGNED,
     (eventData) => {
         handleTaskNotification(
             eventData,
             TASK_EVENTS.ASSIGNED
+        ).catch(
+            (error) => {
+                console.error(
+                    "Unexpected notification listener error:",
+                    error
+                );
+            }
         );
     }
 );
 
-
-// ========================================
-// COMPLETION
-// ========================================
 
 taskEvents.on(
     TASK_EVENTS.COMPLETED,
@@ -144,14 +133,17 @@ taskEvents.on(
         handleTaskNotification(
             eventData,
             TASK_EVENTS.COMPLETED
+        ).catch(
+            (error) => {
+                console.error(
+                    "Unexpected notification listener error:",
+                    error
+                );
+            }
         );
     }
 );
 
-
-// ========================================
-// PRIORITY CHANGE
-// ========================================
 
 taskEvents.on(
     TASK_EVENTS.PRIORITY_CHANGED,
@@ -159,6 +151,13 @@ taskEvents.on(
         handleTaskNotification(
             eventData,
             TASK_EVENTS.PRIORITY_CHANGED
+        ).catch(
+            (error) => {
+                console.error(
+                    "Unexpected notification listener error:",
+                    error
+                );
+            }
         );
     }
 );

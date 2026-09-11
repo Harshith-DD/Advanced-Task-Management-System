@@ -343,3 +343,62 @@ button:hover {
     margin: 0;
     opacity: 0.7;
 }
+
+/* ========================================
+   NOTIFICATIONS
+   ======================================== */
+
+.notification-section {
+    margin-top: 2rem;
+}
+
+.notification-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.notification-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+
+    padding: 1rem;
+
+    border: 1px solid #ddd;
+    border-radius: 8px;
+
+    background: #fff;
+}
+
+.notification-item.unread {
+    border-left: 4px solid #333;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-message {
+    margin: 0 0 0.5rem;
+    font-weight: 500;
+}
+
+.notification-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+.mark-read-button {
+    flex-shrink: 0;
+}
+
+.notification-empty {
+    margin: 0;
+    opacity: 0.7;
+}

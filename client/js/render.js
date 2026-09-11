@@ -642,3 +642,141 @@ export function renderActivities(activities) {
         })
         .join("");
 }
+
+export function renderNotifications(
+    notifications
+) {
+    const notificationList =
+        document.getElementById(
+            "notification-list"
+        );
+
+    const unreadCountElement =
+        document.getElementById(
+            "unread-notification-count"
+        );
+
+    if (!notificationList) {
+        return;
+    }
+
+    if (
+        !notifications ||
+        notifications.length === 0
+    ) {
+        notificationList.innerHTML = `
+            <p class="notification-empty">
+                No notifications yet.
+            </p>
+        `;
+
+        if (unreadCountElement) {
+            unreadCountElement.textContent = "0";
+        }
+
+        return;
+    }
+
+    const unreadCount =
+        notifications.filter(
+            (notification) =>
+                !notification.read
+        ).length;
+
+    if (unreadCountElement) {
+        unreadCountElement.textContent =
+            unreadCount;
+    }
+
+    notificationList.innerHTML = "";
+
+    for (
+        const notification
+        of notifications
+    ) {
+        const notificationItem =
+            document.createElement("article");
+
+        notificationItem.className =
+            notification.read
+                ? "notification-item"
+                : "notification-item unread";
+
+        const content =
+            document.createElement("div");
+
+        content.className =
+            "notification-content";
+
+        const message =
+            document.createElement("p");
+
+        message.className =
+            "notification-message";
+
+        message.textContent =
+            notification.message;
+
+        const meta =
+            document.createElement("div");
+
+        meta.className =
+            "notification-meta";
+
+        const taskTitle =
+            document.createElement("span");
+
+        taskTitle.textContent =
+            `Task: ${
+                notification.task?.title ??
+                "Unknown task"
+            }`;
+
+        const date =
+            document.createElement("span");
+
+        date.textContent =
+            new Date(
+                notification.createdAt
+            ).toLocaleString();
+
+        meta.append(
+            taskTitle,
+            date
+        );
+
+        content.append(
+            message,
+            meta
+        );
+
+        notificationItem.append(
+            content
+        );
+
+        if (!notification.read) {
+            const readButton =
+                document.createElement("button");
+
+            readButton.type =
+                "button";
+
+            readButton.className =
+                "mark-read-button";
+
+            readButton.dataset.notificationId =
+                notification._id;
+
+            readButton.textContent =
+                "Mark as read";
+
+            notificationItem.append(
+                readButton
+            );
+        }
+
+        notificationList.append(
+            notificationItem
+        );
+    }
+}

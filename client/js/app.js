@@ -8,7 +8,10 @@ import {
     loginUser,
     getUsers,
     assignTask,
-    getActivities
+    getActivities,
+    getNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead
 } from "./api.js";
 
 import {
@@ -27,12 +30,15 @@ import {
     getPagination,
     setPagination,
     getUsersState,
-    setUsers
+    setUsers,
+    getNotificationsState,
+    setNotifications
 } from "./state.js";
 
 import {
     renderTasks,
-    renderActivities
+    renderActivities,
+    renderNotifications
 } from "./render.js";
 
 
@@ -147,7 +153,10 @@ const loginError =
 const registerError =
     document.getElementById("register-error");
 
-
+const markAllNotificationsReadButton =
+    document.getElementById(
+        "mark-all-notifications-read"
+    );
 // ========================================
 // LOAD TASKS
 // ========================================
@@ -198,6 +207,26 @@ async function loadActivities() {
     }
 }
 
+async function loadNotifications() {
+    try {
+        const notifications =
+            await getNotifications();
+
+        setNotifications(
+            notifications
+        );
+
+        renderNotifications(
+            notifications
+        );
+    } catch (error) {
+        console.error(
+            "Failed to load notifications:",
+            error
+        );
+    }
+}
+
 function updateTaskStats(tasks) {
     const totalTasks =
         document.querySelector("#total-tasks");
@@ -240,6 +269,7 @@ async function initializeApp() {
     await loadUsers();
     await loadTasks();
     await loadActivities();
+    await loadNotifications();
 }
 
 
@@ -359,6 +389,7 @@ if (loginForm) {
                 await loadUsers();
                 await loadTasks();
                 await loadActivities();
+                await loadNotifications();
 
             } catch (error) {
                 loginError.textContent =
@@ -379,6 +410,8 @@ if (logoutButton) {
             setTasks([]);
 
             setUsers([]);
+
+            setNotifications([]);
 
             setPagination({
                 page: 1,
@@ -417,6 +450,10 @@ taskForm.addEventListener(
     handleCreateTask
 );
 
+document.addEventListener(
+    "click",
+    handleNotificationAction
+);
 
 async function handleCreateTask(event) {
     /*
@@ -499,7 +536,56 @@ async function handleCreateTask(event) {
     }
 }
 
+async function handleNotificationAction(
+    event
+) {
+    const markReadButton =
+        event.target.closest(
+            ".mark-read-button"
+        );
 
+    if (!markReadButton) {
+        return;
+    }
+
+    const notificationId =
+        markReadButton.dataset.notificationId;
+
+    try {
+        await markNotificationAsRead(
+            notificationId
+        );
+
+        await loadNotifications();
+    } catch (error) {
+        console.error(
+            "Failed to mark notification as read:",
+            error
+        );
+    }
+}
+
+if (
+    markAllNotificationsReadButton
+) {
+    markAllNotificationsReadButton.addEventListener(
+        "click",
+        handleMarkAllNotificationsRead
+    );
+}
+
+async function handleMarkAllNotificationsRead() {
+    try {
+        await markAllNotificationsAsRead();
+
+        await loadNotifications();
+    } catch (error) {
+        console.error(
+            "Failed to mark all notifications as read:",
+            error
+        );
+    }
+}
 // ========================================
 // READ FORM DATA
 // ========================================
