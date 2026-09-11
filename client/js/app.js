@@ -7,7 +7,8 @@ import {
     registerUser,
     loginUser,
     getUsers,
-    assignTask
+    assignTask,
+    getActivities
 } from "./api.js";
 
 import {
@@ -30,7 +31,8 @@ import {
 } from "./state.js";
 
 import {
-    renderTasks
+    renderTasks,
+    renderActivities
 } from "./render.js";
 
 
@@ -180,6 +182,22 @@ renderTasks(
     }
 }
 
+async function loadActivities() {
+    try {
+        const activities =
+            await getActivities();
+
+        renderActivities(
+            activities
+        );
+    } catch (error) {
+        console.error(
+            "Failed to load activities:",
+            error
+        );
+    }
+}
+
 function updateTaskStats(tasks) {
     const totalTasks =
         document.querySelector("#total-tasks");
@@ -221,6 +239,7 @@ async function initializeApp() {
     }
     await loadUsers();
     await loadTasks();
+    await loadActivities();
 }
 
 
@@ -339,6 +358,7 @@ if (loginForm) {
                 updateAuthUI();
                 await loadUsers();
                 await loadTasks();
+                await loadActivities();
 
             } catch (error) {
                 loginError.textContent =
@@ -448,7 +468,7 @@ async function handleCreateTask(event) {
          * are active.
          */
         await loadTasks();
-
+        await loadActivities();
         /*
          * Reset the form after successful creation.
          */
@@ -662,6 +682,7 @@ async function handleStatusChange(event) {
          * again.
          */
         await loadTasks();
+        await loadActivities();
 
     } catch (error) {
         console.error(
@@ -985,6 +1006,7 @@ document.addEventListener(
             );
 
             await loadTasks();
+            await loadActivities();
 
         } catch (error) {
             console.error(

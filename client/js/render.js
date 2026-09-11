@@ -562,3 +562,51 @@ function formatDateTime(dateValue) {
 
     return date.toLocaleString();
 }
+
+export function renderActivities(activities) {
+    const activityList =
+        document.getElementById("activity-list");
+
+    if (!activityList) {
+        return;
+    }
+
+    if (!activities || activities.length === 0) {
+        activityList.innerHTML = `
+            <p class="activity-empty">
+                No activity yet.
+            </p>
+        `;
+
+        return;
+    }
+
+    activityList.innerHTML = activities
+        .map((activity) => {
+            const date =
+                new Date(
+                    activity.createdAt
+                ).toLocaleString();
+
+            return `
+                <div class="activity-item">
+                    <div class="activity-content">
+                        <p class="activity-message">
+                            ${activity.message}
+                        </p>
+
+                        <div class="activity-meta">
+                            <span>
+                                ${activity.user?.name ?? "Unknown user"}
+                            </span>
+
+                            <span>
+                                ${date}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .join("");
+}
