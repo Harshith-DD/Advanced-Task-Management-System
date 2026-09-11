@@ -1,15 +1,12 @@
 import jwt from "jsonwebtoken";
 
-
 export function authenticateUser(
     req,
     res,
     next
 ) {
-
     const authorizationHeader =
         req.headers.authorization;
-
 
     if (!authorizationHeader) {
         return res.status(401).json({
@@ -18,12 +15,8 @@ export function authenticateUser(
         });
     }
 
-
-    const [
-        scheme,
-        token
-    ] = authorizationHeader.split(" ");
-
+    const [scheme, token] =
+        authorizationHeader.split(" ");
 
     if (
         scheme !== "Bearer" ||
@@ -31,32 +24,30 @@ export function authenticateUser(
     ) {
         return res.status(401).json({
             success: false,
-            message: "Invalid authentication format"
+            message:
+                "Invalid authentication format"
         });
     }
 
-
     try {
-
         const decoded =
             jwt.verify(
                 token,
                 process.env.JWT_SECRET
             );
 
-
         req.user = {
-            userId: decoded.userId
+            userId: decoded.userId,
+            role: decoded.role
         };
-
 
         next();
 
     } catch (error) {
-
         return res.status(401).json({
             success: false,
-            message: "Invalid or expired token"
+            message:
+                "Invalid or expired token"
         });
     }
 }

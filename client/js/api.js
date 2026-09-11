@@ -165,3 +165,29 @@ export async function loginUser(credentials) {
         }
     );
 }
+
+export async function getUsers() {
+    const result =
+        await request("/users");
+
+    return result.data;
+}
+
+export async function assignTask(
+    taskId,
+    assignedTo
+) {
+    const result =
+        await request(
+            `/tasks/${taskId}/assign`,
+            {
+                method: "PATCH",
+                body: JSON.stringify({
+                    assignedTo:
+                        assignedTo || null
+                })
+            }
+        );
+
+    return result.data;
+}

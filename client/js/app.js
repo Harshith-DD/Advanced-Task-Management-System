@@ -5,7 +5,9 @@ import {
     updateTask,
     deleteTask,
     registerUser,
-    loginUser
+    loginUser,
+    getUsers,
+    assignTask
 } from "./api.js";
 
 import {
@@ -17,11 +19,14 @@ import {
 
 
 import {
+    getTasksState,
     setTasks,
-    setFilters,
     getFilters,
+    setFilters,
     getPagination,
-    setPagination
+    setPagination,
+    getUsersState,
+    setUsers
 } from "./state.js";
 
 import {
@@ -155,7 +160,17 @@ async function loadTasks() {
 
         setPagination(result.pagination);
 
-        renderTasks(result.data);
+        const users =
+    getUsersState();
+
+const currentUser =
+    getUser();
+
+renderTasks(
+    result.data,
+    users,
+    currentUser
+);
 
         renderPagination(result.pagination);
 
@@ -204,7 +219,7 @@ async function initializeApp() {
     if (!isLoggedIn()) {
         return;
     }
-
+    await loadUsers();
     await loadTasks();
 }
 
@@ -227,7 +242,7 @@ function updateAuthUI() {
 
         if (user) {
             userInfo.textContent =
-                `Logged in as ${user.name} (${user.email})`;
+    `Logged in as ${user.name} (${user.email}) — Role: ${user.role}`;
         }
     } else {
         loginContainer.hidden = false;
@@ -322,7 +337,7 @@ if (loginForm) {
                 loginForm.reset();
 
                 updateAuthUI();
-
+                await loadUsers();
                 await loadTasks();
 
             } catch (error) {
@@ -342,6 +357,9 @@ if (logoutButton) {
             updateAuthUI();
 
             setTasks([]);
+
+            setUsers([]);
+
             setPagination({
                 page: 1,
                 totalPages: 1,
@@ -351,6 +369,23 @@ if (logoutButton) {
             renderTasks([]);
         }
     );
+}
+
+async function loadUsers() {
+    try {
+        const users =
+            await getUsers();
+
+        setUsers(users);
+
+    } catch (error) {
+        console.error(
+            "Failed to load users:",
+            error
+        );
+
+        setUsers([]);
+    }
 }
 
 // ========================================
@@ -925,7 +960,42 @@ pageLimit.addEventListener(
         await loadTasks();
     }
 );
+document.addEventListener(
+    "change",
+    async (event) => {
+        const assignmentSelect =
+            event.target.closest(
+                ".assignment-select"
+            );
 
+        if (!assignmentSelect) {
+            return;
+        }
+
+        const taskId =
+            assignmentSelect.dataset.taskId;
+
+        const assignedTo =
+            assignmentSelect.value;
+
+        try {
+            await assignTask(
+                taskId,
+                assignedTo
+            );
+
+            await loadTasks();
+
+        } catch (error) {
+            console.error(
+                "Failed to assign task:",
+                error
+            );
+
+            alert(error.message);
+        }
+    }
+);
 // ========================================
 // START APPLICATION
 // ========================================

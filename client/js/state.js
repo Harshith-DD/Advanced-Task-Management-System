@@ -1,4 +1,5 @@
 let tasks = [];
+let users = [];
 
 let filters = {
     status: "",
@@ -63,4 +64,14 @@ export function setPagination(newPagination) {
         ...pagination,
         ...newPagination
     };
+}
+
+export function getUsersState() {
+    return users;
+}
+
+export function setUsers(
+    newUsers
+) {
+    users = newUsers;
 }
