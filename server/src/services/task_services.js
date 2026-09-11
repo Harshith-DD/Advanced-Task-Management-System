@@ -344,6 +344,27 @@ export async function updateTask(
     }
 );
 
+// ----------------------------------------
+// PRIORITY CHANGED EVENT
+// ----------------------------------------
+
+const priorityChanged =
+    existingTask.priority !== updatedTask.priority;
+
+if (priorityChanged) {
+    taskEvents.emit(
+        TASK_EVENTS.PRIORITY_CHANGED,
+        {
+            task: updatedTask,
+            userId,
+            previousPriority:
+                existingTask.priority,
+            newPriority:
+                updatedTask.priority
+        }
+    );
+}
+
 
     // ----------------------------------------
     // TASK COMPLETED EVENT

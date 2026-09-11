@@ -255,7 +255,9 @@ button:hover {
 .status-select {
     max-width: 180px;
 }
-
+.priority-select{
+    max-width: 180px;
+}
 .delete-button {
     background: #b91c1c;
 }

@@ -697,6 +697,53 @@ async function handleStatusChange(event) {
     }
 }
 
+// ========================================
+// PRIORITY UPDATE
+// ========================================
+
+document.addEventListener(
+    "change",
+    handlePriorityChange
+);
+
+
+async function handlePriorityChange(event) {
+    const prioritySelect =
+        event.target.closest(
+            ".priority-select"
+        );
+
+    if (!prioritySelect) {
+        return;
+    }
+
+    const taskId =
+        prioritySelect.dataset.taskId;
+
+    const priority =
+        prioritySelect.value;
+
+    try {
+        await updateTask(
+            taskId,
+            { priority }
+        );
+
+        await loadTasks();
+        await loadActivities();
+
+    } catch (error) {
+        console.error(
+            "Failed to update task priority:",
+            error
+        );
+
+        showFormError(
+            error.message ||
+            "Failed to update task priority."
+        );
+    }
+}
 
 // ========================================
 // DELETE TASK

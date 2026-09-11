@@ -337,51 +337,96 @@ function createTaskCard(
         isOwner;
 
 
+if (canEdit) {
     // ====================================
     // STATUS SELECT
     // ====================================
 
-    if (canEdit) {
-        const statusSelect =
-            document.createElement("select");
+    const statusSelect =
+        document.createElement("select");
 
-        statusSelect.className =
-            "status-select";
+    statusSelect.className =
+        "status-select";
 
-        statusSelect.dataset.taskId =
-            task._id;
+    statusSelect.dataset.taskId =
+        task._id;
 
+    const statuses = [
+        ["pending", "Pending"],
+        ["in-progress", "In Progress"],
+        ["completed", "Completed"]
+    ];
 
-        const statuses = [
-            ["pending", "Pending"],
-            ["in-progress", "In Progress"],
-            ["completed", "Completed"]
-        ];
+    for (
+        const [value, label]
+        of statuses
+    ) {
+        const option =
+            document.createElement("option");
 
+        option.value =
+            value;
 
-        for (
-            const [value, label]
-            of statuses
-        ) {
-            const option =
-                document.createElement("option");
+        option.textContent =
+            label;
 
-            option.value =
-                value;
-
-            option.textContent =
-                label;
-
-            if (task.status === value) {
-                option.selected = true;
-            }
-
-            statusSelect.append(option);
+        if (task.status === value) {
+            option.selected = true;
         }
 
-
-        footer.append(statusSelect);
+        statusSelect.append(option);
     }
+
+
+    // ====================================
+    // PRIORITY SELECT
+    // ====================================
+
+    const prioritySelect =
+        document.createElement("select");
+
+    prioritySelect.className =
+        "priority-select";
+
+    prioritySelect.dataset.taskId =
+        task._id;
+
+    const priorities = [
+        ["low", "Low"],
+        ["medium", "Medium"],
+        ["high", "High"]
+    ];
+
+    for (
+        const [value, label]
+        of priorities
+    ) {
+        const option =
+            document.createElement("option");
+
+        option.value =
+            value;
+
+        option.textContent =
+            `Priority: ${label}`;
+
+        if (task.priority === value) {
+            option.selected = true;
+        }
+
+        prioritySelect.append(option);
+    }
+
+
+    // ====================================
+    // ADD CONTROLS
+    // ====================================
+
+    footer.append(
+        statusSelect,
+        prioritySelect
+    );
+}
 
 
     // ====================================
