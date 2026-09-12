@@ -56,37 +56,53 @@ async function handleTaskNotification(
             return;
         }
 
-        const recipients =
+let recipients;
+let message;
+
+switch (eventType) {
+    case TASK_EVENTS.ASSIGNED:
+        if (!task.assignedTo) {
+            return;
+        }
+
+        recipients = [
+            task.assignedTo._id?.toString() ??
+            task.assignedTo.toString()
+        ];
+
+        message =
+            `Task "${task.title}" has been assigned to you`;
+        break;
+
+    case TASK_EVENTS.COMPLETED:
+        recipients =
             getRelevantUsers(
                 task,
                 userId
             );
 
-        if (recipients.length === 0) {
-            return;
-        }
+        message =
+            `Task "${task.title}" has been completed`;
+        break;
 
-        let message;
+    case TASK_EVENTS.PRIORITY_CHANGED:
+        recipients =
+            getRelevantUsers(
+                task,
+                userId
+            );
 
-        switch (eventType) {
-            case TASK_EVENTS.ASSIGNED:
-                message =
-                    `Task "${task.title}" has been assigned to you`;
-                break;
+        message =
+            `Priority of task "${task.title}" was changed from ${eventData.previousPriority} to ${eventData.newPriority}`;
+        break;
 
-            case TASK_EVENTS.COMPLETED:
-                message =
-                    `Task "${task.title}" has been completed`;
-                break;
+    default:
+        return;
+}
 
-            case TASK_EVENTS.PRIORITY_CHANGED:
-                message =
-                    `Priority of task "${task.title}" was changed from ${eventData.previousPriority} to ${eventData.newPriority}`;
-                break;
-
-            default:
-                return;
-        }
+if (recipients.length === 0) {
+    return;
+}
 
         await Promise.all(
             recipients.map(
