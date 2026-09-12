@@ -21,9 +21,6 @@ import {
     logout
 } from "./auth.js";
 
-
-
-
 import {
     setTasks,
     getFilters,
@@ -125,10 +122,9 @@ const pageLimit =
     document.querySelector("#page-limit");
 
 
-//===================================
-//AUTH ELEMENTS
-//===================================
-
+// ========================================
+// AUTH ELEMENTS
+// ========================================
 const loginForm = document.getElementById("login-form");
 const registerForm = document.getElementById("register-form");
 
@@ -160,10 +156,27 @@ const markAllNotificationsReadButton =
     document.getElementById(
         "mark-all-notifications-read"
     );
+
 // ========================================
-// LOAD TASKS
+// DATA LOADING
 // ========================================
 
+async function loadUsers() {
+    try {
+        const users =
+            await getUsers();
+
+        setUsers(users);
+
+    } catch (error) {
+        console.error(
+            "Failed to load users:",
+            error
+        );
+
+        setUsers([]);
+    }
+}
 async function loadTasks() {
     try {
         const filters = getFilters();
@@ -230,27 +243,28 @@ async function loadNotifications() {
     }
 }
 
+async function loadDashboard() {
+    try {
 
-// ========================================
-// APPLICATION INITIALIZATION
-// ========================================
+        const dashboard =
+            await getDashboard();
 
+        setDashboard(
+            dashboard
+        );
 
-async function initializeApp() {
-    updateAuthUI();
+        renderDashboard(
+            dashboard
+        );
 
-    if (!isLoggedIn()) {
-        return;
+    } catch (error) {
+
+        console.error(
+            "Failed to load dashboard:",
+            error
+        );
     }
-    await loadUsers();
-    await Promise.all([
-        loadTasks(),
-        loadActivities(),
-        loadNotifications(),
-        loadDashboard()
-    ]);
 }
-
 
 //==========================================
 //AUTH FUNC
@@ -410,22 +424,6 @@ if (logoutButton) {
     );
 }
 
-async function loadUsers() {
-    try {
-        const users =
-            await getUsers();
-
-        setUsers(users);
-
-    } catch (error) {
-        console.error(
-            "Failed to load users:",
-            error
-        );
-
-        setUsers([]);
-    }
-}
 
 // ========================================
 // CREATE TASK
@@ -436,10 +434,7 @@ taskForm.addEventListener(
     handleCreateTask
 );
 
-document.addEventListener(
-    "click",
-    handleNotificationAction
-);
+
 
 async function handleCreateTask(event) {
     /*
@@ -525,58 +520,9 @@ async function handleCreateTask(event) {
     }
 }
 
-async function handleNotificationAction(
-    event
-) {
-    const markReadButton =
-        event.target.closest(
-            ".mark-read-button"
-        );
 
-    if (!markReadButton) {
-        return;
-    }
-
-    const notificationId =
-        markReadButton.dataset.notificationId;
-
-    try {
-        await markNotificationAsRead(
-            notificationId
-        );
-
-        await loadNotifications();
-    } catch (error) {
-        console.error(
-            "Failed to mark notification as read:",
-            error
-        );
-    }
-}
-
-if (
-    markAllNotificationsReadButton
-) {
-    markAllNotificationsReadButton.addEventListener(
-        "click",
-        handleMarkAllNotificationsRead
-    );
-}
-
-async function handleMarkAllNotificationsRead() {
-    try {
-        await markAllNotificationsAsRead();
-
-        await loadNotifications();
-    } catch (error) {
-        console.error(
-            "Failed to mark all notifications as read:",
-            error
-        );
-    }
-}
 // ========================================
-// READ FORM DATA
+// TASK FORM
 // ========================================
 
 function getTaskFormData() {
@@ -622,10 +568,6 @@ function getTaskFormData() {
 }
 
 
-// ========================================
-// VALIDATE TASK FORM
-// ========================================
-
 function validateTaskForm(taskData) {
     let hasError = false;
 
@@ -651,11 +593,6 @@ function validateTaskForm(taskData) {
 
     return hasError;
 }
-
-
-// ========================================
-// FORM ERROR HANDLING
-// ========================================
 
 function clearFormErrors() {
     titleError.textContent = "";
@@ -907,31 +844,6 @@ async function handleTaskAction(event) {
     }
 }
 
-//=========================
-//DASHBOARD HANDLING
-//=========================
-async function loadDashboard() {
-    try {
-
-        const dashboard =
-            await getDashboard();
-
-        setDashboard(
-            dashboard
-        );
-
-        renderDashboard(
-            dashboard
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load dashboard:",
-            error
-        );
-    }
-}
 
 // ========================================
 // FILTER HANDLING
@@ -1147,6 +1059,87 @@ document.addEventListener(
         }
     }
 );
+// ========================================
+// NOTIFICATIONS
+// ========================================
+
+async function handleNotificationAction(
+    event
+) {
+    const markReadButton =
+        event.target.closest(
+            ".mark-read-button"
+        );
+
+    if (!markReadButton) {
+        return;
+    }
+
+    const notificationId =
+        markReadButton.dataset.notificationId;
+
+    try {
+        await markNotificationAsRead(
+            notificationId
+        );
+
+        await loadNotifications();
+    } catch (error) {
+        console.error(
+            "Failed to mark notification as read:",
+            error
+        );
+    }
+}
+
+document.addEventListener(
+    "click",
+    handleNotificationAction
+);
+
+if (
+    markAllNotificationsReadButton
+) {
+    markAllNotificationsReadButton.addEventListener(
+        "click",
+        handleMarkAllNotificationsRead
+    );
+}
+
+async function handleMarkAllNotificationsRead() {
+    try {
+        await markAllNotificationsAsRead();
+
+        await loadNotifications();
+    } catch (error) {
+        console.error(
+            "Failed to mark all notifications as read:",
+            error
+        );
+    }
+}
+
+// ========================================
+// APPLICATION INITIALIZATION
+// ========================================
+
+
+async function initializeApp() {
+    updateAuthUI();
+
+    if (!isLoggedIn()) {
+        return;
+    }
+    await loadUsers();
+    await Promise.all([
+        loadTasks(),
+        loadActivities(),
+        loadNotifications(),
+        loadDashboard()
+    ]);
+}
+
+
 // ========================================
 // START APPLICATION
 // ========================================
