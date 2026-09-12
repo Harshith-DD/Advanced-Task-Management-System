@@ -1,6 +1,5 @@
 import {
     getTasks,
-    getTaskById,
     createTask,
     updateTask,
     deleteTask,
@@ -26,7 +25,6 @@ import {
 
 
 import {
-    getTasksState,
     setTasks,
     getFilters,
     setFilters,
@@ -34,7 +32,6 @@ import {
     setPagination,
     getUsersState,
     setUsers,
-    getNotificationsState,
     setNotifications,
     setDashboard,
     resetDashboard
@@ -910,35 +907,6 @@ async function handleTaskAction(event) {
     }
 }
 
-
-// ========================================
-// GET ONE TASK
-// ========================================
-
-export async function loadTask(taskId) {
-    try {
-        /*
-         * Request one task from the backend.
-         */
-        const task =
-            await getTaskById(taskId);
-
-        return task;
-
-    } catch (error) {
-        console.error(
-            "Failed to load task:",
-            error
-        );
-
-        /*
-         * Re-throw the error so that the code
-         * calling loadTask() can decide what
-         * to do with it.
-         */
-        throw error;
-    }
-}
 //=========================
 //DASHBOARD HANDLING
 //=========================

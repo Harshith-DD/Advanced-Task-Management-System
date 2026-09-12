@@ -95,14 +95,6 @@ export async function getTasks(filters = {}) {
 }
 
 
-export async function getTaskById(taskId) {
-    const result = await request(
-        `/tasks/${taskId}`
-    );
-
-    return result.data;
-}
-
 
 export async function createTask(taskData) {
     const result = await request(

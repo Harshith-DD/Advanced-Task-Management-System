@@ -42,9 +42,7 @@ let dashboard = {
 // Tasks
 // -------------------------
 
-export function getTasksState() {
-    return tasks;
-}
+
 
 export function setTasks(newTasks) {
     tasks = newTasks;
@@ -96,9 +94,7 @@ export function setUsers(
 // Notifications
 // -------------------------
 
-export function getNotificationsState() {
-    return notifications;
-}
+
 
 export function setNotifications(
     newNotifications
@@ -109,9 +105,7 @@ export function setNotifications(
 //=============================
 // DASHBOARD
 //=============================
-export function getDashboardState() {
-    return dashboard;
-}
+
 
 export function setDashboard(newDashboard) {
     dashboard = newDashboard;
