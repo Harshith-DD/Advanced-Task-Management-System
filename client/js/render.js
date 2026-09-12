@@ -681,44 +681,86 @@ export function renderActivities(activities) {
         return;
     }
 
+    activityList.innerHTML = "";
+
     if (!activities || activities.length === 0) {
-        activityList.innerHTML = `
-            <p class="activity-empty">
-                No activity yet.
-            </p>
-        `;
+        const emptyMessage =
+            document.createElement("p");
+
+        emptyMessage.className =
+            "activity-empty";
+
+        emptyMessage.textContent =
+            "No activity yet.";
+
+        activityList.append(
+            emptyMessage
+        );
 
         return;
     }
 
-    activityList.innerHTML = activities
-        .map((activity) => {
-            const date =
-                new Date(
-                    activity.createdAt
-                ).toLocaleString();
+    for (const activity of activities) {
+        const activityItem =
+            document.createElement("div");
 
-            return `
-                <div class="activity-item">
-                    <div class="activity-content">
-                        <p class="activity-message">
-                            ${activity.message}
-                        </p>
+        activityItem.className =
+            "activity-item";
 
-                        <div class="activity-meta">
-                            <span>
-                                ${activity.user?.name ?? "Unknown user"}
-                            </span>
+        const activityContent =
+            document.createElement("div");
 
-                            <span>
-                                ${date}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        })
-        .join("");
+        activityContent.className =
+            "activity-content";
+
+        const message =
+            document.createElement("p");
+
+        message.className =
+            "activity-message";
+
+        message.textContent =
+            activity.message;
+
+        const activityMeta =
+            document.createElement("div");
+
+        activityMeta.className =
+            "activity-meta";
+
+        const userName =
+            document.createElement("span");
+
+        userName.textContent =
+            activity.user?.name ??
+            "Unknown user";
+
+        const date =
+            document.createElement("span");
+
+        date.textContent =
+            new Date(
+                activity.createdAt
+            ).toLocaleString();
+
+        activityMeta.append(
+            userName,
+            date
+        );
+
+        activityContent.append(
+            message,
+            activityMeta
+        );
+
+        activityItem.append(
+            activityContent
+        );
+
+        activityList.append(
+            activityItem
+        );
+    }
 }
 
 export function renderNotifications(
