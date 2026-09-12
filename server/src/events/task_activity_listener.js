@@ -15,51 +15,47 @@ async function handleTaskActivity(
     eventData,
     eventType
 ) {
-    const {
-        task,
-        userId
-    } = eventData;
-
-
-    if (!task || !userId) {
-        console.error(
-            "Invalid task activity event payload"
-        );
-
-        return;
-    }
-
-
-    let message;
-
-
-    switch (eventType) {
-        case TASK_EVENTS.CREATED:
-            message =
-                `Task "${task.title}" was created`;
-            break;
-
-        case TASK_EVENTS.UPDATED:
-            message =
-                `Task "${task.title}" was updated`;
-            break;
-
-        case TASK_EVENTS.ASSIGNED:
-            message =
-                `Task "${task.title}" was assigned`;
-            break;
-
-        case TASK_EVENTS.COMPLETED:
-            message =
-                `Task "${task.title}" was completed`;
-            break;
-
-        default:
-            return;
-    }
-
-
     try {
+        const {
+            task,
+            userId
+        } = eventData;
+
+        if (!task || !userId) {
+            console.error(
+                "Invalid task activity event payload"
+            );
+
+            return;
+        }
+
+        let message;
+
+        switch (eventType) {
+            case TASK_EVENTS.CREATED:
+                message =
+                    `Task "${task.title}" was created`;
+                break;
+
+            case TASK_EVENTS.UPDATED:
+                message =
+                    `Task "${task.title}" was updated`;
+                break;
+
+            case TASK_EVENTS.ASSIGNED:
+                message =
+                    `Task "${task.title}" was assigned`;
+                break;
+
+            case TASK_EVENTS.COMPLETED:
+                message =
+                    `Task "${task.title}" was completed`;
+                break;
+
+            default:
+                return;
+        }
+
         await createActivity({
             type: eventType,
             task: task._id,
@@ -74,7 +70,6 @@ async function handleTaskActivity(
         );
     }
 }
-
 
 // ========================================
 // EVENT LISTENERS

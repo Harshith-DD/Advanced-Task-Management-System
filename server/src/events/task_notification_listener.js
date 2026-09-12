@@ -56,53 +56,53 @@ async function handleTaskNotification(
             return;
         }
 
-let recipients;
-let message;
+        let recipients;
+        let message;
 
-switch (eventType) {
-    case TASK_EVENTS.ASSIGNED:
-        if (!task.assignedTo) {
-            return;
+        switch (eventType) {
+            case TASK_EVENTS.ASSIGNED:
+                if (!task.assignedTo) {
+                    return;
+                }
+
+                recipients = [
+                    task.assignedTo._id?.toString() ??
+                    task.assignedTo.toString()
+                ];
+
+                message =
+                    `Task "${task.title}" has been assigned to you`;
+                break;
+
+            case TASK_EVENTS.COMPLETED:
+                recipients =
+                    getRelevantUsers(
+                        task,
+                        userId
+                    );
+
+                message =
+                    `Task "${task.title}" has been completed`;
+                break;
+
+            case TASK_EVENTS.PRIORITY_CHANGED:
+                recipients =
+                    getRelevantUsers(
+                        task,
+                        userId
+                    );
+
+                message =
+                    `Priority of task "${task.title}" was changed from ${eventData.previousPriority} to ${eventData.newPriority}`;
+                break;
+
+            default:
+                return;
         }
 
-        recipients = [
-            task.assignedTo._id?.toString() ??
-            task.assignedTo.toString()
-        ];
-
-        message =
-            `Task "${task.title}" has been assigned to you`;
-        break;
-
-    case TASK_EVENTS.COMPLETED:
-        recipients =
-            getRelevantUsers(
-                task,
-                userId
-            );
-
-        message =
-            `Task "${task.title}" has been completed`;
-        break;
-
-    case TASK_EVENTS.PRIORITY_CHANGED:
-        recipients =
-            getRelevantUsers(
-                task,
-                userId
-            );
-
-        message =
-            `Priority of task "${task.title}" was changed from ${eventData.previousPriority} to ${eventData.newPriority}`;
-        break;
-
-    default:
-        return;
-}
-
-if (recipients.length === 0) {
-    return;
-}
+        if (recipients.length === 0) {
+            return;
+        }
 
         await Promise.all(
             recipients.map(
