@@ -10,6 +10,7 @@ import {
     assignTask,
     getActivities,
     getNotifications,
+    getDashboard,
     markNotificationAsRead,
     markAllNotificationsAsRead
 } from "./api.js";
@@ -21,9 +22,7 @@ import {
     logout
 } from "./auth.js";
 
-import {
-    getDashboard
-} from "./api.js";
+
 
 
 import {
@@ -400,6 +399,9 @@ if (logoutButton) {
 
             setNotifications([]);
 
+            resetDashboard();
+
+
             setPagination({
                 page: 1,
                 totalPages: 1,
@@ -491,8 +493,11 @@ async function handleCreateTask(event) {
          * This is especially important when filters
          * are active.
          */
-        await loadTasks();
-        await loadActivities();
+        await Promise.all([
+            loadTasks(),
+            loadActivities(),
+            loadDashboard()
+        ]);
         /*
          * Reset the form after successful creation.
          */
@@ -754,8 +759,11 @@ async function handleStatusChange(event) {
          * Reloading applies the current filters
          * again.
          */
-        await loadTasks();
-        await loadActivities();
+        await Promise.all([
+            loadTasks(),
+            loadActivities(),
+            loadDashboard()
+        ]);
 
     } catch (error) {
         console.error(
@@ -802,8 +810,11 @@ async function handlePriorityChange(event) {
             { priority }
         );
 
-        await loadTasks();
-        await loadActivities();
+        await Promise.all([
+            loadTasks(),
+            loadActivities(),
+            loadDashboard()
+        ]);
 
     } catch (error) {
         console.error(
@@ -881,7 +892,10 @@ async function handleTaskAction(event) {
          * Again, the backend is our source
          * of truth.
          */
-        await loadTasks();
+        await Promise.all([
+            loadTasks(),
+            loadDashboard()
+        ]);
 
     } catch (error) {
         console.error(
@@ -1149,8 +1163,11 @@ document.addEventListener(
                 assignedTo
             );
 
-            await loadTasks();
-            await loadActivities();
+            await Promise.all([
+            loadTasks(),
+            loadActivities(),
+            loadDashboard()
+        ]);
 
         } catch (error) {
             console.error(
