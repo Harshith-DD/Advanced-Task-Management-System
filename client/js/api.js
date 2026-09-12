@@ -238,3 +238,11 @@ export async function markAllNotificationsAsRead() {
     return result.data;
 }
 
+export async function getDashboard() {
+    const result =
+        await request(
+            "/dashboard"
+        );
+
+    return result.data;
+}

@@ -179,25 +179,121 @@
                 <h2 id="dashboard-heading">Dashboard</h2>
             </div>
 
-            <div
-                class="stats"
-                aria-label="Task Statistics"
-            >
-                <article class="stat-card">
-                    <span class="stat-label">Total</span>
-                    <strong id="total-count">0</strong>
-                </article>
+<section
+    class="dashboard"
+    aria-labelledby="dashboard-heading"
+>
+    <div class="section-header">
+        <h2 id="dashboard-heading">
+            Dashboard
+        </h2>
+    </div>
 
-                <article class="stat-card">
-                    <span class="stat-label">Completed</span>
-                    <strong id="completed-count">0</strong>
-                </article>
 
-                <article class="stat-card">
-                    <span class="stat-label">Pending</span>
-                    <strong id="pending-count">0</strong>
-                </article>
-            </div>
+    <div
+        class="stats"
+        aria-label="Task Statistics"
+    >
+        <article class="stat-card">
+            <span class="stat-label">
+                Total
+            </span>
+
+            <strong id="dashboard-total">
+                0
+            </strong>
+        </article>
+
+
+        <article class="stat-card">
+            <span class="stat-label">
+                Completed
+            </span>
+
+            <strong id="dashboard-completed">
+                0
+            </strong>
+        </article>
+
+
+        <article class="stat-card">
+            <span class="stat-label">
+                Pending
+            </span>
+
+            <strong id="dashboard-pending">
+                0
+            </strong>
+        </article>
+
+
+        <article class="stat-card">
+            <span class="stat-label">
+                Overdue
+            </span>
+
+            <strong id="dashboard-overdue">
+                0
+            </strong>
+        </article>
+    </div>
+
+
+    <div class="dashboard-priority">
+        <h3>
+            Tasks by Priority
+        </h3>
+
+        <div class="stats">
+
+            <article class="stat-card">
+                <span class="stat-label">
+                    Low
+                </span>
+
+                <strong id="dashboard-low-priority">
+                    0
+                </strong>
+            </article>
+
+
+            <article class="stat-card">
+                <span class="stat-label">
+                    Medium
+                </span>
+
+                <strong id="dashboard-medium-priority">
+                    0
+                </strong>
+            </article>
+
+
+            <article class="stat-card">
+                <span class="stat-label">
+                    High
+                </span>
+
+                <strong id="dashboard-high-priority">
+                    0
+                </strong>
+            </article>
+
+        </div>
+    </div>
+
+
+    <div class="dashboard-activity">
+        <h3>
+            Recent Activity
+        </h3>
+
+        <div id="dashboard-activity">
+        </div>
+    </div>
+
+</section>
+
+
         </section>
 
 

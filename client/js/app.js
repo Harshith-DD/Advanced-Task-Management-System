@@ -21,6 +21,10 @@ import {
     logout
 } from "./auth.js";
 
+import {
+    getDashboard
+} from "./api.js";
+
 
 import {
     getTasksState,
@@ -32,13 +36,16 @@ import {
     getUsersState,
     setUsers,
     getNotificationsState,
-    setNotifications
+    setNotifications,
+    setDashboard,
+    resetDashboard
 } from "./state.js";
 
 import {
     renderTasks,
     renderActivities,
-    renderNotifications
+    renderNotifications,
+    renderDashboard
 } from "./render.js";
 
 
@@ -185,7 +192,7 @@ renderTasks(
 
         renderPagination(result.pagination);
 
-        updateTaskStats(result.data);
+
     } catch (error) {
         console.error("Failed to load tasks:", error);
     }
@@ -227,34 +234,7 @@ async function loadNotifications() {
     }
 }
 
-function updateTaskStats(tasks) {
-    const totalTasks =
-        document.querySelector("#total-tasks");
 
-    const completedTasks =
-        document.querySelector("#completed-tasks");
-
-    const pendingTasks =
-        document.querySelector("#pending-tasks");
-
-    if (totalTasks) {
-        totalTasks.textContent = tasks.length;
-    }
-
-    if (completedTasks) {
-        completedTasks.textContent =
-            tasks.filter(
-                (task) => task.status === "completed"
-            ).length;
-    }
-
-    if (pendingTasks) {
-        pendingTasks.textContent =
-            tasks.filter(
-                (task) => task.status !== "completed"
-            ).length;
-    }
-}
 // ========================================
 // APPLICATION INITIALIZATION
 // ========================================
@@ -267,9 +247,12 @@ async function initializeApp() {
         return;
     }
     await loadUsers();
-    await loadTasks();
-    await loadActivities();
-    await loadNotifications();
+    await Promise.all([
+        loadTasks(),
+        loadActivities(),
+        loadNotifications(),
+        loadDashboard()
+    ]);
 }
 
 
@@ -387,9 +370,13 @@ if (loginForm) {
 
                 updateAuthUI();
                 await loadUsers();
-                await loadTasks();
-                await loadActivities();
-                await loadNotifications();
+
+                await Promise.all([
+                    loadTasks(),
+                    loadActivities(),
+                    loadNotifications(),
+                    loadDashboard()
+                ]);
 
             } catch (error) {
                 loginError.textContent =
@@ -938,7 +925,31 @@ export async function loadTask(taskId) {
         throw error;
     }
 }
+//=========================
+//DASHBOARD HANDLING
+//=========================
+async function loadDashboard() {
+    try {
 
+        const dashboard =
+            await getDashboard();
+
+        setDashboard(
+            dashboard
+        );
+
+        renderDashboard(
+            dashboard
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load dashboard:",
+            error
+        );
+    }
+}
 
 // ========================================
 // FILTER HANDLING

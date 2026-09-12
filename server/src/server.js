@@ -13,6 +13,9 @@ import "./events/task_notification_listener.js";
 import activityRoutes from "./routes/activity_routes.js";
 import notificationRoutes
     from "./routes/notification_routes.js";
+import dashboardRoutes
+    from "./routes/dashboard_routes.js";
+
 
 import {
     connectDatabase
@@ -61,6 +64,10 @@ app.use(
 app.use(
     "/api/notifications",
     notificationRoutes
+);
+app.use(
+    "/api/dashboard",
+    dashboardRoutes
 );
 
 async function startServer() {

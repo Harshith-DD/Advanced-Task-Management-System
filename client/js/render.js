@@ -4,14 +4,29 @@ const taskListElement =
 const emptyStateElement =
     document.querySelector("#empty-state");
 
-const totalCountElement =
-    document.querySelector("#total-count");
+const dashboardTotalElement =
+    document.querySelector("#dashboard-total");
 
-const completedCountElement =
-    document.querySelector("#completed-count");
+const dashboardCompletedElement =
+    document.querySelector("#dashboard-completed");
 
-const pendingCountElement =
-    document.querySelector("#pending-count");
+const dashboardPendingElement =
+    document.querySelector("#dashboard-pending");
+
+const dashboardOverdueElement =
+    document.querySelector("#dashboard-overdue");
+
+const dashboardLowPriorityElement =
+    document.querySelector("#dashboard-low-priority");
+
+const dashboardMediumPriorityElement =
+    document.querySelector("#dashboard-medium-priority");
+
+const dashboardHighPriorityElement =
+    document.querySelector("#dashboard-high-priority");
+
+const dashboardActivityElement =
+    document.querySelector("#dashboard-activity");
 
 const visibleCountElement =
     document.querySelector("#visible-count");
@@ -24,7 +39,7 @@ export function renderTasks(
 ) {
     taskListElement.innerHTML = "";
 
-    updateStatistics(tasks);
+
     updateVisibleCount(tasks);
 
     if (tasks.length === 0) {
@@ -51,29 +66,92 @@ export function renderTasks(
 // STATISTICS
 // ========================================
 
-function updateStatistics(tasks) {
-    const completedTasks =
-        tasks.filter(
-            (task) =>
-                task.status === "completed"
-        );
+export function renderDashboard(
+    dashboard
+) {
+    dashboardTotalElement.textContent =
+        dashboard.total;
 
-    const pendingTasks =
-        tasks.filter(
-            (task) =>
-                task.status === "pending"
-        );
+    dashboardCompletedElement.textContent =
+        dashboard.completed;
 
-    totalCountElement.textContent =
-        tasks.length;
+    dashboardPendingElement.textContent =
+        dashboard.pending;
 
-    completedCountElement.textContent =
-        completedTasks.length;
+    dashboardOverdueElement.textContent =
+        dashboard.overdue;
 
-    pendingCountElement.textContent =
-        pendingTasks.length;
+
+    dashboardLowPriorityElement.textContent =
+        dashboard.byPriority.low;
+
+    dashboardMediumPriorityElement.textContent =
+        dashboard.byPriority.medium;
+
+    dashboardHighPriorityElement.textContent =
+        dashboard.byPriority.high;
+
+
+    renderDashboardActivity(
+        dashboard.recentActivity
+    );
 }
 
+function renderDashboardActivity(
+    activities
+) {
+    dashboardActivityElement.innerHTML = "";
+
+    if (activities.length === 0) {
+        const emptyMessage =
+            document.createElement("p");
+
+        emptyMessage.textContent =
+            "No recent activity";
+
+        dashboardActivityElement.append(
+            emptyMessage
+        );
+
+        return;
+    }
+
+
+    for (const activity of activities) {
+
+        const activityElement =
+            document.createElement("div");
+
+        activityElement.className =
+            "dashboard-activity-item";
+
+
+        const messageElement =
+            document.createElement("p");
+
+        messageElement.textContent =
+            activity.message;
+
+
+        const dateElement =
+            document.createElement("small");
+
+        dateElement.textContent =
+            new Date(
+                activity.createdAt
+            ).toLocaleString();
+
+
+        activityElement.append(
+            messageElement,
+            dateElement
+        );
+
+        dashboardActivityElement.append(
+            activityElement
+        );
+    }
+}
 
 // ========================================
 // VISIBLE COUNT

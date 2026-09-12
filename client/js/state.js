@@ -23,6 +23,21 @@ let pagination = {
 
 let notifications = [];
 
+let dashboard = {
+    total: 0,
+    completed: 0,
+    pending: 0,
+    overdue: 0,
+
+    byPriority: {
+        low: 0,
+        medium: 0,
+        high: 0
+    },
+
+    recentActivity: []
+};
+
 // -------------------------
 // Tasks
 // -------------------------
@@ -89,4 +104,29 @@ export function setNotifications(
     newNotifications
 ) {
     notifications = newNotifications;
+}
+
+//=============================
+// DASHBOARD
+//=============================
+export function getDashboardState() {
+    return dashboard;
+}
+
+export function setDashboard(newDashboard) {
+    dashboard = newDashboard;
+}
+export function resetDashboard() {
+    dashboard = {
+        total: 0,
+        completed: 0,
+        pending: 0,
+        overdue: 0,
+        byPriority: {
+            low: 0,
+            medium: 0,
+            high: 0
+        },
+        recentActivity: []
+    };
 }
