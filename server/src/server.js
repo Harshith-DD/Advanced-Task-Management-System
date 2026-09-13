@@ -27,6 +27,10 @@ import {
     connectDatabase
 } from "./config/database.js";
 
+import {
+    startQueueWorker
+} from "./workers/queue_worker.js";
+
 const app = express();
 
 const PORT = process.env.PORT;
@@ -87,6 +91,7 @@ async function startServer() {
         await connectDatabase();
 
         startReminderScheduler();
+        startQueueWorker();
 
         https.createServer(
             httpsOptions,

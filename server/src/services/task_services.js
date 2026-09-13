@@ -310,11 +310,27 @@ export async function updateTask(
 
 
     // ----------------------------------------
-    // UPDATE TASK
+    // PREPARE UPDATE DATA
     // ----------------------------------------
+
+    const updateData = {
+        ...taskData
+    };
+
     const dueDateChanged =
         taskData.dueDate !== undefined &&
-        String(existingTask.dueDate) !== String(taskData.dueDate);
+        String(existingTask.dueDate) !==
+        String(taskData.dueDate);
+
+    if (dueDateChanged) {
+        updateData.reminderSentAt = null;
+        updateData.isOverdue = false;
+    }
+
+
+    // ----------------------------------------
+    // UPDATE TASK
+    // ----------------------------------------
 
     const updatedTask =
         await Task.findByIdAndUpdate(
@@ -325,51 +341,50 @@ export async function updateTask(
                 runValidators: true
             }
         )
-            .populate(
-                "owner",
-                "name email"
-            )
-            .populate(
-                "assignedTo",
-                "name email"
-            );
+        .populate(
+            "owner",
+            "name email"
+        )
+        .populate(
+            "assignedTo",
+            "name email"
+        );
 
-    if (dueDateChanged) {
-        updateData.reminderSentAt = null;
-        updateData.isOverdue = false;
-    }
+
     // ----------------------------------------
     // TASK UPDATED EVENT
     // ----------------------------------------
 
     taskEvents.emit(
-    TASK_EVENTS.UPDATED,
-    {
-        task: updatedTask,
-        userId
-    }
-);
-
-// ----------------------------------------
-// PRIORITY CHANGED EVENT
-// ----------------------------------------
-
-const priorityChanged =
-    existingTask.priority !== updatedTask.priority;
-
-if (priorityChanged) {
-    taskEvents.emit(
-        TASK_EVENTS.PRIORITY_CHANGED,
+        TASK_EVENTS.UPDATED,
         {
             task: updatedTask,
-            userId,
-            previousPriority:
-                existingTask.priority,
-            newPriority:
-                updatedTask.priority
+            userId
         }
     );
-}
+
+
+    // ----------------------------------------
+    // PRIORITY CHANGED EVENT
+    // ----------------------------------------
+
+    const priorityChanged =
+        existingTask.priority !==
+        updatedTask.priority;
+
+    if (priorityChanged) {
+        taskEvents.emit(
+            TASK_EVENTS.PRIORITY_CHANGED,
+            {
+                task: updatedTask,
+                userId,
+                previousPriority:
+                    existingTask.priority,
+                newPriority:
+                    updatedTask.priority
+            }
+        );
+    }
 
 
     // ----------------------------------------
@@ -382,18 +397,17 @@ if (priorityChanged) {
     const isCompleted =
         updatedTask.status === "completed";
 
-
     if (
         !wasCompleted &&
         isCompleted
     ) {
         taskEvents.emit(
-    TASK_EVENTS.COMPLETED,
-    {
-        task: updatedTask,
-        userId
-    }
-);
+            TASK_EVENTS.COMPLETED,
+            {
+                task: updatedTask,
+                userId
+            }
+        );
     }
 
 

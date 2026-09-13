@@ -2,9 +2,9 @@
 
 A full-stack task management application built with **JavaScript, Node.js, Express.js, MongoDB, Mongoose, and a vanilla JavaScript frontend**.
 
-The project is designed as a practical JavaScript and Node.js learning application. It demonstrates how a simple task CRUD system can evolve into an application with backend querying, authentication, authorization, event-driven architecture, notifications, dashboards, and time-based background processing.
+The project is designed as a practical JavaScript and Node.js learning application. It demonstrates how a simple task CRUD system can evolve into an application with backend querying, authentication, authorization, task assignment, event-driven architecture, notifications, dashboards, time-based background processing, and an in-memory background job queue.
 
-> **Current status:** The application currently includes task management, backend filtering/search/sorting/pagination, authentication and authorization, task assignment, activity logging, in-app notifications, dashboard statistics, reminders, overdue tracking, and a periodic background scheduler.
+> **Current status:** The application includes task management, backend filtering/search/sorting/pagination, authentication and authorization, task assignment, activity logging, in-app notifications, dashboard statistics, reminders, overdue tracking, a periodic reminder scheduler, and an in-memory background job queue with a continuously running worker.
 
 ---
 
@@ -23,6 +23,7 @@ The project is designed as a practical JavaScript and Node.js learning applicati
 * [Event-Driven Features](#event-driven-features)
 * [Notifications](#notifications)
 * [Reminders and Overdue Tasks](#reminders-and-overdue-tasks)
+* [Background Job Queue](#background-job-queue)
 * [Dashboard](#dashboard)
 * [API Reference](#api-reference)
 * [Environment Variables](#environment-variables)
@@ -34,12 +35,15 @@ The project is designed as a practical JavaScript and Node.js learning applicati
 * [Frontend Usage](#frontend-usage)
 * [Request Flow](#request-flow)
 * [Background Reminder Flow](#background-reminder-flow)
+* [Background Job Flow](#background-job-flow)
 * [Important Design Decisions](#important-design-decisions)
 * [Development Commands](#development-commands)
 * [Git Workflow](#git-workflow)
 * [Planned Extensions](#planned-extensions)
 * [Learning Objectives](#learning-objectives)
 * [Known Limitations](#known-limitations)
+* [Security Notes](#security-notes)
+* [Project Philosophy](#project-philosophy)
 * [License](#license)
 
 ---
@@ -92,22 +96,24 @@ Controller
 HTTP Response
 ```
 
-Secondary actions such as activity logging and notifications are connected through the Node.js event system.
+Secondary actions such as activity logging and notifications are separated from the primary task operation through events and background jobs.
 
-Time-based functionality is handled separately through a background scheduler:
+Time-based functionality is handled separately through a background scheduler and job queue:
 
 ```text
 Server Startup
      ↓
 Reminder Scheduler
      ↓
-setInterval()
-     ↓
 Reminder Service
      ↓
+Background Job Queue
+     ↓
+Queue Worker
+     ↓
+Notification Service
+     ↓
 MongoDB
-     ├── Reminder Notification
-     └── Overdue Task
 ```
 
 ---
@@ -203,8 +209,8 @@ Task operations emit events that can be consumed by independent listeners.
 
 Current event-related behavior includes:
 
-* Activity creation
-* Notification creation
+* Activity job creation
+* Notification job creation
 
 ---
 
@@ -230,12 +236,55 @@ The application includes time-based task processing.
 The reminder system:
 
 * Detects tasks approaching their due date.
-* Creates an in-app reminder notification.
+* Queues an in-app reminder notification as a background job.
 * Prevents duplicate reminders.
 * Marks incomplete tasks as overdue once their due date passes.
 * Runs automatically through a periodic background scheduler.
 
 The current reminder window is **one hour before the task's due date**.
+
+---
+
+## Background Jobs
+
+The application includes an in-memory background job queue.
+
+Background jobs are used to move secondary work away from the primary task operation.
+
+Current background job types include:
+
+```text
+activity
+notification
+report
+```
+
+The `report` job type is reserved for the future report-generation functionality planned for M10.
+
+Currently implemented background jobs are:
+
+```text
+activity
+notification
+```
+
+A continuously running worker consumes pending jobs and tracks their lifecycle:
+
+```text
+pending
+   ↓
+processing
+   ↓
+completed
+```
+
+Failed jobs are represented by:
+
+```text
+failed
+```
+
+with the associated error stored on the job.
 
 ---
 
@@ -354,6 +403,26 @@ Task operations create activity records through the event system.
 
 The task service emits events and the activity listener reacts to them.
 
+The activity listener places an activity job into the background queue.
+
+Conceptually:
+
+```text
+Task Event
+    ↓
+Activity Listener
+    ↓
+addJob()
+    ↓
+Background Queue
+    ↓
+Queue Worker
+    ↓
+createActivity()
+    ↓
+MongoDB
+```
+
 This keeps activity creation separate from the primary task operation.
 
 ---
@@ -377,6 +446,8 @@ Users can:
 * See unread notifications.
 * Mark one notification as read.
 * Mark all notifications as read.
+
+Notification creation is performed through the background job queue.
 
 Email/SMTP delivery is not currently implemented.
 
@@ -438,6 +509,8 @@ reminderSentAt
 
 to prevent the same task from generating repeated reminder notifications.
 
+Reminder notifications are queued as background jobs instead of being created directly by the reminder service.
+
 ---
 
 ## 13. Overdue Tracking
@@ -482,6 +555,8 @@ Completed tasks are not treated as overdue reminders.
 | Development server             | nodemon                       |
 | Frontend                       | HTML, CSS, vanilla JavaScript |
 | Event system                   | Node.js EventEmitter          |
+| Background queue               | In-memory JavaScript queue    |
+| Background worker              | Async Node.js worker          |
 | Timers                         | `setInterval()`               |
 | Package format                 | ES Modules                    |
 
@@ -580,6 +655,7 @@ activity_services.js
 notification_services.js
 dashboard_services.js
 reminder_services.js
+reminder_scheduler.js
 ```
 
 The reminder service determines **what reminder processing should do**.
@@ -616,26 +692,76 @@ Task Updated
      ↓
 Task Event
      ├── Activity Listener
+     │       ↓
+     │   Activity Job
+     │
      └── Notification Listener
+             ↓
+        Notification Job
 ```
 
 ---
 
-## Scheduler
+## Queue
 
-The reminder scheduler is responsible for periodic execution.
+The background queue stores jobs in memory.
+
+Each job contains information such as:
+
+```text
+id
+type
+data
+status
+createdAt
+startedAt
+completedAt
+failedAt
+error
+```
+
+The queue currently supports:
+
+```text
+addJob()
+getNextJob()
+updateJobStatus()
+getJobs()
+```
+
+Jobs remain in the application process memory and are lost if the server process stops.
+
+---
+
+## Worker
+
+The queue worker continuously checks for pending jobs.
+
+The current worker processes jobs asynchronously and updates their lifecycle state.
 
 Conceptually:
 
 ```text
-Reminder Scheduler
-       ↓
-setInterval()
-       ↓
-processTaskReminders()
+Pending Job
+    ↓
+Worker
+    ↓
+processing
+    ↓
+Job Handler
+    ↓
+completed
 ```
 
-The scheduler does not contain reminder business logic.
+If the handler throws an error:
+
+```text
+processing
+    ↓
+failed
+```
+
+The worker is intentionally separate from the reminder scheduler.
 
 ---
 
@@ -684,6 +810,10 @@ task-management-system/
 │       │   ├── task_model.js
 │       │   └── user_model.js
 │       │
+│       ├── queue/
+│       │   ├── job_queue.js
+│       │   └── job_types.js
+│       │
 │       ├── routes/
 │       │   ├── activity_routes.js
 │       │   ├── auth_routes.js
@@ -701,6 +831,10 @@ task-management-system/
 │       │   ├── reminder_services.js
 │       │   ├── task_services.js
 │       │   └── user_services.js
+│       │
+│       ├── workers/
+│       │   ├── job_handlers.js
+│       │   └── queue_worker.js
 │       │
 │       └── server.js
 │
@@ -783,6 +917,8 @@ services     → business logic
 models       → MongoDB data structures
 middleware   → reusable request processing
 events       → task event definitions/listeners
+queue        → background job storage and lifecycle
+workers      → background job execution
 config       → infrastructure configuration
 ```
 
@@ -1144,9 +1280,14 @@ Create / Update / Assign Task
         ┌─────┴─────┐
         ↓           ↓
     Activity    Notification
+        ↓           ↓
+   Queue Job     Queue Job
+        └─────┬─────┘
+              ↓
+           Worker
 ```
 
-This prevents the task service from becoming responsible for every secondary operation.
+The task service does not directly perform activity or notification persistence.
 
 ---
 
@@ -1192,7 +1333,7 @@ The reminder service is responsible for:
 1. Finding tasks that require time-based processing.
 2. Ignoring completed tasks.
 3. Detecting upcoming tasks.
-4. Creating reminder notifications.
+4. Queuing reminder notification jobs.
 5. Recording `reminderSentAt`.
 6. Detecting tasks whose due date has passed.
 7. Setting `isOverdue`.
@@ -1205,9 +1346,11 @@ Task
 Due date check
  ├── Upcoming
  │      ↓
- │  Reminder notification
+ │  Add notification job
  │      ↓
- │  reminderSentAt
+ │  Background worker
+ │      ↓
+ │  Notification
  │
  └── Past due
         ↓
@@ -1226,13 +1369,13 @@ The task stores:
 reminderSentAt
 ```
 
-After a reminder is created:
+After a reminder job is queued:
 
 ```text
 reminderSentAt = current timestamp
 ```
 
-Future scheduler cycles can therefore skip the already-reminded task.
+Future scheduler cycles can therefore skip the already-processed task.
 
 ---
 
@@ -1252,7 +1395,7 @@ For example:
 ```text
 Original due date
        ↓
-Reminder sent
+Reminder job queued
        ↓
 Due date changed
        ↓
@@ -1265,105 +1408,166 @@ New reminder can be generated
 
 ---
 
-# Background Reminder Flow
+# Background Job Queue
 
-The scheduler is responsible for **when** reminder processing runs.
+The project contains a simple **in-memory background job queue**.
 
-The reminder service is responsible for **what** processing does.
+The queue demonstrates how slower secondary work can be separated from the user-facing operation.
 
-```text
-Server Startup
-      ↓
-startReminderScheduler()
-      ↓
-Initial reminder check
-      ↓
-setInterval()
-      ↓
-Every 60 seconds
-      ↓
-processTaskReminders()
-      ↓
-MongoDB
-      ├── Create taskReminder notification
-      └── Mark overdue tasks
-```
+## Why a Queue?
 
-The scheduler currently checks once every:
+Without a background queue, a task event listener could directly perform database operations:
 
 ```text
-60 seconds
+Task Request
+     ↓
+Task Service
+     ↓
+Emit Event
+     ↓
+Create Activity / Notification
+     ↓
+HTTP Response
 ```
 
-An initial check is also performed when the scheduler starts.
+With the queue:
+
+```text
+Task Request
+     ↓
+Task Service
+     ↓
+Emit Event
+     ↓
+Add Job
+     ↓
+HTTP Response
+```
+
+The worker then processes the job separately:
+
+```text
+Background Queue
+      ↓
+Queue Worker
+      ↓
+Job Handler
+      ↓
+Database Operation
+```
+
+The primary API operation therefore does not need to wait for the secondary background work to complete.
 
 ---
 
-## Why `setInterval()`?
+## Job Types
 
-The application needs periodic processing rather than a separate timer for every task.
-
-A single scheduler is simpler for this stage of the project:
+The project defines:
 
 ```text
-One scheduler
-      ↓
-Periodic database check
-      ↓
-All relevant tasks
+activity
+notification
+report
 ```
 
-The application does not create one `setTimeout()` for every task.
+Currently implemented:
 
-That approach would introduce additional lifecycle and timer-management complexity that is not required for the current implementation.
+```text
+activity
+notification
+```
+
+Reserved for future development:
+
+```text
+report
+```
+
+Report generation belongs to the later file export/report milestone.
 
 ---
 
-## Why Does `setInterval()` Not Run at an Exact Time?
+## Job Lifecycle
 
-`setInterval()` schedules a callback to become eligible after its delay.
+Every queued job has a lifecycle:
 
-It does not guarantee that the callback will execute at the exact wall-clock instant.
+```text
+pending
+   ↓
+processing
+   ↓
+completed
+```
 
-The callback must wait for the Node.js event loop to be able to process it.
+If processing fails:
+
+```text
+pending
+   ↓
+processing
+   ↓
+failed
+```
+
+A job records timestamps such as:
+
+```text
+createdAt
+startedAt
+completedAt
+failedAt
+```
+
+and stores an error message when processing fails.
+
+---
+
+## Queue Worker
+
+The worker continuously polls the queue for pending jobs.
+
+The current architecture uses one active job at a time.
 
 Conceptually:
 
 ```text
-Timer delay expires
-       ↓
-Callback becomes eligible
-       ↓
-Event loop
-       ↓
-Callback executes
+Worker
+  ↓
+Get pending job
+  ↓
+Mark processing
+  ↓
+Handle job
+  ↓
+Mark completed / failed
+  ↓
+Get next job
 ```
 
-This is why the reminder system checks periodically rather than assuming that a callback will execute at an exact second.
+Controlled concurrency can later allow more than one job to be processed simultaneously.
 
 ---
 
-## Preventing Overlapping Checks
+## Job Handlers
 
-The scheduler keeps track of whether a reminder check is already running.
+Job-specific behavior is separated into the job handler layer.
 
 Conceptually:
 
 ```text
-Check starts
+Worker
    ↓
-isProcessing = true
-   ↓
-Database processing
-   ↓
-Check finishes
-   ↓
-isProcessing = false
+handleJob()
+   ├── activity
+   │      ↓
+   │  createActivity()
+   │
+   └── notification
+          ↓
+      createNotification()
 ```
 
-If another interval occurs while processing is still active, that cycle is skipped.
-
-This prevents overlapping reminder runs within the same server process.
+This keeps the worker responsible for job execution while the handler determines what each job type actually does.
 
 ---
 
@@ -1415,9 +1619,9 @@ https://127.0.0.1:3000/api
 
 ---
 
-## Health
+# Health
 
-### Check API
+## Check API
 
 ```http
 GET /api/health
@@ -1833,6 +2037,15 @@ Backend:
 https://127.0.0.1:3000
 ```
 
+The backend starts:
+
+```text
+MongoDB connection
+Reminder scheduler
+Background job worker
+HTTPS server
+```
+
 ---
 
 ## Start the Frontend
@@ -2083,9 +2296,13 @@ MongoDB
           ↓
 10. Activity listener reacts
           ↓
-11. Response returns to frontend
+11. Activity job is added to the queue
           ↓
-12. Frontend updates state and rendering
+12. Response returns to frontend
+          ↓
+13. Background worker processes activity job
+          ↓
+14. Activity is persisted in MongoDB
 ```
 
 ---
@@ -2160,14 +2377,147 @@ Find Relevant Tasks
 Upcoming              Past Due
 │                      │
 ↓                      ↓
-Reminder              isOverdue
-Notification           = true
+Add Notification       isOverdue
+Job                     = true
+│
+↓
+Background Queue
+│
+↓
+Queue Worker
+│
+↓
+Notification
 │
 ↓
 reminderSentAt
 ```
 
 The scheduler continues running while the Node.js process is alive.
+
+---
+
+## Reminder Scheduler vs Queue Worker
+
+These are two different responsibilities.
+
+### Reminder Scheduler
+
+Responsible for:
+
+```text
+WHEN should reminder processing happen?
+```
+
+It uses:
+
+```text
+setInterval()
+```
+
+### Queue Worker
+
+Responsible for:
+
+```text
+WHEN a job exists, how should that background job be processed?
+```
+
+The scheduler does not run the worker logic itself.
+
+The architecture is:
+
+```text
+Scheduler
+    ↓
+Reminder Service
+    ↓
+Queue
+    ↓
+Worker
+```
+
+---
+
+# Background Job Flow
+
+Background jobs allow secondary work to be separated from the primary API operation.
+
+## Activity
+
+```text
+Task Operation
+      ↓
+Task Event
+      ↓
+Activity Listener
+      ↓
+addJob({
+    type: "activity"
+})
+      ↓
+Queue
+      ↓
+Worker
+      ↓
+Job Handler
+      ↓
+createActivity()
+      ↓
+MongoDB
+```
+
+---
+
+## Notification
+
+```text
+Task Operation
+      ↓
+Task Event
+      ↓
+Notification Listener
+      ↓
+addJob({
+    type: "notification"
+})
+      ↓
+Queue
+      ↓
+Worker
+      ↓
+Job Handler
+      ↓
+createNotification()
+      ↓
+MongoDB
+```
+
+---
+
+## Reminder Notification
+
+```text
+Reminder Scheduler
+      ↓
+Reminder Service
+      ↓
+Task approaching due date
+      ↓
+addJob({
+    type: "notification"
+})
+      ↓
+Queue
+      ↓
+Worker
+      ↓
+createNotification()
+      ↓
+MongoDB
+```
+
+The reminder scheduler therefore determines **when to check**, while the background worker handles the actual notification persistence.
 
 ---
 
@@ -2225,6 +2575,37 @@ Activity and notification behavior is triggered through task events instead of t
 
 ---
 
+## Background Queue for Secondary Work
+
+Activity and notification persistence are treated as background work.
+
+The primary task operation only needs to enqueue the job.
+
+The worker performs the slower secondary operation separately.
+
+This introduces the concepts of:
+
+```text
+queues
+FIFO processing
+workers
+job lifecycle
+async processing
+error propagation
+```
+
+---
+
+## In-Memory Queue
+
+The current queue is intentionally stored in application memory.
+
+This is appropriate for learning the queue architecture without introducing Redis or another external infrastructure dependency.
+
+The trade-off is that queued jobs are lost if the Node.js process stops.
+
+---
+
 ## Dashboard Calculations
 
 Dashboard statistics are calculated by the backend so the API remains the authoritative source.
@@ -2249,7 +2630,13 @@ WHAT
 
 processing does.
 
-This keeps scheduling concerns separate from reminder business logic.
+The queue worker then handles:
+
+```text
+HOW background work is executed
+```
+
+This keeps scheduling, business logic, and background execution separate.
 
 ---
 
@@ -2323,6 +2710,8 @@ feat: add notification foundation
 feat: move JWT authentication to HttpOnly cookies
 feat: enable HTTPS for local development
 feat: add task reminders and overdue tracking
+feat: add background job queue
+feat: move reminder notifications to background queue
 ```
 
 Generated certificates, environment secrets, and machine-specific VS Code configuration are excluded through `.gitignore`.
@@ -2333,27 +2722,30 @@ Generated certificates, environment secrets, and machine-specific VS Code config
 
 The following areas are intentionally **not part of the current implementation** and can be introduced later.
 
-## Background Job Queue
+## Controlled Queue Concurrency
 
-Potential future job types:
+The current worker processes one job at a time.
 
-```text
-notification
-activity log
-report generation
-```
+The next queue improvement is controlled concurrency, allowing a limited number of jobs to run simultaneously.
 
-Possible concepts:
+For example:
 
 ```text
-FIFO queues
-workers
-concurrency
-job states
-async processing
+Maximum concurrency = 2
+
+Job 1 ──────────────→ completed
+Job 2 ──────────────→ completed
+       Job 3 waits
+                       ↓
+                  Job 3 starts
 ```
 
-A queue system such as Redis/BullMQ can be introduced when background work becomes more complex.
+This will demonstrate:
+
+* Controlled concurrency
+* Active worker tracking
+* Concurrent Promises
+* Event loop behavior
 
 ---
 
@@ -2371,6 +2763,8 @@ Future background jobs can support:
 
 ## File Exports and Reports
 
+Report generation is planned for the later report/file milestone.
+
 Potential functionality:
 
 * Export tasks as JSON
@@ -2378,6 +2772,14 @@ Potential functionality:
 * Generate reports
 * Save reports
 * Download reports through the API
+
+The existing:
+
+```text
+report
+```
+
+job type is reserved for this future functionality.
 
 Possible Node.js concepts:
 
@@ -2390,6 +2792,8 @@ Buffer
 createReadStream
 createWriteStream
 ```
+
+Report generation can then be moved into the existing background queue instead of blocking an API request.
 
 ---
 
@@ -2430,6 +2834,22 @@ Future testing can include:
 * Async success/failure tests
 * Reminder edge-case tests
 * Scheduler behavior tests
+* Queue worker tests
+
+---
+
+## External Queue Infrastructure
+
+The current queue is intentionally in memory.
+
+A future production-oriented extension can replace it with:
+
+```text
+Redis
+BullMQ
+```
+
+while keeping the public application behavior largely independent of the queue implementation.
 
 ---
 
@@ -2462,6 +2882,12 @@ Promise.all()
 error propagation
 event-driven programming
 timers
+setInterval()
+queues
+workers
+FIFO processing
+concurrency
+job state management
 ```
 
 ---
@@ -2478,6 +2904,9 @@ EventEmitter
 asynchronous operations
 timers
 event loop
+background processing
+job queues
+workers
 ```
 
 ---
@@ -2556,6 +2985,10 @@ timers
 setInterval()
 event loop behavior
 background processing
+queues
+workers
+job states
+controlled concurrency
 ```
 
 A key learning goal is understanding not only how asynchronous code works, but **why a particular asynchronous design is appropriate for a particular problem**.
@@ -2572,7 +3005,10 @@ Current limitations include:
 * Centralized error middleware is not yet implemented.
 * Notifications are currently in-app only.
 * Email/SMTP delivery is not implemented.
-* A dedicated background job queue has not yet been introduced.
+* The background queue is in-memory and is not persistent.
+* Queued jobs are lost if the Node.js process stops.
+* The current worker processes jobs sequentially.
+* Controlled queue concurrency is planned as the next queue improvement.
 * Retry infrastructure has not yet been introduced.
 * File export/report generation has not yet been introduced.
 * Local HTTPS uses development certificates.
@@ -2581,7 +3017,7 @@ Current limitations include:
 * The reminder scheduler currently runs inside the Node.js application process.
 * Multi-instance/distributed scheduler coordination is not implemented.
 
-These are extension points for later development rather than missing requirements of the current reminder implementation.
+These are extension points for later development rather than missing requirements of the current implementation.
 
 ---
 
@@ -2641,12 +3077,16 @@ Dashboard
 Timers / Reminders
     ↓
 Overdue Tracking
+    ↓
+Background Job Queue
+    ↓
+Background Worker
 ```
 
 Future infrastructure can then be introduced when the application actually benefits from it:
 
 ```text
-Background Jobs
+Controlled Concurrency
     ↓
 Retries
     ↓
@@ -2657,6 +3097,8 @@ Service Classes
 Centralized Errors
     ↓
 Automated Testing
+    ↓
+External Queue Infrastructure
 ```
 
 The goal is not only to make the application work, but to understand:
@@ -2671,6 +3113,10 @@ The goal is not only to make the application work, but to understand:
 * why independent operations can use `Promise.all()`
 * how timers interact with the Node.js event loop
 * why periodic background work belongs in a scheduler
+* why secondary work can be moved into a background queue
+* how workers consume queued jobs
+* how job state moves from pending to processing to completed or failed
+* how controlled concurrency can improve background processing
 * how time-based state such as reminders and overdue tasks can be managed safely
 
 ---

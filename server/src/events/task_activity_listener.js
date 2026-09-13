@@ -3,9 +3,12 @@ import taskEvents, {
 } from "./task_events.js";
 
 import {
-    createActivity
-} from "../services/activity_services.js";
+    addJob
+} from "../queue/job_queue.js";
 
+import {
+    JOB_TYPES
+} from "../queue/job_types.js";
 
 // ========================================
 // CREATE ACTIVITY FOR TASK EVENT
@@ -56,11 +59,14 @@ async function handleTaskActivity(
                 return;
         }
 
-        await createActivity({
-            type: eventType,
-            task: task._id,
-            user: userId,
-            message
+        addJob({
+            type: JOB_TYPES.ACTIVITY,
+            data: {
+                type: eventType,
+                task: task._id,
+                user: userId,
+                message
+            }
         });
 
     } catch (error) {

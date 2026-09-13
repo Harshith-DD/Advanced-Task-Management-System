@@ -3,9 +3,12 @@ import taskEvents, {
 } from "./task_events.js";
 
 import {
-    createNotification
-} from "../services/notification_services.js";
+    addJob
+} from "../queue/job_queue.js";
 
+import {
+    JOB_TYPES
+} from "../queue/job_types.js";
 
 function getRelevantUsers(
     task,
@@ -104,16 +107,18 @@ async function handleTaskNotification(
             return;
         }
 
-        await Promise.all(
-            recipients.map(
-                (recipientId) =>
-                    createNotification({
+        recipients.forEach(
+            (recipientId) => {
+                addJob({
+                    type: JOB_TYPES.NOTIFICATION,
+                    data: {
                         user: recipientId,
                         type: eventType,
                         task: task._id,
                         message
-                    })
-            )
+                    }
+                });
+            }
         );
 
     } catch (error) {

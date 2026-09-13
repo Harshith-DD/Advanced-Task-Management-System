@@ -1,9 +1,7 @@
 import Task from "../models/task_model.js";
 
-import {
-    createNotification
-} from "./notification_services.js";
-
+import { addJob } from "../queue/job_queue.js";
+import { JOB_TYPES } from "../queue/job_types.js";
 
 // ========================================
 // REMINDER CONFIGURATION
@@ -97,12 +95,14 @@ export async function processTaskReminders() {
             }
 
 
-            await createNotification({
-                user: recipient,
-                type: "taskReminder",
-                task: task._id,
-                message:
-                    `Task "${task.title}" is due soon`
+            addJob({
+                type: JOB_TYPES.NOTIFICATION,
+                data: {
+                    user: recipient,
+                    type: "taskReminder",
+                    task: task._id,
+                    message: `Task "${task.title}" is due soon`
+                }
             });
 
 
