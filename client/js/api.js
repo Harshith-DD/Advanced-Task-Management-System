@@ -1,24 +1,21 @@
-import { getToken } from "./auth.js";
 
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = "http://127.0.0.1:3000/api";
 
-async function request(endpoint, options = {}) {
-    const token = getToken();
-
+async function request(
+    endpoint,
+    options = {}
+) {
     const headers = {
         "Content-Type": "application/json",
         ...options.headers
     };
 
-    if (token) {
-        headers.Authorization = `Bearer ${token}`;
-    }
-
     const response = await fetch(
         `${API_BASE_URL}${endpoint}`,
         {
             ...options,
-            headers
+            headers,
+            credentials: "include"
         }
     );
 
@@ -32,13 +29,13 @@ async function request(endpoint, options = {}) {
 
     if (!response.ok) {
         throw new Error(
-            data?.message || "API request failed"
+            data?.message ||
+            "API request failed"
         );
     }
 
     return data;
 }
-
 
 export async function getTasks(filters = {}) {
     const params = new URLSearchParams();
@@ -237,4 +234,18 @@ export async function getDashboard() {
         );
 
     return result.data;
+}
+
+export async function getCurrentUser() {
+    return request("/auth/me");
+}
+
+
+export async function logoutUser() {
+    return request(
+        "/auth/logout",
+        {
+            method: "POST"
+        }
+    );
 }

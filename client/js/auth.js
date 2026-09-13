@@ -1,30 +1,17 @@
-const TOKEN_KEY = "authToken";
-const USER_KEY = "authUser";
+let currentUser = null;
 
-export function saveAuth(data) {
-    localStorage.setItem(TOKEN_KEY, data.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-}
-
-export function getToken() {
-    return localStorage.getItem(TOKEN_KEY);
+export function saveUser(user) {
+    currentUser = user;
 }
 
 export function getUser() {
-    const user = localStorage.getItem(USER_KEY);
-
-    if (!user) {
-        return null;
-    }
-
-    return JSON.parse(user);
+    return currentUser;
 }
 
 export function isLoggedIn() {
-    return Boolean(getToken());
+    return Boolean(currentUser);
 }
 
-export function logout() {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+export function clearUser() {
+    currentUser = null;
 }

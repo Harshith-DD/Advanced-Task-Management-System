@@ -5,20 +5,22 @@ import {
     deleteTask,
     registerUser,
     loginUser,
+    getCurrentUser,
+    logoutUser,
     getUsers,
     assignTask,
     getActivities,
     getNotifications,
-    getDashboard,
     markNotificationAsRead,
-    markAllNotificationsAsRead
+    markAllNotificationsAsRead,
+    getDashboard
 } from "./api.js";
 
 import {
-    saveAuth,
+    saveUser,
     getUser,
     isLoggedIn,
-    logout
+    clearUser
 } from "./auth.js";
 
 import {
@@ -374,7 +376,7 @@ if (loginForm) {
                     password
                 });
 
-                saveAuth(result.data);
+                saveUser(result.data.user);
 
                 loginForm.reset();
 
@@ -396,13 +398,17 @@ if (loginForm) {
     );
 }
 
+
 if (logoutButton) {
     logoutButton.addEventListener(
         "click",
-        () => {
-            logout();
-
-            updateAuthUI();
+        async () => {
+            try {
+                await logoutUser();
+            } finally {
+                clearUser();
+                updateAuthUI();
+            }
 
             setTasks([]);
 
@@ -411,7 +417,6 @@ if (logoutButton) {
             setNotifications([]);
 
             resetDashboard();
-
 
             setPagination({
                 page: 1,
@@ -1125,20 +1130,27 @@ async function handleMarkAllNotificationsRead() {
 
 
 async function initializeApp() {
-    updateAuthUI();
+    try {
+        const result = await getCurrentUser();
 
-    if (!isLoggedIn()) {
-        return;
+        saveUser(result.data.user);
+
+        updateAuthUI();
+
+        await loadUsers();
+
+        await Promise.all([
+            loadTasks(),
+            loadActivities(),
+            loadNotifications(),
+            loadDashboard()
+        ]);
+
+    } catch (error) {
+        clearUser();
+        updateAuthUI();
     }
-    await loadUsers();
-    await Promise.all([
-        loadTasks(),
-        loadActivities(),
-        loadNotifications(),
-        loadDashboard()
-    ]);
 }
-
 
 // ========================================
 // START APPLICATION

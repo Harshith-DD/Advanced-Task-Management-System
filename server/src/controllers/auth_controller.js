@@ -3,6 +3,8 @@ import {
     loginUser
 } from "../services/auth_services.js";
 
+import User from "../models/user_model.js";
+
 
 export async function registerController(
     req,
@@ -92,9 +94,28 @@ export async function loginController(
             );
 
 
+        res.cookie(
+            "authToken",
+            result.token,
+            {
+                httpOnly: true,
+
+                secure:
+                    process.env.COOKIE_SECURE === "true",
+
+                sameSite: "lax",
+
+                maxAge:
+                    24 * 60 * 60 * 1000
+            }
+        );
+
+
         res.status(200).json({
             success: true,
-            data: result
+            data: {
+                user: result.user
+            }
         });
 
     } catch (error) {
@@ -107,7 +128,85 @@ export async function loginController(
 
         res.status(401).json({
             success: false,
-            message: "Invalid email or password"
+            message:
+                "Invalid email or password"
         });
     }
+}
+
+
+export async function getCurrentUserController(
+    req,
+    res
+) {
+
+    try {
+
+        const user =
+            await User.findById(
+                req.user.userId
+            ).select(
+                "_id name email role"
+            );
+
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+
+        res.status(200).json({
+            success: true,
+            data: {
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role
+                }
+            }
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Failed to get current user:",
+            error
+        );
+
+
+        res.status(500).json({
+            success: false,
+            message:
+                "Failed to get current user"
+        });
+    }
+}
+
+
+export function logoutController(
+    req,
+    res
+) {
+
+    res.clearCookie(
+        "authToken",
+        {
+            httpOnly: true,
+
+            secure:
+                process.env.COOKIE_SECURE === "true",
+
+            sameSite: "lax"
+        }
+    );
+
+
+    res.status(200).json({
+        success: true,
+        message: "Logged out successfully"
+    });
 }

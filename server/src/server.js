@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import taskRoutes from "./routes/task_routes.js";
 import authRoutes from "./routes/auth_routes.js";
@@ -29,11 +30,13 @@ const allowedOrigin =
 
 app.use(
     cors({
-        origin: allowedOrigin
+        origin: allowedOrigin,
+        credentials: true
     })
 );
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.get(
     "/api/health",
