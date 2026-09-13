@@ -312,11 +312,14 @@ export async function updateTask(
     // ----------------------------------------
     // UPDATE TASK
     // ----------------------------------------
+    const dueDateChanged =
+        taskData.dueDate !== undefined &&
+        String(existingTask.dueDate) !== String(taskData.dueDate);
 
     const updatedTask =
         await Task.findByIdAndUpdate(
             taskId,
-            taskData,
+            updateData,
             {
                 new: true,
                 runValidators: true
@@ -331,7 +334,10 @@ export async function updateTask(
                 "name email"
             );
 
-
+    if (dueDateChanged) {
+        updateData.reminderSentAt = null;
+        updateData.isOverdue = false;
+    }
     // ----------------------------------------
     // TASK UPDATED EVENT
     // ----------------------------------------

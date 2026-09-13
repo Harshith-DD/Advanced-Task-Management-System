@@ -180,7 +180,9 @@ function createTaskCard(
     article.className =
         `task-card priority-${task.priority}`;
 
-
+    if (task.isOverdue) {
+        article.classList.add("overdue");
+    }
     // ====================================
     // HEADER
     // ====================================
@@ -287,7 +289,10 @@ function createTaskCard(
     dueDate.textContent =
         `Due: ${formatDateTime(task.dueDate)}`;
 
-
+    if (task.isOverdue) {
+        dueDate.textContent += " — Overdue";
+    }
+    
     const createdAt =
         document.createElement("span");
 

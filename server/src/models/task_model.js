@@ -46,6 +46,16 @@ const taskSchema = new mongoose.Schema(
             default: []
         },
 
+        reminderSentAt: {
+            type: Date,
+            default: null
+        },
+
+        isOverdue: {
+            type: Boolean,
+            default: false
+        },
+        
         owner: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",

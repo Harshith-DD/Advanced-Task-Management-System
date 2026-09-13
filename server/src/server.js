@@ -19,6 +19,9 @@ import notificationRoutes
 import dashboardRoutes
     from "./routes/dashboard_routes.js";
 
+import {
+    startReminderScheduler
+} from "./services/reminder_scheduler.js";
 
 import {
     connectDatabase
@@ -82,6 +85,8 @@ app.use(
 async function startServer() {
     try {
         await connectDatabase();
+
+        startReminderScheduler();
 
         https.createServer(
             httpsOptions,

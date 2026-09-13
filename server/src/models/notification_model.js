@@ -13,7 +13,8 @@ const notificationSchema = new mongoose.Schema(
             enum: [
                 "taskAssigned",
                 "taskCompleted",
-                "taskPriorityChanged"
+                "taskPriorityChanged",
+                "taskReminder"
             ],
             required: true
         },

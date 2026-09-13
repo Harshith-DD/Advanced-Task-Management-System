@@ -402,3 +402,7 @@ button:hover {
     margin: 0;
     opacity: 0.7;
 }
+
+.task-card.overdue {
+    border-left: 4px solid;
+}
