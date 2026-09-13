@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
+import passportLocalMongoosePackage from "passport-local-mongoose";
 
+const passportLocalMongoose =
+    passportLocalMongoosePackage.default ||
+    passportLocalMongoosePackage;
+    
 const userSchema = new mongoose.Schema(
     {
         name: {
@@ -12,14 +17,8 @@ const userSchema = new mongoose.Schema(
         email: {
             type: String,
             required: true,
-            unique: true,
             lowercase: true,
             trim: true
-        },
-
-        password: {
-            type: String,
-            required: true
         },
 
         role: {
@@ -32,6 +31,11 @@ const userSchema = new mongoose.Schema(
         timestamps: true
     }
 );
+
+userSchema.plugin(passportLocalMongoose, {
+    usernameField: "email",
+    usernameLowerCase: true
+});
 
 const User = mongoose.model("User", userSchema);
 

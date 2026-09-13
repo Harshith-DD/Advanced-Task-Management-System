@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import User from "../models/user_model.js";
@@ -10,23 +9,14 @@ export async function registerUser(userData) {
         password
     } = userData;
 
-    const existingUser =
-        await User.findOne({ email });
-
-    if (existingUser) {
-        throw new Error(
-            "User with this email already exists"
-        );
-    }
-
-    const hashedPassword =
-        await bcrypt.hash(password, 12);
-
-    const user = await User.create({
+    const user = new User({
         name,
         email,
-        password: hashedPassword
+        role: "user"
     });
+
+    await user.setPassword(password);
+    await user.save();
 
     return {
         id: user._id,
@@ -40,22 +30,15 @@ export async function loginUser(
     email,
     password
 ) {
-    const user =
-        await User.findOne({ email });
+    const authenticate =
+        User.authenticate();
+
+    const result =
+        await authenticate(email, password);
+
+    const user = result.user;
 
     if (!user) {
-        throw new Error(
-            "Invalid email or password"
-        );
-    }
-
-    const passwordMatches =
-        await bcrypt.compare(
-            password,
-            user.password
-        );
-
-    if (!passwordMatches) {
         throw new Error(
             "Invalid email or password"
         );
