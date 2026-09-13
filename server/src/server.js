@@ -3,6 +3,8 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import https from "https";
+import fs from "fs";
 
 import taskRoutes from "./routes/task_routes.js";
 import authRoutes from "./routes/auth_routes.js";
@@ -27,6 +29,10 @@ const app = express();
 const PORT = process.env.PORT;
 const allowedOrigin =
     process.env.CORS_ORIGIN;
+const httpsOptions = {
+    key: fs.readFileSync("./certs/localhost+2-key.pem"),
+    cert: fs.readFileSync("./certs/localhost+2.pem")
+};
 
 app.use(
     cors({
@@ -77,11 +83,14 @@ async function startServer() {
     try {
         await connectDatabase();
 
-        app.listen(
+        https.createServer(
+            httpsOptions,
+            app
+        ).listen(
             PORT,
             () => {
                 console.log(
-                    `Server is running on port http://localhost:${PORT}`
+                    `HTTPS server is running on https://127.0.0.1:${PORT}`
                 );
             }
         );
