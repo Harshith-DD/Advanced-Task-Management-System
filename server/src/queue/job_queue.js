@@ -22,14 +22,15 @@ export function addJob(job) {
         startedAt: null,
         completedAt: null,
         failedAt: null,
-        error: null
+        error: null,
+        attempts: 0,
+        maxAttempts: 3
     };
 
     jobs.push(queuedJob);
 
     return queuedJob;
 }
-
 
 // ========================================
 // GET NEXT PENDING JOB

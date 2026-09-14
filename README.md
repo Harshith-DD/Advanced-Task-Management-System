@@ -4,7 +4,7 @@ A full-stack task management application built with **JavaScript, Node.js, Expre
 
 The project is designed as a practical JavaScript and Node.js learning application. It demonstrates how a simple task CRUD system can evolve into an application with backend querying, authentication, authorization, task assignment, event-driven architecture, notifications, dashboards, time-based background processing, and an in-memory background job queue.
 
-> **Current status:** The application includes task management, backend filtering/search/sorting/pagination, authentication and authorization, task assignment, activity logging, in-app notifications, dashboard statistics, reminders, overdue tracking, a periodic reminder scheduler, and an in-memory background job queue with a continuously running worker.
+> **Current status:** The application includes task management, backend filtering/search/sorting/pagination, authentication and authorization, task assignment, activity logging, in-app notifications, dashboard statistics, reminders, overdue tracking, a periodic reminder scheduler, and an in-memory background job queue with a continuously running worker, retry handling, exponential backoff, and permanent failure handling.
 
 ---
 
@@ -24,6 +24,7 @@ The project is designed as a practical JavaScript and Node.js learning applicati
 * [Notifications](#notifications)
 * [Reminders and Overdue Tasks](#reminders-and-overdue-tasks)
 * [Background Job Queue](#background-job-queue)
+* [Retry and Failure Handling](#retry-and-failure-handling)
 * [Dashboard](#dashboard)
 * [API Reference](#api-reference)
 * [Environment Variables](#environment-variables)
@@ -713,6 +714,8 @@ id
 type
 data
 status
+attempts
+maxAttempts
 createdAt
 startedAt
 completedAt
@@ -1499,15 +1502,23 @@ processing
 completed
 ```
 
-If processing fails:
+If processing fails, the worker retries the job before permanently marking it as failed:
 
 ```text
 pending
    ↓
 processing
    ↓
-failed
+attempt fails
+   ↓
+retry with increasing delay
+   ↓
+processing
+   ↓
+completed / permanently failed
 ```
+
+Each job currently allows up to **3 total attempts**. Retry delays use exponential backoff.
 
 A job records timestamps such as:
 
@@ -1537,9 +1548,17 @@ Get pending job
   ↓
 Mark processing
   ↓
-Handle job
+Attempt job
   ↓
-Mark completed / failed
+Success? ── Yes ──→ completed
+  │
+  No
+  ↓
+Retry with increasing delay
+  ↓
+Attempts remaining?
+  ├── Yes → Attempt again
+  └── No  → permanently failed
   ↓
 Get next job
 ```
@@ -2521,6 +2540,92 @@ The reminder scheduler therefore determines **when to check**, while the backgro
 
 ---
 
+# Retry and Failure Handling
+
+Background jobs are designed to tolerate temporary failures without bringing down the worker.
+
+## Retry Behavior
+
+Each queued job tracks:
+
+```text
+attempts
+maxAttempts
+error
+```
+
+The current maximum is:
+
+```text
+maxAttempts = 3
+```
+
+This means one initial execution plus up to two retry executions, for a maximum of three total attempts.
+
+## Exponential Backoff
+
+When a job fails, the generic retry utility waits before trying again. The delay increases after each failed attempt.
+
+For the current worker configuration:
+
+```text
+Attempt 1 → failure
+     ↓ 1 second
+Attempt 2 → failure
+     ↓ 2 seconds
+Attempt 3 → failure
+     ↓
+Permanently failed
+```
+
+The retry logic is implemented in:
+
+```text
+server/src/utils/retry.js
+```
+
+The utility is intentionally generic so it does not depend on queue-specific state. The worker supplies the asynchronous operation that should be retried.
+
+## Permanent Failure
+
+If all attempts fail, the retry utility rejects and the worker records the job as:
+
+```text
+status = failed
+```
+
+The error message is stored on the job.
+
+## Worker Resilience
+
+A permanently failed job does not stop the worker. The worker uses `finally` to release its busy state so subsequent jobs can continue processing.
+
+Conceptually:
+
+```text
+Job A
+  ↓
+3 failed attempts
+  ↓
+failed
+  ↓
+worker continues
+  ↓
+Job B
+  ↓
+processed normally
+```
+
+This separates **retry behavior** from **job-specific work**:
+
+```text
+retry.js       → how failures are retried
+queue_worker   → when jobs are processed and finalized
+job_handlers   → what each job actually does
+```
+
+---
+
 # Important Design Decisions
 
 ## Controllers vs Services
@@ -2593,6 +2698,16 @@ job lifecycle
 async processing
 error propagation
 ```
+
+---
+
+## Retry and Failure Handling
+
+Background jobs use a reusable retry utility rather than embedding retry logic separately in every handler.
+
+The worker allows up to three total attempts and uses increasing delays between attempts. Once the retry limit is exhausted, the job is marked as failed and the worker continues processing later jobs.
+
+The retry utility uses recursion and `setTimeout()` to implement the retry sequence and exponential backoff.
 
 ---
 
@@ -2749,16 +2864,6 @@ This will demonstrate:
 
 ---
 
-## Retry and Failure Handling
-
-Future background jobs can support:
-
-* Retry attempts
-* Increasing retry delays
-* Permanent failure states
-* Error details
-* Worker resilience
-
 ---
 
 ## File Exports and Reports
@@ -2888,6 +2993,12 @@ workers
 FIFO processing
 concurrency
 job state management
+retry logic
+recursion
+exponential backoff
+Promise rejection
+finally
+defensive programming
 ```
 
 ---
@@ -2907,6 +3018,8 @@ event loop
 background processing
 job queues
 workers
+retry handling
+exponential backoff
 ```
 
 ---
@@ -3009,7 +3122,6 @@ Current limitations include:
 * Queued jobs are lost if the Node.js process stops.
 * The current worker processes jobs sequentially.
 * Controlled queue concurrency is planned as the next queue improvement.
-* Retry infrastructure has not yet been introduced.
 * File export/report generation has not yet been introduced.
 * Local HTTPS uses development certificates.
 * Certificate and VS Code paths are machine-specific.
@@ -3080,6 +3192,8 @@ Overdue Tracking
     ↓
 Background Job Queue
     ↓
+Retry / Failure Handling
+    ↓
 Background Worker
 ```
 
@@ -3087,8 +3201,6 @@ Future infrastructure can then be introduced when the application actually benef
 
 ```text
 Controlled Concurrency
-    ↓
-Retries
     ↓
 Reports / Files
     ↓

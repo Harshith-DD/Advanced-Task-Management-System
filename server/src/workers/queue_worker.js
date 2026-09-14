@@ -7,10 +7,19 @@ import {
     handleJob
 } from "./job_handlers.js";
 
+import {
+    retry
+} from "../utils/retry.js";
+
+
 const WORKER_POLL_INTERVAL =
     500;
 
+const RETRY_DELAY =
+    1000;
+
 let isWorkerBusy = false;
+
 
 async function processJob(
     job
@@ -19,12 +28,25 @@ async function processJob(
         `Processing job ${job.id} (${job.type})`
     );
 
-    await handleJob(job);
+    await retry(
+        async () => {
+            job.attempts += 1;
+
+            console.log(
+                `Attempt ${job.attempts} for job ${job.id}`
+            );
+
+            return handleJob(job);
+        },
+        job.maxAttempts - 1,
+        RETRY_DELAY
+    );
 
     console.log(
         `Job ${job.id} completed`
     );
 }
+
 
 async function runWorker() {
     if (isWorkerBusy) {
@@ -61,13 +83,15 @@ async function runWorker() {
         );
 
         console.error(
-            `Job ${job.id} failed:`,
+            `Job ${job.id} permanently failed after ${job.attempts} attempts:`,
             error
         );
+
     } finally {
         isWorkerBusy = false;
     }
 }
+
 
 export function startQueueWorker() {
     setInterval(
