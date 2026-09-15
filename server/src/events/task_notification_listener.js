@@ -107,19 +107,17 @@ async function handleTaskNotification(
             return;
         }
 
-        recipients.forEach(
-            (recipientId) => {
-                addJob({
-                    type: JOB_TYPES.NOTIFICATION,
-                    data: {
-                        user: recipientId,
-                        type: eventType,
-                        task: task._id,
-                        message
-                    }
-                });
-            }
-        );
+for (const recipientId of recipients) {
+    await addJob({
+        type: JOB_TYPES.NOTIFICATION,
+        data: {
+            user: recipientId,
+            type: eventType,
+            task: task._id,
+            message
+        }
+    });
+}
 
     } catch (error) {
         console.error(

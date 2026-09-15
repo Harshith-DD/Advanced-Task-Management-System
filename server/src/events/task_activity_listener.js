@@ -59,7 +59,7 @@ async function handleTaskActivity(
                 return;
         }
 
-        addJob({
+        await addJob({
             type: JOB_TYPES.ACTIVITY,
             data: {
                 type: eventType,

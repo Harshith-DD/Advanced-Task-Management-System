@@ -1,6 +1,7 @@
 import {
     getNextJob,
-    updateJobStatus
+    updateJobStatus,
+    updateJobAttempts
 } from "../queue/job_queue.js";
 
 import { handleJob } from "./job_handlers.js";
@@ -17,86 +18,72 @@ class QueueWorker {
     }
 
 
-    async processJob(job) {
+async processJob(job) {
+    console.log(
+        `Processing job ${job.id} (${job.type})`
+    );
 
-        console.log(
-            `Processing job ${job.id} (${job.type})`
+    const remainingRetries =
+        job.maxAttempts - job.attempts - 1;
+
+    const result = await retry(
+        async () => {
+            job.attempts += 1;
+
+            await updateJobAttempts(
+                job.id,
+                job.attempts
+            );
+
+            console.log(
+                `Attempt ${job.attempts} for job ${job.id}`
+            );
+
+            return handleJob(job);
+        },
+        remainingRetries,
+        this.retryDelay
+    );
+
+    console.log(`Job ${job.id} completed`);
+
+    return result;
+}
+
+
+async runWorker() {
+    if (this.isBusy) return;
+
+    const job = await getNextJob();
+
+    if (!job) return;
+
+    this.isBusy = true;
+
+    try {
+        const result = await this.processJob(job);
+
+        await updateJobStatus(
+            job.id,
+            "completed",
+            null,
+            result
+        );
+    } catch (error) {
+        await updateJobStatus(
+            job.id,
+            "failed",
+            error.message
         );
 
-        const result = await retry(
-            async () => {
-
-                job.attempts += 1;
-
-                console.log(
-                    `Attempt ${job.attempts} for job ${job.id}`
-                );
-
-                return handleJob(job);
-            },
-
-            job.maxAttempts - 1,
-
-            this.retryDelay
+        console.error(
+            `Job ${job.id} permanently failed after ${job.attempts} attempts:`,
+            error
         );
-
-        console.log(
-            `Job ${job.id} completed`
-        );
-
-        return result;
+    } finally {
+        this.isBusy = false;
     }
-
-
-    async runWorker() {
-
-        if (this.isBusy) {
-            return;
-        }
-
-        const job = getNextJob();
-
-        if (!job) {
-            return;
-        }
-
-        this.isBusy = true;
-
-        updateJobStatus(
-            job,
-            "processing"
-        );
-
-        try {
-
-            const result =
-                await this.processJob(job);
-
-            updateJobStatus(
-                job,
-                "completed",
-                null,
-                result
-            );
-
-        } catch (error) {
-
-            updateJobStatus(
-                job,
-                "failed",
-                error.message
-            );
-
-            console.error(
-                `Job ${job.id} permanently failed after ${job.attempts} attempts:`,
-                error
-            );
-
-        } finally {
-
-            this.isBusy = false;
-        }
-    }
+}
 
 
 start() {

@@ -6,7 +6,7 @@ import {
 
 import {
     addJob,
-    getJobs
+    getJobById
 } from "../queue/job_queue.js";
 
 import {
@@ -99,7 +99,7 @@ export async function createTaskReportController(
     res
 ) {
     const job =
-        addJob({
+        await addJob({
             type: JOB_TYPES.REPORT,
 
             data: {
@@ -123,19 +123,20 @@ export async function createTaskReportController(
 // GET REPORT STATUS
 // ========================================
 
-export function getReportStatusController(
+export async function getReportStatusController(
     req,
     res
 ) {
     const job =
-        getJobs().find(
-            (item) =>
-                item.id === req.params.jobId &&
-                item.type === JOB_TYPES.REPORT
+        await getJobById(
+            req.params.jobId
         );
 
 
-    if (!job) {
+    if (
+        !job ||
+        job.type !== JOB_TYPES.REPORT
+    ) {
 
         throw new NotFoundError(
             "Report job not found"
@@ -178,19 +179,20 @@ export function getReportStatusController(
 // DOWNLOAD REPORT
 // ========================================
 
-export function downloadReportController(
+export async function downloadReportController(
     req,
     res
 ) {
     const job =
-        getJobs().find(
-            (item) =>
-                item.id === req.params.jobId &&
-                item.type === JOB_TYPES.REPORT
+        await getJobById(
+            req.params.jobId
         );
 
 
-    if (!job) {
+    if (
+        !job ||
+        job.type !== JOB_TYPES.REPORT
+    ) {
 
         throw new NotFoundError(
             "Report job not found"
@@ -267,7 +269,7 @@ export function downloadReportController(
                 res.status(500).json({
                     success: false,
                     message:
-                        "Failed to download report"
+                        "Failed to stream report file"
                 });
 
             } else {

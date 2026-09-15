@@ -1,84 +1,107 @@
-import crypto from "crypto";
+import Job from "../models/job_model.js";
 
+const STALE_JOB_TIMEOUT_MS = 5 * 60 * 1000;
 
-// ========================================
-// IN-MEMORY JOB QUEUE
-// ========================================
-
-const jobs = [];
-
-
-// ========================================
-// ADD JOB
-// ========================================
-
-export function addJob(job) {
-    const queuedJob = {
-        id: crypto.randomUUID(),
+export async function addJob(job) {
+    const queuedJob = await Job.create({
         type: job.type,
         data: job.data,
         status: "pending",
-        createdAt: new Date(),
-        startedAt: null,
-        completedAt: null,
-        failedAt: null,
-        error: null,
-        attempts: 0,
-        maxAttempts: 3,
-        result: null,
-    };
-
-    jobs.push(queuedJob);
+        maxAttempts: 3
+    });
 
     return queuedJob;
 }
 
-// ========================================
-// GET NEXT PENDING JOB
-// ========================================
-
-export function getNextJob() {
-    return jobs.find(
-        (job) =>
-            job.status === "pending"
+export async function getNextJob() {
+    const now = new Date();
+    const staleTime = new Date(
+        now.getTime() - STALE_JOB_TIMEOUT_MS
     );
-}
 
-
-// ========================================
-// UPDATE JOB STATUS
-// ========================================
-
-export function updateJobStatus(
-    job,
-    status,
-    error = null,
-    result = null
-) {
-    job.status = status;
-
-    if (status === "processing") {
-        job.startedAt = new Date();
-    }
-
-    if (status === "completed") {
-        job.completedAt = new Date();
-        job.result = result;
-    }
-
-    if (status === "failed") {
-        job.failedAt = new Date();
-        job.error = error;
-    }
+    const job = await Job.findOneAndUpdate(
+        {
+            $or: [
+                {
+                    status: "pending"
+                },
+                {
+                    status: "processing",
+                    startedAt: {
+                        $lt: staleTime
+                    }
+                }
+            ]
+        },
+        {
+            $set: {
+                status: "processing",
+                startedAt: now
+            }
+        },
+        {
+            sort: {
+                createdAt: 1
+            },
+            new: true
+        }
+    );
 
     return job;
 }
 
+export async function updateJobStatus(
+    jobId,
+    status,
+    error = null,
+    result = null
+) {
+    const update = {
+        status
+    };
 
-// ========================================
-// GET ALL JOBS
-// ========================================
+    if (status === "processing") {
+        update.startedAt = new Date();
+    }
 
-export function getJobs() {
-    return jobs;
+    if (status === "completed") {
+        update.completedAt = new Date();
+        update.result = result;
+    }
+
+    if (status === "failed") {
+        update.failedAt = new Date();
+        update.error = error;
+    }
+
+    return Job.findOneAndUpdate(
+        { id: jobId },
+        { $set: update },
+        {
+            returnDocument: "after"
+        }
+    );
+}
+
+export async function updateJobAttempts(
+    jobId,
+    attempts
+) {
+    return Job.findOneAndUpdate(
+        { id: jobId },
+        {
+            $set: {
+                attempts
+            }
+        },
+        {
+            returnDocument: "after"
+        }
+    );
+}
+
+export async function getJobById(jobId) {
+    return Job.findOne({
+        id: jobId
+    });
 }
