@@ -6,3 +6,4 @@ postman/
 .postman/
 certs/
 .vscode/
+server/reports/exports/

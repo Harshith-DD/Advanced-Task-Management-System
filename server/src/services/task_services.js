@@ -22,6 +22,27 @@ export async function createTask(taskData, userId) {
     return task;
 }
 
+// ========================================
+// BUILD TASK ACCESS QUERY
+// ========================================
+
+export function buildTaskAccessQuery(user) {
+    if (user.role === "admin") {
+        return {};
+    }
+
+    return {
+        $or: [
+            {
+                owner: user.userId
+            },
+            {
+                assignedTo: user.userId
+            }
+        ]
+    };
+}
+
 
 // ========================================
 // GET ALL TASKS
@@ -66,17 +87,11 @@ export async function getAllTasks(
      * 2. Tasks assigned to them
      */
 
-    if (user.role !== "admin") {
-        conditions.push({
-            $or: [
-                {
-                    owner: user.userId
-                },
-                {
-                    assignedTo: user.userId
-                }
-            ]
-        });
+    const accessQuery =
+        buildTaskAccessQuery(user);
+
+    if (Object.keys(accessQuery).length > 0) {
+        conditions.push(accessQuery);
     }
 
 

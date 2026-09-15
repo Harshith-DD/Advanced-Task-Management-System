@@ -21,14 +21,12 @@ const RETRY_DELAY =
 let isWorkerBusy = false;
 
 
-async function processJob(
-    job
-) {
+async function processJob(job) {
     console.log(
         `Processing job ${job.id} (${job.type})`
     );
 
-    await retry(
+    const result = await retry(
         async () => {
             job.attempts += 1;
 
@@ -45,6 +43,8 @@ async function processJob(
     console.log(
         `Job ${job.id} completed`
     );
+
+    return result;
 }
 
 
@@ -67,15 +67,18 @@ async function runWorker() {
         "processing"
     );
 
-    try {
+try {
+    const result =
         await processJob(job);
 
-        updateJobStatus(
-            job,
-            "completed"
-        );
+    updateJobStatus(
+        job,
+        "completed",
+        null,
+        result
+    );
 
-    } catch (error) {
+} catch (error) {
         updateJobStatus(
             job,
             "failed",

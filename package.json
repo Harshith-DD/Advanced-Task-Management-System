@@ -8,6 +8,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon server/src/server.js"
   },
+  "nodemonConfig": {
+    "ignore": [
+      "server/reports/**"
+    ]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

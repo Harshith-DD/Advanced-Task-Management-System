@@ -2,9 +2,9 @@
 
 A full-stack task management application built with **JavaScript, Node.js, Express.js, MongoDB, Mongoose, and a vanilla JavaScript frontend**.
 
-The project is designed as a practical JavaScript and Node.js learning application. It demonstrates how a simple task CRUD system can evolve into an application with backend querying, authentication, authorization, task assignment, event-driven architecture, notifications, dashboards, time-based background processing, and an in-memory background job queue.
+The project is designed as a practical JavaScript and Node.js learning application. It demonstrates how a simple task CRUD system can evolve into an application with backend querying, authentication, authorization, task assignment, event-driven architecture, notifications, dashboards, time-based background processing, an in-memory background job queue, retry handling, and filesystem-based task exports and reports.
 
-> **Current status:** The application includes task management, backend filtering/search/sorting/pagination, authentication and authorization, task assignment, activity logging, in-app notifications, dashboard statistics, reminders, overdue tracking, a periodic reminder scheduler, and an in-memory background job queue with a continuously running worker, retry handling, exponential backoff, and permanent failure handling.
+> **Current status:** The application includes task management, backend filtering/search/sorting/pagination, authentication and authorization, task assignment, activity logging, in-app notifications, dashboard statistics, reminders, overdue tracking, a periodic reminder scheduler, an in-memory background job queue with a continuously running worker, retry handling, exponential backoff, permanent failure handling, JSON/CSV task exports, and background task report generation.
 
 ---
 
@@ -25,7 +25,9 @@ The project is designed as a practical JavaScript and Node.js learning applicati
 * [Reminders and Overdue Tasks](#reminders-and-overdue-tasks)
 * [Background Job Queue](#background-job-queue)
 * [Retry and Failure Handling](#retry-and-failure-handling)
+* [File Exports and Reports](#file-exports-and-reports)
 * [Dashboard](#dashboard)
+* [File Exports and Reports](#file-exports-and-reports)
 * [API Reference](#api-reference)
 * [Environment Variables](#environment-variables)
 * [Prerequisites](#prerequisites)
@@ -260,13 +262,14 @@ notification
 report
 ```
 
-The `report` job type is reserved for the future report-generation functionality planned for M10.
+The `report` job type is now implemented for background task report generation.
 
 Currently implemented background jobs are:
 
 ```text
 activity
 notification
+report
 ```
 
 A continuously running worker consumes pending jobs and tracks their lifecycle:
@@ -475,7 +478,31 @@ Administrators have broader task visibility.
 
 ---
 
-## 11. Role-Based Access
+## 11. File Exports and Reports
+
+The application supports:
+
+* JSON task export
+* CSV task export
+* Saved generated export files
+* Streaming downloads
+* Background task report generation
+* Report job status tracking
+* Downloading completed reports
+
+Direct exports use the authenticated user's task access rules. Background reports use the same authorization-aware task query.
+
+Generated files are saved under:
+
+```text
+server/reports/exports/
+```
+
+The report job is processed by the existing queue worker and stores the generated file information as its result.
+
+---
+
+## 12. Role-Based Access
 
 The system supports:
 
@@ -492,7 +519,7 @@ Authorization is enforced by the backend and is not dependent on frontend UI vis
 
 ---
 
-## 12. Task Reminders
+## 13. Task Reminders
 
 Tasks with a due date approaching within the reminder window can generate a reminder notification.
 
@@ -514,7 +541,7 @@ Reminder notifications are queued as background jobs instead of being created di
 
 ---
 
-## 13. Overdue Tracking
+## 14. Overdue Tracking
 
 Overdue state is stored separately from the task's workflow status.
 
@@ -787,6 +814,9 @@ task-management-system/
 │   └── index.html
 │
 ├── server/
+│   ├── reports/
+│   │   └── exports/        # Generated files, ignored by Git
+│   │
 │   └── src/
 │       ├── config/
 │       │   └── database.js
@@ -796,6 +826,7 @@ task-management-system/
 │       │   ├── auth_controller.js
 │       │   ├── dashboard_controller.js
 │       │   ├── notification_controller.js
+│       │   ├── report_controller.js
 │       │   ├── task_controller.js
 │       │   └── user_controller.js
 │       │
@@ -806,6 +837,9 @@ task-management-system/
 │       │
 │       ├── middleware/
 │       │   └── auth_middleware.js
+│       │
+│       ├── reports/
+│       │   └── report_service.js
 │       │
 │       ├── models/
 │       │   ├── activity_model.js
@@ -822,6 +856,7 @@ task-management-system/
 │       │   ├── auth_routes.js
 │       │   ├── dashboard_routes.js
 │       │   ├── notification_routes.js
+│       │   ├── report_routes.js
 │       │   ├── task_routes.js
 │       │   └── user_routes.js
 │       │
@@ -1943,6 +1978,107 @@ Required
 
 ---
 
+# Reports and Exports
+
+## Export Tasks as JSON
+
+```http
+GET /api/reports/tasks/json
+```
+
+Authentication:
+
+```text
+Required
+```
+
+Returns the authenticated user's authorized tasks as a downloadable JSON file.
+
+---
+
+## Export Tasks as CSV
+
+```http
+GET /api/reports/tasks/csv
+```
+
+Authentication:
+
+```text
+Required
+```
+
+Returns the authenticated user's authorized tasks as a downloadable CSV file.
+
+---
+
+## Start Task Report Generation
+
+```http
+POST /api/reports/tasks/report
+```
+
+Authentication:
+
+```text
+Required
+```
+
+The endpoint queues a background report job and returns `202 Accepted` with a `jobId`.
+
+Example response shape:
+
+```json
+{
+  "success": true,
+  "message": "Task report generation started",
+  "jobId": "JOB_ID"
+}
+```
+
+---
+
+## Get Report Job Status
+
+```http
+GET /api/reports/jobs/:jobId
+```
+
+Authentication:
+
+```text
+Required
+```
+
+The job status can be:
+
+```text
+pending
+processing
+completed
+failed
+```
+
+A user can access the report job associated with their own report request. Administrators have broader access.
+
+---
+
+## Download Completed Report
+
+```http
+GET /api/reports/jobs/:jobId/download
+```
+
+Authentication:
+
+```text
+Required
+```
+
+The report must be completed before it can be downloaded. The generated file is streamed to the client.
+
+---
+
 # Environment Variables
 
 Create a local `.env` file in the project root.
@@ -2540,9 +2676,50 @@ The reminder scheduler therefore determines **when to check**, while the backgro
 
 ---
 
+# Background Report Flow
+
+The report feature combines the filesystem layer with the existing background queue.
+
+```text
+Generate Report button
+        ↓
+POST /api/reports/tasks/report
+        ↓
+Report Controller
+        ↓
+addJob({ type: "report" })
+        ↓
+202 Accepted + jobId
+        ↓
+Queue Worker
+        ↓
+Job Handler
+        ↓
+generateTaskReport()
+        ↓
+Authorization-aware task query
+        ↓
+Build report JSON
+        ↓
+writeFile()
+        ↓
+Store file result on completed job
+        ↓
+Frontend polls job status
+        ↓
+GET /api/reports/jobs/:jobId/download
+        ↓
+createReadStream()
+        ↓
+Browser download
+```
+
+The report job stores its generated file information as the job result. Activity and notification jobs do not need a result because their purpose is simply to perform the background database operation.
+
+
 # Retry and Failure Handling
 
-Background jobs are designed to tolerate temporary failures without bringing down the worker.
+Activity, notification, and report background jobs are designed to tolerate temporary failures without bringing down the worker.
 
 ## Retry Behavior
 
@@ -2701,16 +2878,6 @@ error propagation
 
 ---
 
-## Retry and Failure Handling
-
-Background jobs use a reusable retry utility rather than embedding retry logic separately in every handler.
-
-The worker allows up to three total attempts and uses increasing delays between attempts. Once the retry limit is exhausted, the job is marked as failed and the worker continues processing later jobs.
-
-The retry utility uses recursion and `setTimeout()` to implement the retry sequence and exponential backoff.
-
----
-
 ## In-Memory Queue
 
 The current queue is intentionally stored in application memory.
@@ -2866,42 +3033,6 @@ This will demonstrate:
 
 ---
 
-## File Exports and Reports
-
-Report generation is planned for the later report/file milestone.
-
-Potential functionality:
-
-* Export tasks as JSON
-* Export tasks as CSV
-* Generate reports
-* Save reports
-* Download reports through the API
-
-The existing:
-
-```text
-report
-```
-
-job type is reserved for this future functionality.
-
-Possible Node.js concepts:
-
-```text
-fs/promises
-readFile
-writeFile
-streams
-Buffer
-createReadStream
-createWriteStream
-```
-
-Report generation can then be moved into the existing background queue instead of blocking an API request.
-
----
-
 ## Service Classes
 
 Services could later be refactored into classes when there is a genuine architectural reason to do so.
@@ -3020,6 +3151,12 @@ job queues
 workers
 retry handling
 exponential backoff
+filesystem APIs
+writeFile()
+createReadStream()
+CSV generation
+JSON serialization
+file downloads
 ```
 
 ---
@@ -3122,7 +3259,6 @@ Current limitations include:
 * Queued jobs are lost if the Node.js process stops.
 * The current worker processes jobs sequentially.
 * Controlled queue concurrency is planned as the next queue improvement.
-* File export/report generation has not yet been introduced.
 * Local HTTPS uses development certificates.
 * Certificate and VS Code paths are machine-specific.
 * The application currently uses a local MongoDB configuration.
@@ -3195,14 +3331,14 @@ Background Job Queue
 Retry / Failure Handling
     ↓
 Background Worker
+    ↓
+File Exports / Reports
 ```
 
 Future infrastructure can then be introduced when the application actually benefits from it:
 
 ```text
 Controlled Concurrency
-    ↓
-Reports / Files
     ↓
 Service Classes
     ↓

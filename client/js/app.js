@@ -13,7 +13,11 @@ import {
     getNotifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
-    getDashboard
+    getDashboard,
+    downloadTaskExport,
+    createTaskReport,
+getReportStatus,
+downloadReport
 } from "./api.js";
 
 import {
@@ -123,6 +127,25 @@ const pageNumbers =
 const pageLimit =
     document.querySelector("#page-limit");
 
+const exportJsonButton =
+    document.querySelector(
+        "#export-json-button"
+    );
+
+const exportCsvButton =
+    document.querySelector(
+        "#export-csv-button"
+    );
+
+const generateReportButton =
+    document.querySelector(
+        "#generate-report-button"
+    );
+
+const reportStatus =
+    document.querySelector(
+        "#report-status"
+    );
 
 // ========================================
 // AUTH ELEMENTS
@@ -849,6 +872,83 @@ async function handleTaskAction(event) {
     }
 }
 
+// ========================================
+// TASK EXPORT
+// ========================================
+
+async function handleTaskExport(
+    format
+) {
+
+    try {
+
+        const blob =
+            await downloadTaskExport(
+                format
+            );
+
+
+        const downloadUrl =
+            URL.createObjectURL(
+                blob
+            );
+
+
+        const link =
+            document.createElement(
+                "a"
+            );
+
+
+        link.href =
+            downloadUrl;
+
+
+        link.download =
+            `tasks.${format}`;
+
+
+        document.body.appendChild(
+            link
+        );
+
+
+        link.click();
+
+
+        link.remove();
+
+
+        URL.revokeObjectURL(
+            downloadUrl
+        );
+
+    } catch (error) {
+
+        console.error(
+            `Failed to export tasks as ${format}:`,
+            error
+        );
+
+
+        showFormError(
+            error.message ||
+            "Failed to export tasks."
+        );
+    }
+}
+
+
+exportJsonButton.addEventListener(
+    "click",
+    () => handleTaskExport("json")
+);
+
+
+exportCsvButton.addEventListener(
+    "click",
+    () => handleTaskExport("csv")
+);
 
 // ========================================
 // FILTER HANDLING
@@ -1152,6 +1252,82 @@ async function initializeApp() {
     }
 }
 
+async function waitForReport(jobId) {
+    while (true) {
+        const response =
+            await getReportStatus(jobId);
+
+        const job = response.job;
+
+        if (job.status === "completed") {
+            return;
+        }
+
+        if (job.status === "failed") {
+            throw new Error(
+                job.error ||
+                "Report generation failed"
+            );
+        }
+
+        await new Promise(
+            (resolve) =>
+                setTimeout(resolve, 1000)
+        );
+    }
+}
+
+async function handleGenerateReport() {
+    try {
+        reportStatus.textContent =
+            "Generating report...";
+
+        const response =
+            await createTaskReport();
+
+        await waitForReport(
+            response.jobId
+        );
+
+        const blob =
+            await downloadReport(
+                response.jobId
+            );
+
+        const downloadUrl =
+            URL.createObjectURL(blob);
+
+        const link =
+            document.createElement("a");
+
+        link.href = downloadUrl;
+        link.download = "task-report.json";
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        URL.revokeObjectURL(downloadUrl);
+
+        reportStatus.textContent =
+            "Report downloaded.";
+
+    } catch (error) {
+        console.error(
+            "Failed to generate report:",
+            error
+        );
+
+        reportStatus.textContent =
+            error.message ||
+            "Failed to generate report.";
+    }
+}
+
+generateReportButton.addEventListener(
+    "click",
+    handleGenerateReport
+);
 // ========================================
 // START APPLICATION
 // ========================================

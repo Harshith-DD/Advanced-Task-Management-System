@@ -24,7 +24,8 @@ export function addJob(job) {
         failedAt: null,
         error: null,
         attempts: 0,
-        maxAttempts: 3
+        maxAttempts: 3,
+        result: null,
     };
 
     jobs.push(queuedJob);
@@ -51,7 +52,8 @@ export function getNextJob() {
 export function updateJobStatus(
     job,
     status,
-    error = null
+    error = null,
+    result = null
 ) {
     job.status = status;
 
@@ -61,6 +63,7 @@ export function updateJobStatus(
 
     if (status === "completed") {
         job.completedAt = new Date();
+        job.result = result;
     }
 
     if (status === "failed") {

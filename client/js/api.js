@@ -249,3 +249,80 @@ export async function logoutUser() {
         }
     );
 }
+
+export async function downloadTaskExport(
+    format
+) {
+
+    const response =
+        await fetch(
+            `${API_BASE_URL}/reports/tasks/${format}`,
+            {
+                credentials: "include"
+            }
+        );
+
+
+    if (!response.ok) {
+
+        let data = null;
+
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch (error) {
+            // Ignore non-JSON error responses.
+        }
+
+
+        throw new Error(
+            data?.message ||
+            "Failed to download task export"
+        );
+    }
+
+
+    return response.blob();
+}
+
+export async function createTaskReport() {
+    return request("/reports/tasks/report", {
+        method: "POST"
+    });
+}
+
+export async function getReportStatus(jobId) {
+    return request(
+        `/reports/jobs/${jobId}`
+    );
+}
+
+export async function downloadReport(jobId) {
+    const response =
+        await fetch(
+            `${API_BASE_URL}/reports/jobs/${jobId}/download`,
+            {
+                credentials: "include"
+            }
+        );
+
+    if (!response.ok) {
+        let data = null;
+
+        try {
+            data = await response.json();
+        } catch (error) {
+            // Ignore non-JSON error responses.
+        }
+
+        throw new Error(
+            data?.message ||
+            "Failed to download report"
+        );
+    }
+
+    return response.blob();
+}

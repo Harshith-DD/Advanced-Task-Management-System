@@ -18,6 +18,8 @@ import notificationRoutes
     from "./routes/notification_routes.js";
 import dashboardRoutes
     from "./routes/dashboard_routes.js";
+import reportRoutes
+    from "./routes/report_routes.js";
 
 import {
     startReminderScheduler
@@ -84,6 +86,10 @@ app.use(
 app.use(
     "/api/dashboard",
     dashboardRoutes
+);
+app.use(
+    "/api/reports",
+    reportRoutes
 );
 
 async function startServer() {
