@@ -90,10 +90,6 @@ const formError =
 const searchInput =
     document.querySelector("#search-input");
 
-const searchButton =
-    document.querySelector("#search-button");
-
-
 const statusFilter =
     document.querySelector("#status-filter");
 
@@ -955,11 +951,54 @@ exportCsvButton.addEventListener(
 // ========================================
 
 
-searchButton.addEventListener(
-    "click",
+statusFilter.addEventListener(
+    "change",
     handleFilterChange
 );
 
+priorityFilter.addEventListener(
+    "change",
+    handleFilterChange
+);
+
+tagFilter.addEventListener(
+    "change",
+    handleFilterChange
+);
+
+fromDateFilter.addEventListener(
+    "change",
+    handleFilterChange
+);
+
+toDateFilter.addEventListener(
+    "change",
+    handleFilterChange
+);
+
+sortBy.addEventListener(
+    "change",
+    handleFilterChange
+);
+
+sortOrder.addEventListener(
+    "change",
+    handleFilterChange
+);
+
+let searchTimeout;
+
+searchInput.addEventListener(
+    "input",
+    () => {
+        clearTimeout(searchTimeout);
+
+        searchTimeout = setTimeout(
+            handleFilterChange,
+            500
+        );
+    }
+);
 
 async function handleFilterChange() {
 
