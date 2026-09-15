@@ -1,9 +1,5 @@
-import {
-    getNotifications,
-    markNotificationAsRead,
-    markAllNotificationsAsRead
-} from "../services/notification_services.js";
-
+import notificationService
+    from "../services/notification_services.js";
 
 // ========================================
 // GET NOTIFICATIONS
@@ -15,7 +11,7 @@ export async function getNotificationsController(
 ) {
     try {
         const notifications =
-            await getNotifications(
+            await notificationService.getNotifications(
                 req.user.userId
             );
 
@@ -49,7 +45,7 @@ export async function markNotificationAsReadController(
 ) {
     try {
         const notification =
-            await markNotificationAsRead(
+            await notificationService.markNotificationAsRead(
                 req.params.id,
                 req.user.userId
             );
@@ -92,7 +88,7 @@ export async function markAllNotificationsAsReadController(
 ) {
     try {
         const result =
-            await markAllNotificationsAsRead(
+            await notificationService.markAllNotificationsAsRead(
                 req.user.userId
             );
 

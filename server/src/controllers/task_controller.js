@@ -1,12 +1,4 @@
-import {
-    createTask,
-    getAllTasks,
-    getTaskById,
-    updateTask,
-    deleteTask,
-    assignTask
-} from "../services/task_services.js";
-
+import taskService from "../services/task_services.js";
 
 // ========================================
 // CREATE TASK
@@ -32,7 +24,7 @@ export async function createTaskController(
 
 
         const task =
-    await createTask(
+        await taskService.createTask(
         taskData,
         req.user.userId
     );
@@ -68,7 +60,7 @@ export async function getAllTasksController(
 ) {
     try {
         const result =
-            await getAllTasks(
+            await taskService.getAllTasks(
                 req.query,
                 req.user
             );
@@ -106,7 +98,7 @@ export async function getTaskByIdController(
 ) {
     try {
         const task =
-            await getTaskById(
+            await taskService.getTaskById(
                 req.params.id
             );
 
@@ -182,7 +174,7 @@ export async function updateTaskController(
 ) {
     try {
         const task =
-            await getTaskById(
+            await taskService.getTaskById(
                 req.params.id
             );
 
@@ -259,7 +251,7 @@ if (Object.keys(taskData).length === 0) {
 
 
         const updatedTask =
-    await updateTask(
+    await taskService.updateTask(
         req.params.id,
         taskData,
         req.user.userId
@@ -296,7 +288,7 @@ export async function deleteTaskController(
 ) {
     try {
         const task =
-            await getTaskById(
+            await taskService.getTaskById(
                 req.params.id
             );
 
@@ -335,7 +327,7 @@ export async function deleteTaskController(
         }
 
 
-        await deleteTask(
+        await taskService.deleteTask(
             req.params.id
         );
 
@@ -366,7 +358,7 @@ export async function assignTaskController(
 ) {
     try {
         const task =
-            await getTaskById(
+            await taskService.getTaskById(
                 req.params.id
             );
 
@@ -396,7 +388,7 @@ export async function assignTaskController(
         const { assignedTo } = req.body;
 
         const updatedTask =
-    await assignTask(
+    await taskService.assignTask(
         req.params.id,
         assignedTo,
         req.user.userId

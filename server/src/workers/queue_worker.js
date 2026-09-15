@@ -3,106 +3,116 @@ import {
     updateJobStatus
 } from "../queue/job_queue.js";
 
-import {
-    handleJob
-} from "./job_handlers.js";
+import { handleJob } from "./job_handlers.js";
 
-import {
-    retry
-} from "../utils/retry.js";
+import { retry } from "../utils/retry.js";
 
 
-const WORKER_POLL_INTERVAL =
-    500;
+class QueueWorker {
 
-const RETRY_DELAY =
-    1000;
-
-let isWorkerBusy = false;
-
-
-async function processJob(job) {
-    console.log(
-        `Processing job ${job.id} (${job.type})`
-    );
-
-    const result = await retry(
-        async () => {
-            job.attempts += 1;
-
-            console.log(
-                `Attempt ${job.attempts} for job ${job.id}`
-            );
-
-            return handleJob(job);
-        },
-        job.maxAttempts - 1,
-        RETRY_DELAY
-    );
-
-    console.log(
-        `Job ${job.id} completed`
-    );
-
-    return result;
-}
-
-
-async function runWorker() {
-    if (isWorkerBusy) {
-        return;
+    constructor() {
+        this.pollInterval = 500;
+        this.retryDelay = 1000;
+        this.isBusy = false;
     }
 
-    const job =
-        getNextJob();
 
-    if (!job) {
-        return;
+    async processJob(job) {
+
+        console.log(
+            `Processing job ${job.id} (${job.type})`
+        );
+
+        const result = await retry(
+            async () => {
+
+                job.attempts += 1;
+
+                console.log(
+                    `Attempt ${job.attempts} for job ${job.id}`
+                );
+
+                return handleJob(job);
+            },
+
+            job.maxAttempts - 1,
+
+            this.retryDelay
+        );
+
+        console.log(
+            `Job ${job.id} completed`
+        );
+
+        return result;
     }
 
-    isWorkerBusy = true;
 
-    updateJobStatus(
-        job,
-        "processing"
-    );
+    async runWorker() {
 
-try {
-    const result =
-        await processJob(job);
+        if (this.isBusy) {
+            return;
+        }
 
-    updateJobStatus(
-        job,
-        "completed",
-        null,
-        result
-    );
+        const job = getNextJob();
 
-} catch (error) {
+        if (!job) {
+            return;
+        }
+
+        this.isBusy = true;
+
         updateJobStatus(
             job,
-            "failed",
-            error.message
+            "processing"
         );
 
-        console.error(
-            `Job ${job.id} permanently failed after ${job.attempts} attempts:`,
-            error
-        );
+        try {
 
-    } finally {
-        isWorkerBusy = false;
+            const result =
+                await this.processJob(job);
+
+            updateJobStatus(
+                job,
+                "completed",
+                null,
+                result
+            );
+
+        } catch (error) {
+
+            updateJobStatus(
+                job,
+                "failed",
+                error.message
+            );
+
+            console.error(
+                `Job ${job.id} permanently failed after ${job.attempts} attempts:`,
+                error
+            );
+
+        } finally {
+
+            this.isBusy = false;
+        }
     }
-}
 
 
-export function startQueueWorker() {
+start() {
+
     setInterval(
-        runWorker,
-        WORKER_POLL_INTERVAL
+        this.runWorker.bind(this),
+        this.pollInterval
     );
 
     console.log(
         "Background job worker started"
     );
 }
+}
+
+
+const queueWorker = new QueueWorker();
+
+export default queueWorker;

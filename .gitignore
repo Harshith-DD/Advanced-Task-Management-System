@@ -7,3 +7,4 @@ postman/
 certs/
 .vscode/
 server/reports/exports/
+server/src/this-example.js

@@ -2,9 +2,8 @@ import {
     createActivity
 } from "../services/activity_services.js";
 
-import {
-    createNotification
-} from "../services/notification_services.js";
+import notificationService
+    from "../services/notification_services.js";
 
 import { generateTaskReport } from "../reports/report_service.js";
 
@@ -23,7 +22,7 @@ export async function handleJob(
             break;
 
         case JOB_TYPES.NOTIFICATION:
-            await createNotification(
+            await notificationService.createNotification(
                 job.data
             );
             break;
