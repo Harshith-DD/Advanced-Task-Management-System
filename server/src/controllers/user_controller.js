@@ -6,7 +6,6 @@ export async function getAllUsersController(
     req,
     res
 ) {
-    try {
         const users =
             await getAllUsers();
 
@@ -14,17 +13,4 @@ export async function getAllUsersController(
             success: true,
             data: users
         });
-
-    } catch (error) {
-        console.error(
-            "Failed to fetch users:",
-            error
-        );
-
-        res.status(500).json({
-            success: false,
-            message:
-                "Failed to fetch users"
-        });
-    }
 }

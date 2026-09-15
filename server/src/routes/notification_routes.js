@@ -10,6 +10,9 @@ import {
     authenticateUser
 } from "../middleware/auth_middleware.js";
 
+import {
+    asyncHandler
+} from "../utils/async_handler.js";
 
 const router = Router();
 
@@ -21,7 +24,8 @@ const router = Router();
 router.get(
     "/",
     authenticateUser,
-    getNotificationsController
+    asyncHandler(
+    getNotificationsController)
 );
 
 
@@ -32,7 +36,8 @@ router.get(
 router.patch(
     "/read-all",
     authenticateUser,
-    markAllNotificationsAsReadController
+    asyncHandler(
+    markAllNotificationsAsReadController)
 );
 
 
@@ -43,7 +48,8 @@ router.patch(
 router.patch(
     "/:id/read",
     authenticateUser,
-    markNotificationAsReadController
+    asyncHandler(
+    markNotificationAsReadController)
 );
 
 

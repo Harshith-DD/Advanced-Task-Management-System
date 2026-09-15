@@ -27,12 +27,21 @@ async function request(
         data = null;
     }
 
-    if (!response.ok) {
-        throw new Error(
-            data?.message ||
-            "API request failed"
-        );
-    }
+if (!response.ok) {
+    const error = new Error(
+        data?.error?.message ||
+        "API request failed"
+    );
+
+    error.code =
+        data?.error?.code ||
+        "API_ERROR";
+
+    error.statusCode =
+        response.status;
+
+    throw error;
+}
 
     return data;
 }
@@ -278,10 +287,10 @@ export async function downloadTaskExport(
         }
 
 
-        throw new Error(
-            data?.message ||
-            "Failed to download task export"
-        );
+throw new Error(
+    data?.error?.message ||
+    "Failed to download report"
+);
     }
 
 
@@ -318,10 +327,10 @@ export async function downloadReport(jobId) {
             // Ignore non-JSON error responses.
         }
 
-        throw new Error(
-            data?.message ||
-            "Failed to download report"
-        );
+throw new Error(
+    data?.error?.message ||
+    "Failed to download report"
+);
     }
 
     return response.blob();

@@ -11,6 +11,9 @@ import {
     authenticateUser
 } from "../middleware/auth_middleware.js";
 
+import {
+    asyncHandler
+} from "../utils/async_handler.js";
 
 const router =
     Router();
@@ -19,24 +22,28 @@ const router =
 router.get(
     "/tasks/:format",
     authenticateUser,
-    exportTasksController
+    asyncHandler(
+    exportTasksController)
 );
 
 router.post(
     "/tasks/report",
     authenticateUser,
-    createTaskReportController
+    asyncHandler(
+    createTaskReportController)
 );
 
 router.get(
     "/jobs/:jobId",
     authenticateUser,
-    getReportStatusController
+    asyncHandler(
+    getReportStatusController)
 );
 
 router.get(
     "/jobs/:jobId/download",
     authenticateUser,
-    downloadReportController
+    asyncHandler(
+    downloadReportController)
 );
 export default router;

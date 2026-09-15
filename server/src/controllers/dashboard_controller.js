@@ -11,8 +11,6 @@ export async function getDashboardController(
     req,
     res
 ) {
-    try {
-
         const dashboard =
             await getDashboard(
                 req.user
@@ -24,17 +22,4 @@ export async function getDashboardController(
             data: dashboard
         });
 
-    } catch (error) {
-
-        console.error(
-            "Failed to fetch dashboard:",
-            error
-        );
-
-        res.status(500).json({
-            success: false,
-            message:
-                "Failed to fetch dashboard"
-        });
-    }
 }

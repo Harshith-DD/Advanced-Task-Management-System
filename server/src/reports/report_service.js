@@ -12,6 +12,9 @@ import {
     buildTaskAccessQuery
 } from "../services/task_services.js";
 
+import {
+    ValidationError
+} from "../errors/app_error.js";
 
 const __filename =
     fileURLToPath(import.meta.url);
@@ -268,14 +271,14 @@ export async function exportTasks(
     user
 ) {
 
-    if (
-        format !== "json" &&
-        format !== "csv"
-    ) {
-        throw new Error(
-            "Unsupported export format"
-        );
-    }
+if (
+    format !== "json" &&
+    format !== "csv"
+) {
+    throw new ValidationError(
+        "Unsupported export format"
+    );
+}
 
 
     await ensureExportDirectory();

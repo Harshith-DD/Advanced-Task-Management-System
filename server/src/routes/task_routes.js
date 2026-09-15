@@ -12,43 +12,52 @@ import {
 import {
     authenticateUser
 } from "../middleware/auth_middleware.js";
+import {
+    asyncHandler
+} from "../utils/async_handler.js";
 
 const router = Router();
 
 router.post(
     "/",
     authenticateUser,
-    createTaskController
+    asyncHandler(
+    createTaskController)
 );
 
 router.get(
     "/",
     authenticateUser,
-    getAllTasksController
+    asyncHandler(
+    getAllTasksController)
 );
 
 router.patch(
     "/:id/assign",
     authenticateUser,
-    assignTaskController
+    asyncHandler(
+    assignTaskController)
 );
 
 router.get(
     "/:id",
     authenticateUser,
-    getTaskByIdController
+    asyncHandler(
+    getTaskByIdController)
 );
 
 router.put(
     "/:id",
     authenticateUser,
-    updateTaskController
+    asyncHandler(
+    updateTaskController)
 );
 
 router.delete(
     "/:id",
     authenticateUser,
-    deleteTaskController
+    asyncHandler(
+    deleteTaskController)
 );
 
 export default router;

@@ -1,6 +1,9 @@
 import notificationService
     from "../services/notification_services.js";
 
+import {
+    NotFoundError
+} from "../errors/app_error.js";    
 // ========================================
 // GET NOTIFICATIONS
 // ========================================
@@ -9,7 +12,6 @@ export async function getNotificationsController(
     req,
     res
 ) {
-    try {
         const notifications =
             await notificationService.getNotifications(
                 req.user.userId
@@ -19,19 +21,6 @@ export async function getNotificationsController(
             success: true,
             data: notifications
         });
-
-    } catch (error) {
-        console.error(
-            "Failed to fetch notifications:",
-            error
-        );
-
-        res.status(500).json({
-            success: false,
-            message:
-                "Failed to fetch notifications"
-        });
-    }
 }
 
 
@@ -43,7 +32,6 @@ export async function markNotificationAsReadController(
     req,
     res
 ) {
-    try {
         const notification =
             await notificationService.markNotificationAsRead(
                 req.params.id,
@@ -51,30 +39,15 @@ export async function markNotificationAsReadController(
             );
 
         if (!notification) {
-            return res.status(404).json({
-                success: false,
-                message:
-                    "Notification not found"
-            });
+throw new NotFoundError(
+    "Notification not found"
+);
         }
 
         res.status(200).json({
             success: true,
             data: notification
         });
-
-    } catch (error) {
-        console.error(
-            "Failed to mark notification as read:",
-            error
-        );
-
-        res.status(500).json({
-            success: false,
-            message:
-                "Failed to mark notification as read"
-        });
-    }
 }
 
 
@@ -86,7 +59,6 @@ export async function markAllNotificationsAsReadController(
     req,
     res
 ) {
-    try {
         const result =
             await notificationService.markAllNotificationsAsRead(
                 req.user.userId
@@ -96,17 +68,4 @@ export async function markAllNotificationsAsReadController(
             success: true,
             data: result
         });
-
-    } catch (error) {
-        console.error(
-            "Failed to mark notifications as read:",
-            error
-        );
-
-        res.status(500).json({
-            success: false,
-            message:
-                "Failed to mark notifications as read"
-        });
-    }
 }

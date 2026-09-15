@@ -5,6 +5,9 @@ import taskEvents, {
     TASK_EVENTS
 } from "../events/task_events.js";
 
+import {
+    NotFoundError
+} from "../errors/app_error.js";
 
 // ========================================
 // BUILD TASK ACCESS QUERY
@@ -499,9 +502,9 @@ class TaskService {
             await User.findById(assignedTo);
 
         if (!user) {
-            throw new Error(
-                "Assigned user not found"
-            );
+throw new NotFoundError(
+    "Assigned user not found"
+);
         }
 
 

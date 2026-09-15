@@ -1,47 +1,48 @@
 import jwt from "jsonwebtoken";
 
+import {
+    AuthenticationError
+} from "../errors/app_error.js";
+
 
 export function authenticateUser(
     req,
     res,
     next
 ) {
-
     const token =
         req.cookies?.authToken;
 
 
     if (!token) {
-        return res.status(401).json({
-            success: false,
-            message: "Authentication required"
-        });
+        throw new AuthenticationError();
     }
 
 
     try {
-
         const decoded =
             jwt.verify(
                 token,
                 process.env.JWT_SECRET
             );
 
-
         req.user = {
             userId: decoded.userId,
             role: decoded.role
         };
 
-
         next();
 
     } catch (error) {
 
-        return res.status(401).json({
-            success: false,
-            message:
-                "Invalid or expired token"
-        });
+        if (
+            error instanceof AuthenticationError
+        ) {
+            throw error;
+        }
+
+        throw new AuthenticationError(
+            "Invalid or expired token"
+        );
     }
 }

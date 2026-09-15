@@ -8,6 +8,9 @@ import {
     authenticateUser
 } from "../middleware/auth_middleware.js";
 
+import {
+    asyncHandler
+} from "../utils/async_handler.js";
 
 const router = Router();
 
@@ -15,7 +18,8 @@ const router = Router();
 router.get(
     "/",
     authenticateUser,
-    getActivitiesController
+    asyncHandler(
+    getActivitiesController)
 );
 
 

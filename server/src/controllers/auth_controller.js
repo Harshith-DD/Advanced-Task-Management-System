@@ -5,14 +5,16 @@ import {
 
 import User from "../models/user_model.js";
 
+import {
+    ValidationError,
+    NotFoundError
+} from "../errors/app_error.js";
+
 
 export async function registerController(
     req,
     res
 ) {
-
-    try {
-
         const {
             name,
             email,
@@ -20,17 +22,15 @@ export async function registerController(
         } = req.body;
 
 
-        if (
-            !name ||
-            !email ||
-            !password
-        ) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Name, email and password are required"
-            });
-        }
+if (
+    !name ||
+    !email ||
+    !password
+) {
+    throw new ValidationError(
+        "Name, email and password are required"
+    );
+}
 
 
         const user =
@@ -46,19 +46,6 @@ export async function registerController(
             data: user
         });
 
-    } catch (error) {
-
-        console.error(
-            "Registration failed:",
-            error
-        );
-
-
-        res.status(400).json({
-            success: false,
-            message: error.message
-        });
-    }
 }
 
 
@@ -67,24 +54,20 @@ export async function loginController(
     res
 ) {
 
-    try {
-
         const {
             email,
             password
         } = req.body;
 
 
-        if (
-            !email ||
-            !password
-        ) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Email and password are required"
-            });
-        }
+if (
+    !email ||
+    !password
+) {
+    throw new ValidationError(
+        "Email and password are required"
+    );
+}
 
 
         const result =
@@ -117,21 +100,6 @@ export async function loginController(
                 user: result.user
             }
         });
-
-    } catch (error) {
-
-        console.error(
-            "Login failed:",
-            error
-        );
-
-
-        res.status(401).json({
-            success: false,
-            message:
-                "Invalid email or password"
-        });
-    }
 }
 
 
@@ -139,8 +107,6 @@ export async function getCurrentUserController(
     req,
     res
 ) {
-
-    try {
 
         const user =
             await User.findById(
@@ -151,10 +117,9 @@ export async function getCurrentUserController(
 
 
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
+throw new NotFoundError(
+    "User not found"
+);
         }
 
 
@@ -169,21 +134,6 @@ export async function getCurrentUserController(
                 }
             }
         });
-
-    } catch (error) {
-
-        console.error(
-            "Failed to get current user:",
-            error
-        );
-
-
-        res.status(500).json({
-            success: false,
-            message:
-                "Failed to get current user"
-        });
-    }
 }
 
 

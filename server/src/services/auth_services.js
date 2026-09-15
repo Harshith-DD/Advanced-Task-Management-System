@@ -2,6 +2,10 @@ import jwt from "jsonwebtoken";
 
 import User from "../models/user_model.js";
 
+import {
+    AuthenticationError
+} from "../errors/app_error.js";
+
 export async function registerUser(userData) {
     const {
         name,
@@ -38,11 +42,11 @@ export async function loginUser(
 
     const user = result.user;
 
-    if (!user) {
-        throw new Error(
-            "Invalid email or password"
-        );
-    }
+if (!user) {
+    throw new AuthenticationError(
+        "Invalid email or password"
+    );
+}
 
     const token = jwt.sign(
         {

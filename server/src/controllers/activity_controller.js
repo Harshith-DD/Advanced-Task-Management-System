@@ -11,7 +11,6 @@ export async function getActivitiesController(
     req,
     res
 ) {
-    try {
         const activities =
             await getActivities(
                 req.user
@@ -22,17 +21,4 @@ export async function getActivitiesController(
             success: true,
             data: activities
         });
-
-    } catch (error) {
-        console.error(
-            "Failed to fetch activities:",
-            error
-        );
-
-        res.status(500).json({
-            success: false,
-            message:
-                "Failed to fetch activities"
-        });
-    }
 }

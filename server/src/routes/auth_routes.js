@@ -11,32 +11,39 @@ import {
     authenticateUser
 } from "../middleware/auth_middleware.js";
 
+import {
+    asyncHandler
+} from "../utils/async_handler.js";
 
 const router = Router();
 
 
 router.post(
     "/register",
-    registerController
+    asyncHandler(
+    registerController)
 );
 
 
 router.post(
     "/login",
-    loginController
+    asyncHandler(
+    loginController)
 );
 
 
 router.get(
     "/me",
     authenticateUser,
-    getCurrentUserController
+    asyncHandler(
+    getCurrentUserController)
 );
 
 
 router.post(
     "/logout",
-    logoutController
+    asyncHandler(
+    logoutController)
 );
 
 
