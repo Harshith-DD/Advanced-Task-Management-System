@@ -39,12 +39,12 @@ export async function getNextJob() {
                 startedAt: now
             }
         },
-        {
-            sort: {
-                createdAt: 1
-            },
-            new: true
-        }
+{
+    sort: {
+        createdAt: 1
+    },
+    returnDocument: "after"
+}
     );
 
     return job;

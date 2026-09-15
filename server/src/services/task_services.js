@@ -354,10 +354,10 @@ class TaskService {
             await Task.findByIdAndUpdate(
                 taskId,
                 updateData,
-                {
-                    new: true,
-                    runValidators: true
-                }
+{
+    returnDocument: "after",
+    runValidators: true
+}
             )
             .populate(
                 "owner",

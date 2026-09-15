@@ -58,8 +58,8 @@ class NotificationService {
                 read: true
             },
             {
-                new: true
-            }
+    returnDocument: "after"
+}
         );
     }
 
