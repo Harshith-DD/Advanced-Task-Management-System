@@ -316,24 +316,26 @@ if (fromDate || toDate) {
         // DATABASE QUERIES
         // --------------------------------
 
-        const totalTasks =
-            await Task.countDocuments(query);
+const [
+    totalTasks,
+    tasks
+] = await Promise.all([
+    Task.countDocuments(query),
 
-        const tasks =
-            await Task
-                .find(query)
-                .populate(
-                    "owner",
-                    "name email"
-                )
-                .populate(
-                    "assignedTo",
-                    "name email"
-                )
-                .sort(sort)
-                .skip(skip)
-                .limit(pageLimit);
-
+    Task
+        .find(query)
+        .populate(
+            "owner",
+            "name email"
+        )
+        .populate(
+            "assignedTo",
+            "name email"
+        )
+        .sort(sort)
+        .skip(skip)
+        .limit(pageLimit)
+]);
 
         // --------------------------------
         // PAGINATION METADATA
