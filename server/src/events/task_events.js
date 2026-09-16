@@ -16,6 +16,7 @@ export const TASK_EVENTS = {
     CREATED: "taskCreated",
     UPDATED: "taskUpdated",
     ASSIGNED: "taskAssigned",
+    UNASSIGNED: "taskUnassigned",
     COMPLETED: "taskCompleted",
     PRIORITY_CHANGED: "taskPriorityChanged"
 };

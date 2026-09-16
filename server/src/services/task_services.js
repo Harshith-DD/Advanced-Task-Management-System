@@ -483,7 +483,7 @@ class TaskService {
                     );
 
             taskEvents.emit(
-                TASK_EVENTS.ASSIGNED,
+                TASK_EVENTS.UNASSIGNED,
                 {
                     task: updatedTask,
                     userId

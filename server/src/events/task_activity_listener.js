@@ -50,6 +50,11 @@ async function handleTaskActivity(
                     `Task "${task.title}" was assigned`;
                 break;
 
+            case TASK_EVENTS.UNASSIGNED:
+                message =
+                    `Task "${task.title}" was unassigned`;
+                break;
+
             case TASK_EVENTS.COMPLETED:
                 message =
                     `Task "${task.title}" was completed`;
@@ -113,6 +118,15 @@ taskEvents.on(
     }
 );
 
+taskEvents.on(
+    TASK_EVENTS.UNASSIGNED,
+    (eventData) => {
+        handleTaskActivity(
+            eventData,
+            TASK_EVENTS.UNASSIGNED
+        );
+    }
+);
 
 taskEvents.on(
     TASK_EVENTS.COMPLETED,

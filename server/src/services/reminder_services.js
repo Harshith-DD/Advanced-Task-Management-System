@@ -95,7 +95,7 @@ export async function processTaskReminders() {
             }
 
 
-            addJob({
+            await addJob({
                 type: JOB_TYPES.NOTIFICATION,
                 data: {
                     user: recipient,
