@@ -1,73 +1,49 @@
 import Task from "../models/task_model.js";
 import User from "../models/user_model.js";
 
-import taskEvents, {
-    TASK_EVENTS
-} from "../events/task_events.js";
+import taskEvents, { TASK_EVENTS } from "../events/task_events.js";
 
-import {
-    NotFoundError,
-    ValidationError
-} from "../errors/app_error.js";
+import { NotFoundError, ValidationError } from "../errors/app_error.js";
 
 // ========================================
 // BUILD TASK ACCESS QUERY
 // ========================================
 
 export function buildTaskAccessQuery(user) {
-    if (user.role === "admin") {
-        return {};
-    }
+  if (user.role === "admin") {
+    return {};
+  }
 
-    return {
-        $or: [
-            {
-                owner: user.userId
-            },
-            {
-                assignedTo: user.userId
-            }
-        ]
-    };
+  return {
+    $or: [
+      {
+        owner: user.userId,
+      },
+      {
+        assignedTo: user.userId,
+      },
+    ],
+  };
 }
 
-function parseDateFilter(
-    value,
-    fieldName,
-    endOfDay = false
-) {
-    const date = new Date(value);
+function parseDateFilter(value, fieldName, endOfDay = false) {
+  const date = new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
-        throw new ValidationError(
-            `${fieldName} must be a valid date`
-        );
-    }
+  if (Number.isNaN(date.getTime())) {
+    throw new ValidationError(`${fieldName} must be a valid date`);
+  }
 
-    if (endOfDay) {
-        date.setHours(
-            23,
-            59,
-            59,
-            999
-        );
-    } else {
-        date.setHours(
-            0,
-            0,
-            0,
-            0
-        );
-    }
+  if (endOfDay) {
+    date.setHours(23, 59, 59, 999);
+  } else {
+    date.setHours(0, 0, 0, 0);
+  }
 
-    return date;
+  return date;
 }
 
 function escapeRegex(value) {
-    return value.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        "\\$&"
-    );
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // ========================================
@@ -75,569 +51,397 @@ function escapeRegex(value) {
 // ========================================
 
 class TaskService {
+  // ====================================
+  // CREATE TASK
+  // ====================================
 
-    // ====================================
-    // CREATE TASK
-    // ====================================
+  async createTask(taskData, userId) {
+    const task = await Task.create(taskData);
 
-    async createTask(taskData, userId) {
-        const task =
-            await Task.create(taskData);
+    taskEvents.emit(TASK_EVENTS.CREATED, {
+      task,
+      userId,
+    });
 
-        taskEvents.emit(
-            TASK_EVENTS.CREATED,
-            {
-                task,
-                userId
-            }
-        );
+    return task;
+  }
 
-        return task;
+  // ====================================
+  // GET ALL TASKS
+  // ====================================
+
+  async getAllTasks(filters = {}, user) {
+    const {
+      status,
+      priority,
+      search,
+      tag,
+      fromDate,
+      toDate,
+      sortBy = "createdAt",
+      sortOrder = "asc",
+      page = 1,
+      limit = 10,
+    } = filters;
+
+    // --------------------------------
+    // BUILD QUERY CONDITIONS
+    // --------------------------------
+
+    const conditions = [];
+
+    // --------------------------------
+    // AUTHORIZATION FILTER
+    // --------------------------------
+
+    const accessQuery = buildTaskAccessQuery(user);
+
+    if (Object.keys(accessQuery).length > 0) {
+      conditions.push(accessQuery);
     }
 
+    // --------------------------------
+    // STATUS FILTER
+    // --------------------------------
 
-    // ====================================
-    // GET ALL TASKS
-    // ====================================
+    if (status) {
+      conditions.push({
+        status,
+      });
+    }
 
-    async getAllTasks(
-        filters = {},
-        user
-    ) {
-        const {
-            status,
-            priority,
-            search,
-            tag,
-            fromDate,
-            toDate,
-            sortBy = "createdAt",
-            sortOrder = "asc",
-            page = 1,
-            limit = 10
-        } = filters;
+    // --------------------------------
+    // PRIORITY FILTER
+    // --------------------------------
 
+    if (priority) {
+      conditions.push({
+        priority,
+      });
+    }
 
-        // --------------------------------
-        // BUILD QUERY CONDITIONS
-        // --------------------------------
+    // --------------------------------
+    // SEARCH FILTER
+    // --------------------------------
+    const escapedSearch = search ? escapeRegex(search) : null;
 
-        const conditions = [];
+    if (escapedSearch) {
+      conditions.push({
+        $or: [
+          {
+            title: {
+              $regex: escapedSearch,
+              $options: "i",
+            },
+          },
+          {
+            description: {
+              $regex: escapedSearch,
+              $options: "i",
+            },
+          },
+        ],
+      });
+    }
 
+    // --------------------------------
+    // TAG FILTER
+    // --------------------------------
 
-        // --------------------------------
-        // AUTHORIZATION FILTER
-        // --------------------------------
+    if (tag) {
+      conditions.push({
+        tags: {
+          $in: [tag],
+        },
+      });
+    }
 
-        const accessQuery =
-            buildTaskAccessQuery(user);
+    // --------------------------------
+    // DATE FILTER
+    // --------------------------------
 
-        if (
-            Object.keys(accessQuery).length > 0
-        ) {
-            conditions.push(accessQuery);
-        }
+    if (fromDate || toDate) {
+      const dueDateQuery = {};
 
-
-        // --------------------------------
-        // STATUS FILTER
-        // --------------------------------
-
-        if (status) {
-            conditions.push({
-                status
-            });
-        }
-
-
-        // --------------------------------
-        // PRIORITY FILTER
-        // --------------------------------
-
-        if (priority) {
-            conditions.push({
-                priority
-            });
-        }
-
-
-        // --------------------------------
-        // SEARCH FILTER
-        // --------------------------------
-        const escapedSearch =
-    search
-        ? escapeRegex(search)
+      const normalizedFromDate = fromDate
+        ? parseDateFilter(fromDate, "fromDate")
         : null;
 
-if (escapedSearch) {
-    conditions.push({
-        $or: [
-            {
-                title: {
-                    $regex: escapedSearch,
-                    $options: "i"
-                }
-            },
-            {
-                description: {
-                    $regex: escapedSearch,
-                    $options: "i"
-                }
-            }
-        ]
-    });
-}
+      const normalizedToDate = toDate
+        ? parseDateFilter(toDate, "toDate", true)
+        : null;
 
-
-        // --------------------------------
-        // TAG FILTER
-        // --------------------------------
-
-        if (tag) {
-            conditions.push({
-                tags: {
-                    $in: [tag]
-                }
-            });
-        }
-
-
-        // --------------------------------
-        // DATE FILTER
-        // --------------------------------
-
-if (fromDate || toDate) {
-    const dueDateQuery = {};
-
-    const normalizedFromDate =
-        fromDate
-            ? parseDateFilter(
-                fromDate,
-                "fromDate"
-            )
-            : null;
-
-    const normalizedToDate =
-        toDate
-            ? parseDateFilter(
-                toDate,
-                "toDate",
-                true
-            )
-            : null;
-
-    if (
+      if (
         normalizedFromDate &&
         normalizedToDate &&
         normalizedFromDate > normalizedToDate
-    ) {
-        throw new ValidationError(
-            "fromDate cannot be later than toDate"
-        );
+      ) {
+        throw new ValidationError("fromDate cannot be later than toDate");
+      }
+
+      if (normalizedFromDate) {
+        dueDateQuery.$gte = normalizedFromDate;
+      }
+
+      if (normalizedToDate) {
+        dueDateQuery.$lte = normalizedToDate;
+      }
+
+      conditions.push({
+        dueDate: dueDateQuery,
+      });
     }
 
-    if (normalizedFromDate) {
-        dueDateQuery.$gte =
-            normalizedFromDate;
-    }
+    // --------------------------------
+    // FINAL QUERY
+    // --------------------------------
 
-    if (normalizedToDate) {
-        dueDateQuery.$lte =
-            normalizedToDate;
-    }
+    const query = conditions.length > 0 ? { $and: conditions } : {};
 
-    conditions.push({
-        dueDate: dueDateQuery
-    });
-}
+    // --------------------------------
+    // SORTING
+    // --------------------------------
 
+    const allowedSortFields = ["dueDate", "priority", "createdAt", "updatedAt"];
 
-        // --------------------------------
-        // FINAL QUERY
-        // --------------------------------
+    const safeSortBy = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : "createdAt";
 
-        const query =
-            conditions.length > 0
-                ? { $and: conditions }
-                : {};
+    const safeSortOrder = sortOrder === "desc" ? -1 : 1;
 
+    const sort = {
+      [safeSortBy]: safeSortOrder,
+    };
 
-        // --------------------------------
-        // SORTING
-        // --------------------------------
+    // --------------------------------
+    // PAGINATION
+    // --------------------------------
 
-        const allowedSortFields = [
-            "dueDate",
-            "priority",
-            "createdAt",
-            "updatedAt"
-        ];
+    const pageNumber = Math.max(Number(page) || 1, 1);
 
-        const safeSortBy =
-            allowedSortFields.includes(sortBy)
-                ? sortBy
-                : "createdAt";
+    const pageLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
 
-        const safeSortOrder =
-            sortOrder === "desc"
-                ? -1
-                : 1;
+    const skip = (pageNumber - 1) * pageLimit;
 
-        const sort = {
-            [safeSortBy]: safeSortOrder
-        };
+    // --------------------------------
+    // DATABASE QUERIES
+    // --------------------------------
 
+    const [totalTasks, tasks] = await Promise.all([
+      Task.countDocuments(query),
 
-        // --------------------------------
-        // PAGINATION
-        // --------------------------------
-
-        const pageNumber =
-            Math.max(
-                Number(page) || 1,
-                1
-            );
-
-        const pageLimit =
-            Math.min(
-                Math.max(
-                    Number(limit) || 10,
-                    1
-                ),
-                100
-            );
-
-        const skip =
-            (pageNumber - 1) *
-            pageLimit;
-
-
-        // --------------------------------
-        // DATABASE QUERIES
-        // --------------------------------
-
-const [
-    totalTasks,
-    tasks
-] = await Promise.all([
-    Task.countDocuments(query),
-
-    Task
-        .find(query)
-        .populate(
-            "owner",
-            "name email"
-        )
-        .populate(
-            "assignedTo",
-            "name email"
-        )
+      Task.find(query)
+        .populate("owner", "name email")
+        .populate("assignedTo", "name email")
         .sort(sort)
         .skip(skip)
-        .limit(pageLimit)
-]);
+        .limit(pageLimit),
+    ]);
 
-        // --------------------------------
-        // PAGINATION METADATA
-        // --------------------------------
+    // --------------------------------
+    // PAGINATION METADATA
+    // --------------------------------
 
-        const totalPages =
-            Math.ceil(
-                totalTasks / pageLimit
-            );
+    const totalPages = Math.ceil(totalTasks / pageLimit);
 
+    return {
+      tasks,
 
-        return {
-            tasks,
+      pagination: {
+        page: pageNumber,
+        limit: pageLimit,
+        totalTasks,
+        totalPages,
+      },
+    };
+  }
 
-            pagination: {
-                page: pageNumber,
-                limit: pageLimit,
-                totalTasks,
-                totalPages
-            }
-        };
+  // ====================================
+  // GET ONE TASK
+  // ====================================
+
+  async getTaskById(taskId) {
+    return await Task.findById(taskId)
+      .populate("owner", "name email")
+      .populate("assignedTo", "name email");
+  }
+
+  // ====================================
+  // UPDATE TASK
+  // ====================================
+
+  async updateTask(taskId, taskData, userId) {
+    // --------------------------------
+    // GET CURRENT TASK
+    // --------------------------------
+
+    const existingTask = await Task.findById(taskId);
+
+    if (!existingTask) {
+      return null;
     }
 
+    // --------------------------------
+    // PREPARE UPDATE DATA
+    // --------------------------------
 
-    // ====================================
-    // GET ONE TASK
-    // ====================================
+    const updateData = {
+      ...taskData,
+    };
 
-    async getTaskById(taskId) {
-        return await Task
-            .findById(taskId)
-            .populate(
-                "owner",
-                "name email"
-            )
-            .populate(
-                "assignedTo",
-                "name email"
-            );
+    const existingDueDate = existingTask.dueDate
+      ? new Date(existingTask.dueDate).getTime()
+      : null;
+
+    const newDueDate = taskData.dueDate
+      ? new Date(taskData.dueDate).getTime()
+      : null;
+
+    const dueDateChanged =
+      taskData.dueDate !== undefined && existingDueDate !== newDueDate;
+
+    if (dueDateChanged) {
+      updateData.reminderSentAt = null;
+      updateData.isOverdue = false;
     }
 
-
-    // ====================================
+    // --------------------------------
     // UPDATE TASK
-    // ====================================
+    // --------------------------------
 
-    async updateTask(
-        taskId,
-        taskData,
-        userId
-    ) {
-        // --------------------------------
-        // GET CURRENT TASK
-        // --------------------------------
+    const updatedTask = await Task.findByIdAndUpdate(taskId, updateData, {
+      returnDocument: "after",
+      runValidators: true,
+    })
+      .populate("owner", "name email")
+      .populate("assignedTo", "name email");
 
-        const existingTask =
-            await Task.findById(taskId);
+    // --------------------------------
+    // TASK UPDATED EVENT
+    // --------------------------------
 
-        if (!existingTask) {
-            return null;
-        }
+    taskEvents.emit(TASK_EVENTS.UPDATED, {
+      task: updatedTask,
+      userId,
+    });
 
+    // --------------------------------
+    // PRIORITY CHANGED EVENT
+    // --------------------------------
 
-        // --------------------------------
-        // PREPARE UPDATE DATA
-        // --------------------------------
+    const priorityChanged = existingTask.priority !== updatedTask.priority;
 
-        const updateData = {
-            ...taskData
-        };
-
-        const existingDueDate =
-            existingTask.dueDate
-            ? new Date(existingTask.dueDate).getTime()
-            : null;
-
-        const newDueDate =
-            taskData.dueDate
-                ? new Date(taskData.dueDate).getTime()
-                : null;
-
-        const dueDateChanged =
-            taskData.dueDate !== undefined &&
-            existingDueDate !== newDueDate;
-
-        if (dueDateChanged) {
-            updateData.reminderSentAt = null;
-            updateData.isOverdue = false;
-        }
-
-
-        // --------------------------------
-        // UPDATE TASK
-        // --------------------------------
-
-        const updatedTask =
-            await Task.findByIdAndUpdate(
-                taskId,
-                updateData,
-{
-    returnDocument: "after",
-    runValidators: true
-}
-            )
-            .populate(
-                "owner",
-                "name email"
-            )
-            .populate(
-                "assignedTo",
-                "name email"
-            );
-
-
-        // --------------------------------
-        // TASK UPDATED EVENT
-        // --------------------------------
-
-        taskEvents.emit(
-            TASK_EVENTS.UPDATED,
-            {
-                task: updatedTask,
-                userId
-            }
-        );
-
-
-        // --------------------------------
-        // PRIORITY CHANGED EVENT
-        // --------------------------------
-
-        const priorityChanged =
-            existingTask.priority !==
-            updatedTask.priority;
-
-        if (priorityChanged) {
-            taskEvents.emit(
-                TASK_EVENTS.PRIORITY_CHANGED,
-                {
-                    task: updatedTask,
-                    userId,
-                    previousPriority:
-                        existingTask.priority,
-                    newPriority:
-                        updatedTask.priority
-                }
-            );
-        }
-
-
-        // --------------------------------
-        // TASK COMPLETED EVENT
-        // --------------------------------
-
-        const wasCompleted =
-            existingTask.status === "completed";
-
-        const isCompleted =
-            updatedTask.status === "completed";
-
-        if (
-            !wasCompleted &&
-            isCompleted
-        ) {
-            taskEvents.emit(
-                TASK_EVENTS.COMPLETED,
-                {
-                    task: updatedTask,
-                    userId
-                }
-            );
-        }
-
-
-        return updatedTask;
+    if (priorityChanged) {
+      taskEvents.emit(TASK_EVENTS.PRIORITY_CHANGED, {
+        task: updatedTask,
+        userId,
+        previousPriority: existingTask.priority,
+        newPriority: updatedTask.priority,
+      });
     }
 
+    // --------------------------------
+    // TASK COMPLETED EVENT
+    // --------------------------------
 
-    // ====================================
-    // DELETE TASK
-    // ====================================
+    const wasCompleted = existingTask.status === "completed";
 
-    async deleteTask(taskId) {
-        return await Task.findByIdAndDelete(
-            taskId
-        );
+    const isCompleted = updatedTask.status === "completed";
+
+    if (!wasCompleted && isCompleted) {
+      taskEvents.emit(TASK_EVENTS.COMPLETED, {
+        task: updatedTask,
+        userId,
+      });
     }
 
+    return updatedTask;
+  }
 
-    // ====================================
+  // ====================================
+  // DELETE TASK
+  // ====================================
+
+  async deleteTask(taskId) {
+    return await Task.findByIdAndDelete(taskId);
+  }
+
+  // ====================================
+  // ASSIGN TASK
+  // ====================================
+
+  async assignTask(taskId, assignedTo, userId) {
+    const task = await Task.findById(taskId);
+
+    if (!task) {
+      return null;
+    }
+
+    // --------------------------------
+    // REMOVE ASSIGNMENT
+    // --------------------------------
+
+    if (!assignedTo) {
+      task.assignedTo = null;
+
+      await task.save();
+
+      const updatedTask = await Task.findById(taskId)
+        .populate("owner", "name email role")
+        .populate("assignedTo", "name email role");
+
+      taskEvents.emit(TASK_EVENTS.UNASSIGNED, {
+        task: updatedTask,
+        userId,
+      });
+
+      return updatedTask;
+    }
+
+    // --------------------------------
+    // VERIFY ASSIGNED USER
+    // --------------------------------
+
+    const user = await User.findById(assignedTo);
+
+    if (!user) {
+      throw new NotFoundError("Assigned user not found");
+    }
+
+    // --------------------------------
     // ASSIGN TASK
-    // ====================================
+    // --------------------------------
 
-    async assignTask(
-        taskId,
-        assignedTo,
-        userId
-    ) {
-        const task =
-            await Task.findById(taskId);
+    task.assignedTo = assignedTo;
 
-        if (!task) {
-            return null;
-        }
+    await task.save();
 
+    // --------------------------------
+    // GET POPULATED TASK
+    // --------------------------------
 
-        // --------------------------------
-        // REMOVE ASSIGNMENT
-        // --------------------------------
+    const updatedTask = await Task.findById(taskId)
+      .populate("owner", "name email role")
+      .populate("assignedTo", "name email role");
 
-        if (!assignedTo) {
-            task.assignedTo = null;
+    // --------------------------------
+    // TASK ASSIGNED EVENT
+    // --------------------------------
 
-            await task.save();
+    taskEvents.emit(TASK_EVENTS.ASSIGNED, {
+      task: updatedTask,
+      userId,
+    });
 
-            const updatedTask =
-                await Task
-                    .findById(taskId)
-                    .populate(
-                        "owner",
-                        "name email role"
-                    )
-                    .populate(
-                        "assignedTo",
-                        "name email role"
-                    );
-
-            taskEvents.emit(
-                TASK_EVENTS.UNASSIGNED,
-                {
-                    task: updatedTask,
-                    userId
-                }
-            );
-
-            return updatedTask;
-        }
-
-
-        // --------------------------------
-        // VERIFY ASSIGNED USER
-        // --------------------------------
-
-        const user =
-            await User.findById(assignedTo);
-
-        if (!user) {
-throw new NotFoundError(
-    "Assigned user not found"
-);
-        }
-
-
-        // --------------------------------
-        // ASSIGN TASK
-        // --------------------------------
-
-        task.assignedTo = assignedTo;
-
-        await task.save();
-
-
-        // --------------------------------
-        // GET POPULATED TASK
-        // --------------------------------
-
-        const updatedTask =
-            await Task
-                .findById(taskId)
-                .populate(
-                    "owner",
-                    "name email role"
-                )
-                .populate(
-                    "assignedTo",
-                    "name email role"
-                );
-
-
-        // --------------------------------
-        // TASK ASSIGNED EVENT
-        // --------------------------------
-
-        taskEvents.emit(
-            TASK_EVENTS.ASSIGNED,
-            {
-                task: updatedTask,
-                userId
-            }
-        );
-
-
-        return updatedTask;
-    }
+    return updatedTask;
+  }
 }
-
 
 // ========================================
 // SERVICE INSTANCE
 // ========================================
 
-const taskService =
-    new TaskService();
+const taskService = new TaskService();
 
 export default taskService;

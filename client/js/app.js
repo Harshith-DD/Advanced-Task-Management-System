@@ -1,147 +1,132 @@
 import {
-    getTasks,
-    createTask,
-    updateTask,
-    deleteTask,
-    registerUser,
-    loginUser,
-    getCurrentUser,
-    logoutUser,
-    getUsers,
-    assignTask,
-    getActivities,
-    getNotifications,
-    markNotificationAsRead,
-    markAllNotificationsAsRead,
-    getDashboard,
-    downloadTaskExport,
-    createTaskReport,
-getReportStatus,
-downloadTaskReport
+  getTasks,
+  createTask,
+  updateTask,
+  deleteTask,
+  registerUser,
+  loginUser,
+  getCurrentUser,
+  logoutUser,
+  getUsers,
+  assignTask,
+  getActivities,
+  getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  getDashboard,
+  downloadTaskExport,
+  createTaskReport,
+  getReportStatus,
+  downloadTaskReport,
 } from "./api.js";
 
-import {
-    saveUser,
-    getUser,
-    isLoggedIn,
-    clearUser
-} from "./auth.js";
+import { saveUser, getUser, isLoggedIn, clearUser } from "./auth.js";
 
 import {
-    setTasks,
-    getFilters,
-    setFilters,
-    getPagination,
-    setPagination,
-    getUsersState,
-    setUsers,
-    setNotifications,
-    setDashboard,
-    resetDashboard
+  setTasks,
+  getFilters,
+  setFilters,
+  getPagination,
+  setPagination,
+  getUsersState,
+  setUsers,
+  setNotifications,
+  setDashboard,
+  resetDashboard,
 } from "./state.js";
 
 import {
-    renderTasks,
-    renderActivities,
-    renderNotifications,
-    renderDashboard
+  renderTasks,
+  renderActivities,
+  renderNotifications,
+  renderDashboard,
 } from "./render.js";
 
+import { initializeRouter, navigate, handleProtectedRoute } from "./router.js";
 
 // ========================================
 // FORM ELEMENTS
 // ========================================
 
-const taskForm =
-    document.querySelector("#task-form");
+const taskForm = document.querySelector("#task-form");
 
-const titleInput =
-    document.querySelector("#task-title");
+const titleInput = document.querySelector("#task-title");
 
-const descriptionInput =
-    document.querySelector("#task-description");
+const descriptionInput = document.querySelector("#task-description");
 
-const statusInput =
-    document.querySelector("#task-status");
+const statusInput = document.querySelector("#task-status");
 
-const priorityInput =
-    document.querySelector("#task-priority");
+const priorityInput = document.querySelector("#task-priority");
 
-const dueDateInput =
-    document.querySelector("#task-due-date");
+const dueDateInput = document.querySelector("#task-due-date");
 
-const tagsInput =
-    document.querySelector("#task-tags");
+const tagsInput = document.querySelector("#task-tags");
 
-const titleError =
-    document.querySelector("#title-error");
+const assigneeInput = document.querySelector("#task-assignee");
 
-const descriptionError =
-    document.querySelector("#description-error");
+const titleError = document.querySelector("#title-error");
 
-const formError =
-    document.querySelector("#form-error");
+const descriptionError = document.querySelector("#description-error");
 
+const formError = document.querySelector("#form-error");
 
 // ========================================
 // FILTER ELEMENTS
 // ========================================
 
-const searchInput =
-    document.querySelector("#search-input");
+const searchInput = document.querySelector("#search-input");
 
-const statusFilter =
-    document.querySelector("#status-filter");
+const statusFilter = document.querySelector("#status-filter");
 
-const priorityFilter =
-    document.querySelector("#priority-filter");
+const priorityFilter = document.querySelector("#priority-filter");
 
-const tagFilter =
-    document.querySelector("#tag-filter");
+const tagFilter = document.querySelector("#tag-filter");
 
-const fromDateFilter =
-    document.querySelector("#from-date-filter");
+const fromDateFilter = document.querySelector("#from-date-filter");
 
-const toDateFilter =
-    document.querySelector("#to-date-filter");
+const toDateFilter = document.querySelector("#to-date-filter");
 
-const sortBy =
-    document.querySelector("#sort-by");
+const sortBy = document.querySelector("#sort-by");
 
-const sortOrder =
-    document.querySelector("#sort-order");
+const sortOrder = document.querySelector("#sort-order");
 
-const previousPageButton =
-    document.querySelector("#previous-page");
+const previousPageButton = document.querySelector("#previous-page");
 
-const nextPageButton =
-    document.querySelector("#next-page");
+const nextPageButton = document.querySelector("#next-page");
 
-const pageNumbers =
-    document.querySelector("#page-numbers");
+const pageNumbers = document.querySelector("#page-numbers");
 
-const pageLimit =
-    document.querySelector("#page-limit");
+const pageLimit = document.querySelector("#page-limit");
 
-const exportJsonButton =
-    document.querySelector(
-        "#export-json-button"
-    );
+const exportJsonButton = document.querySelector("#export-json-button");
 
-const exportCsvButton =
-    document.querySelector(
-        "#export-csv-button"
-    );
+const exportCsvButton = document.querySelector("#export-csv-button");
 
-const generateReportButton =
-    document.querySelector(
-        "#generate-report-button"
-    );
+const generateReportButton = document.querySelector("#generate-report-button");
 
-const reportStatus =
-    document.querySelector(
-        "#report-status"
-    );
+const taskFormModal = document.querySelector("#task-form-modal");
+
+const openTaskFormButton = document.querySelector("#open-task-form-button");
+
+const closeTaskFormButton = document.querySelector("#close-task-form-button");
+
+const cancelTaskFormButton = document.querySelector("#cancel-task-form-button");
+
+const showRegisterButton = document.querySelector("#show-register-button");
+
+const showLoginButton = document.querySelector("#show-login-button");
+
+const navUnreadCount = document.querySelector("#nav-unread-count");
+
+const listViewButton = document.querySelector("#list-view-button");
+
+const kanbanViewButton = document.querySelector("#kanban-view-button");
+
+const taskListView = document.querySelector("#task-list-view");
+
+const kanbanBoard = document.querySelector("#kanban-board");
+
+const reportStatus = document.querySelector("#report-status");
 
 // ========================================
 // AUTH ELEMENTS
@@ -149,142 +134,126 @@ const reportStatus =
 const loginForm = document.getElementById("login-form");
 const registerForm = document.getElementById("register-form");
 
-const loginContainer =
-    document.getElementById("login-container");
+const loginContainer = document.getElementById("login-container");
 
-const registerContainer =
-    document.getElementById("register-container");
+const registerContainer = document.getElementById("register-container");
 
-const userContainer =
-    document.getElementById("user-container");
+const userContainer = document.getElementById("user-container");
 
-const authStatus =
-    document.getElementById("auth-status");
+const authStatus = document.getElementById("auth-status");
 
-const userInfo =
-    document.getElementById("user-info");
+const userInfo = document.getElementById("user-info");
 
-const logoutButton =
-    document.getElementById("logout-button");
+const logoutButton = document.getElementById("logout-button");
 
-const loginError =
-    document.getElementById("login-error");
+const loginError = document.getElementById("login-error");
 
-const registerError =
-    document.getElementById("register-error");
+const registerError = document.getElementById("register-error");
 
-const markAllNotificationsReadButton =
-    document.getElementById(
-        "mark-all-notifications-read"
-    );
+const markAllNotificationsReadButton = document.getElementById(
+  "mark-all-notifications-read",
+);
 
 // ========================================
 // DATA LOADING
 // ========================================
 
 async function loadUsers() {
-    try {
-        const users =
-            await getUsers();
+  try {
+    const users = await getUsers();
 
-        setUsers(users);
+    setUsers(users);
+    populateTaskAssigneeSelect(users);
+  } catch (error) {
+    console.error("Failed to load users:", error);
 
-    } catch (error) {
-        console.error(
-            "Failed to load users:",
-            error
-        );
-
-        setUsers([]);
-    }
+    setUsers([]);
+  }
 }
+function populateTaskAssigneeSelect(users) {
+  if (!assigneeInput) {
+    return;
+  }
+
+  assigneeInput.innerHTML = '<option value="">Unassigned</option>';
+
+  users.forEach((user) => {
+    const option = document.createElement("option");
+    option.value = user._id;
+    option.textContent = user.name || user.email;
+    assigneeInput.appendChild(option);
+  });
+}
+
 async function loadTasks() {
-    try {
-        const filters = getFilters();
+  try {
+    const filters = getFilters();
 
-        const result = await getTasks(filters);
+    const result = await getTasks(filters);
 
-        setTasks(result.data);
+    setTasks(result.data);
 
-        setPagination(result.pagination);
+    setPagination(result.pagination);
 
-        const users =
-    getUsersState();
+    const users = getUsersState();
 
-const currentUser =
-    getUser();
+    const currentUser = getUser();
 
-renderTasks(
-    result.data,
-    users,
-    currentUser
-);
+    renderTasks(result.data, users, currentUser);
 
-        renderPagination(result.pagination);
-
-
-    } catch (error) {
-        console.error("Failed to load tasks:", error);
-    }
+    renderPagination(result.pagination);
+  } catch (error) {
+    console.error("Failed to load tasks:", error);
+  }
 }
 
 async function loadActivities() {
-    try {
-        const activities =
-            await getActivities();
+  try {
+    const activities = await getActivities();
 
-        renderActivities(
-            activities
-        );
-    } catch (error) {
-        console.error(
-            "Failed to load activities:",
-            error
-        );
-    }
+    renderActivities(activities);
+  } catch (error) {
+    console.error("Failed to load activities:", error);
+  }
 }
 
 async function loadNotifications() {
-    try {
-        const notifications =
-            await getNotifications();
+  try {
+    const notifications = await getNotifications();
 
-        setNotifications(
-            notifications
-        );
+    setNotifications(notifications);
 
-        renderNotifications(
-            notifications
-        );
-    } catch (error) {
-        console.error(
-            "Failed to load notifications:",
-            error
-        );
-    }
+    renderNotifications(notifications);
+
+    updateNotificationNavCount(notifications);
+  } catch (error) {
+    console.error("Failed to load notifications:", error);
+  }
+}
+
+function updateNotificationNavCount(notifications) {
+  if (!navUnreadCount) {
+    return;
+  }
+
+  const unreadCount = notifications.filter(
+    (notification) => !notification.read,
+  ).length;
+
+  navUnreadCount.textContent = unreadCount;
+  navUnreadCount.hidden = unreadCount === 0;
 }
 
 async function loadDashboard() {
-    try {
+  try {
+    const dashboard = await getDashboard();
 
-        const dashboard =
-            await getDashboard();
+    setDashboard(dashboard);
 
-        setDashboard(
-            dashboard
-        );
-
-        renderDashboard(
-            dashboard
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load dashboard:",
-            error
-        );
-    }
+    renderDashboard(dashboard);
+  } catch (error) {
+    console.error("Failed to load dashboard:", error);
+  }
 }
 
 //==========================================
@@ -292,1135 +261,1080 @@ async function loadDashboard() {
 //==========================================
 
 function updateAuthUI() {
-    const loggedIn = isLoggedIn();
+  const loggedIn = isLoggedIn();
 
-    if (loggedIn) {
-        const user = getUser();
+  if (loggedIn) {
+    const user = getUser();
 
-        loginContainer.hidden = true;
-        registerContainer.hidden = true;
-        userContainer.hidden = false;
+    loginContainer.hidden = true;
+    registerContainer.hidden = true;
+    userContainer.hidden = false;
 
-        authStatus.textContent = "You are logged in.";
+    authStatus.textContent = "You are logged in.";
 
-        if (user) {
-            userInfo.textContent =
-    `Logged in as ${user.name} (${user.email}) — Role: ${user.role}`;
-        }
-    } else {
-        loginContainer.hidden = false;
-        registerContainer.hidden = false;
-        userContainer.hidden = true;
-
-        authStatus.textContent =
-            "You are not logged in.";
-
-        userInfo.textContent = "";
+    if (user) {
+      userInfo.textContent = `Logged in as ${user.name} (${user.email}) — Role: ${user.role}`;
     }
+  } else {
+    loginContainer.hidden = false;
+    registerContainer.hidden = true;
+    userContainer.hidden = true;
+
+    authStatus.textContent = "You are not logged in.";
+
+    userInfo.textContent = "";
+  }
+
+  handleProtectedRoute(loggedIn);
 }
 
 if (registerForm) {
-    registerForm.addEventListener(
-        "submit",
-        async (event) => {
-            event.preventDefault();
+  registerForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-            registerError.textContent = "";
+    registerError.textContent = "";
 
-            const formData =
-                new FormData(registerForm);
+    const formData = new FormData(registerForm);
 
-            const name =
-                formData.get("name").trim();
+    const name = formData.get("name").trim();
 
-            const email =
-                formData.get("email").trim();
+    const email = formData.get("email").trim();
 
-            const password =
-                formData.get("password");
+    const password = formData.get("password");
 
-            if (!name || !email || !password) {
-                registerError.textContent =
-                    "All fields are required.";
+    if (!name || !email || !password) {
+      registerError.textContent = "All fields are required.";
 
-                return;
-            }
+      return;
+    }
 
-            try {
-                await registerUser({
-                    name,
-                    email,
-                    password
-                });
+    try {
+      await registerUser({
+        name,
+        email,
+        password,
+      });
 
-                registerForm.reset();
+      registerForm.reset();
 
-                registerError.textContent =
-                    "Registration successful. Please log in.";
-            } catch (error) {
-                registerError.textContent =
-                    error.message;
-            }
-        }
-    );
+      registerError.textContent = "Registration successful. Please log in.";
+    } catch (error) {
+      registerError.textContent = error.message;
+    }
+  });
 }
 
 if (loginForm) {
-    loginForm.addEventListener(
-        "submit",
-        async (event) => {
-            event.preventDefault();
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-            loginError.textContent = "";
+    loginError.textContent = "";
 
-            const formData =
-                new FormData(loginForm);
+    const formData = new FormData(loginForm);
 
-            const email =
-                formData.get("email").trim();
+    const email = formData.get("email").trim();
 
-            const password =
-                formData.get("password");
+    const password = formData.get("password");
 
-            if (!email || !password) {
-                loginError.textContent =
-                    "Email and password are required.";
+    if (!email || !password) {
+      loginError.textContent = "Email and password are required.";
 
-                return;
-            }
+      return;
+    }
 
-            try {
-                const result = await loginUser({
-                    email,
-                    password
-                });
+    try {
+      const result = await loginUser({
+        email,
+        password,
+      });
 
-                saveUser(result.data.user);
+      saveUser(result.data.user);
 
-                loginForm.reset();
+      loginForm.reset();
 
-                updateAuthUI();
-                await loadUsers();
+      updateAuthUI();
+      await loadUsers();
 
-                await Promise.all([
-                    loadTasks(),
-                    loadActivities(),
-                    loadNotifications(),
-                    loadDashboard()
-                ]);
+      await Promise.all([
+        loadTasks(),
+        loadActivities(),
+        loadNotifications(),
+        loadDashboard(),
+      ]);
 
-            } catch (error) {
-                loginError.textContent =
-                    error.message;
-            }
-        }
-    );
+      navigate("dashboard");
+    } catch (error) {
+      loginError.textContent = error.message;
+    }
+  });
 }
-
 
 if (logoutButton) {
-    logoutButton.addEventListener(
-        "click",
-        async () => {
-            try {
-                await logoutUser();
-            } finally {
-                clearUser();
-                updateAuthUI();
-            }
+  logoutButton.addEventListener("click", async () => {
+    try {
+      await logoutUser();
+    } finally {
+      clearUser();
+      updateAuthUI();
+    }
 
-            setTasks([]);
+    setTasks([]);
 
-            setUsers([]);
+    setUsers([]);
 
-            setNotifications([]);
+    setNotifications([]);
 
-            resetDashboard();
+    resetDashboard();
 
-            setPagination({
-                page: 1,
-                totalPages: 1,
-                totalTasks: 0
-            });
+    setPagination({
+      page: 1,
+      totalPages: 1,
+      totalTasks: 0,
+    });
 
-            renderTasks([]);
-        }
-    );
+    renderTasks([]);
+    navigate("dashboard");
+  });
 }
 
+function openTaskForm() {
+  if (!taskFormModal) {
+    return;
+  }
+
+  clearFormErrors();
+  taskFormModal.hidden = false;
+  document.body.classList.add("modal-open");
+  titleInput.focus();
+}
+
+function closeTaskForm() {
+  if (!taskFormModal) {
+    return;
+  }
+
+  taskFormModal.hidden = true;
+  document.body.classList.remove("modal-open");
+}
+
+if (openTaskFormButton) {
+  openTaskFormButton.addEventListener("click", openTaskForm);
+}
+
+if (closeTaskFormButton) {
+  closeTaskFormButton.addEventListener("click", closeTaskForm);
+}
+
+if (cancelTaskFormButton) {
+  cancelTaskFormButton.addEventListener("click", closeTaskForm);
+}
+
+if (taskFormModal) {
+  taskFormModal.addEventListener("click", (event) => {
+    if (event.target === taskFormModal) {
+      closeTaskForm();
+    }
+  });
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && taskFormModal && !taskFormModal.hidden) {
+    closeTaskForm();
+  }
+});
+
+function showAuthForm(form) {
+  const showLogin = form === "login";
+
+  loginContainer.hidden = !showLogin;
+  registerContainer.hidden = showLogin;
+
+  loginError.textContent = "";
+  registerError.textContent = "";
+}
+
+if (showRegisterButton) {
+  showRegisterButton.addEventListener("click", () => showAuthForm("register"));
+}
+
+if (showLoginButton) {
+  showLoginButton.addEventListener("click", () => showAuthForm("login"));
+}
+
+// ========================================
+// TASK VIEW
+// ========================================
+
+function setTaskView(view) {
+  const showList = view === "list";
+
+  taskListView.hidden = !showList;
+  kanbanBoard.hidden = showList;
+
+  listViewButton.classList.toggle("active", showList);
+
+  kanbanViewButton.classList.toggle("active", !showList);
+
+  listViewButton.setAttribute("aria-pressed", String(showList));
+
+  kanbanViewButton.setAttribute("aria-pressed", String(!showList));
+
+  localStorage.setItem("taskflow-task-view", view);
+}
+
+listViewButton.addEventListener("click", () => setTaskView("list"));
+
+kanbanViewButton.addEventListener("click", () => setTaskView("kanban"));
+
+setTaskView(localStorage.getItem("taskflow-task-view") || "kanban");
+
+// ========================================
+// KANBAN DRAG AND DROP
+// ========================================
+
+kanbanBoard.addEventListener("dragstart", handleKanbanDragStart);
+
+kanbanBoard.addEventListener("dragend", handleKanbanDragEnd);
+
+kanbanBoard.addEventListener("dragenter", handleKanbanDragEnter);
+
+kanbanBoard.addEventListener("dragover", handleKanbanDragOver);
+
+kanbanBoard.addEventListener("dragleave", handleKanbanDragLeave);
+
+kanbanBoard.addEventListener("drop", handleKanbanDrop);
+
+function handleKanbanDragStart(event) {
+  const card = event.target.closest(".kanban-card");
+
+  if (!card) {
+    return;
+  }
+
+  if (event.target.closest("button, select, input, textarea, a")) {
+    event.preventDefault();
+    return;
+  }
+
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", card.dataset.taskId);
+
+  card.classList.add("is-dragging");
+}
+
+function handleKanbanDragEnd(event) {
+  const card = event.target.closest(".kanban-card");
+
+  if (card) {
+    card.classList.remove("is-dragging");
+  }
+
+  kanbanBoard
+    .querySelectorAll(".kanban-drop-zone.is-drag-over")
+    .forEach((zone) => {
+      zone.classList.remove("is-drag-over");
+    });
+}
+
+function getKanbanDropZone(target) {
+  const directZone = target.closest?.(".kanban-drop-zone");
+
+  if (directZone) {
+    return directZone;
+  }
+
+  const column = target.closest?.(".kanban-column");
+
+  return column?.querySelector(".kanban-drop-zone") || null;
+}
+
+function handleKanbanDragEnter(event) {
+  const dropZone = getKanbanDropZone(event.target);
+
+  if (!dropZone) {
+    return;
+  }
+
+  event.preventDefault();
+  dropZone.classList.add("is-drag-over");
+}
+
+function handleKanbanDragOver(event) {
+  const dropZone = getKanbanDropZone(event.target);
+
+  if (!dropZone) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
+
+  dropZone.classList.add("is-drag-over");
+}
+
+function handleKanbanDragLeave(event) {
+  const dropZone = getKanbanDropZone(event.target);
+
+  if (!dropZone) {
+    return;
+  }
+
+  if (dropZone.contains(event.relatedTarget)) {
+    return;
+  }
+
+  dropZone.classList.remove("is-drag-over");
+}
+
+async function handleKanbanDrop(event) {
+  const dropZone = getKanbanDropZone(event.target);
+
+  if (!dropZone) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  dropZone.classList.remove("is-drag-over");
+
+  const taskId = event.dataTransfer?.getData("text/plain");
+
+  const nextStatus = dropZone.dataset.status;
+
+  if (!taskId || !nextStatus) {
+    return;
+  }
+
+  const currentCard = kanbanBoard.querySelector(`[data-task-id="${taskId}"]`);
+
+  if (!currentCard) {
+    return;
+  }
+
+  const currentStatus = currentCard.dataset.status;
+
+  if (currentStatus === nextStatus) {
+    return;
+  }
+
+  const targetDropZone = kanbanBoard.querySelector(
+    `.kanban-drop-zone[data-status="${nextStatus}"]`,
+  );
+
+  if (!targetDropZone) {
+    return;
+  }
+
+  const previousParent = currentCard.parentElement;
+  const previousStatus = currentCard.dataset.status;
+
+  // Move the card immediately so the UI responds without requiring a refresh.
+  targetDropZone.appendChild(currentCard);
+  currentCard.dataset.status = nextStatus;
+  updateKanbanColumnCounts();
+
+  try {
+    await updateTask(taskId, { status: nextStatus });
+
+    await Promise.all([loadActivities(), loadDashboard()]);
+  } catch (error) {
+    // Restore the card if the server rejects the status change.
+    previousParent.appendChild(currentCard);
+    currentCard.dataset.status = previousStatus;
+    updateKanbanColumnCounts();
+    console.error("Failed to move task:", error);
+    alert(error.message);
+  }
+}
 
 // ========================================
 // CREATE TASK
 // ========================================
 
-taskForm.addEventListener(
-    "submit",
-    handleCreateTask
-);
-
-
+taskForm.addEventListener("submit", handleCreateTask);
 
 async function handleCreateTask(event) {
+  /*
+   * Prevent the browser from submitting
+   * the form normally.
+   *
+   * Without this, the browser would reload
+   * the page.
+   */
+  event.preventDefault();
+
+  /*
+   * Remove previous validation/API errors.
+   */
+  clearFormErrors();
+
+  /*
+   * Collect values from the form.
+   */
+  const taskData = getTaskFormData();
+
+  /*
+   * Validate the collected data.
+   */
+  const validationError = validateTaskForm(taskData);
+
+  /*
+   * If validation failed, stop here.
+   */
+  if (validationError) {
+    return;
+  }
+
+  try {
     /*
-     * Prevent the browser from submitting
-     * the form normally.
+     * Send the new task to the backend.
+     */
+    const createdTask = await createTask(taskData);
+
+    if (taskData.assignedTo) {
+      await assignTask(createdTask._id, taskData.assignedTo);
+    }
+
+    /*
+     * Do NOT manually add the returned task
+     * to frontend state.
      *
-     * Without this, the browser would reload
-     * the page.
+     * Instead, reload the tasks from the backend.
+     *
+     * This is especially important when filters
+     * are active.
      */
-    event.preventDefault();
+    await Promise.all([loadTasks(), loadActivities(), loadDashboard()]);
+    /*
+     * Reset the form after successful creation.
+     */
+    taskForm.reset();
 
     /*
-     * Remove previous validation/API errors.
+     * Restore the default form values because
+     * reset() returns controls to their HTML
+     * default values, and we want these values
+     * to be explicit.
      */
-    clearFormErrors();
+    priorityInput.value = "medium";
 
-    /*
-     * Collect values from the form.
-     */
-    const taskData =
-        getTaskFormData();
+    statusInput.value = "pending";
 
-    /*
-     * Validate the collected data.
-     */
-    const validationError =
-        validateTaskForm(taskData);
+    assigneeInput.value = "";
+    closeTaskForm();
+  } catch (error) {
+    console.error("Failed to create task:", error);
 
-    /*
-     * If validation failed, stop here.
-     */
-    if (validationError) {
-        return;
-    }
-
-    try {
-        /*
-         * Send the new task to the backend.
-         */
-        await createTask(taskData);
-
-        /*
-         * Do NOT manually add the returned task
-         * to frontend state.
-         *
-         * Instead, reload the tasks from the backend.
-         *
-         * This is especially important when filters
-         * are active.
-         */
-        await Promise.all([
-            loadTasks(),
-            loadActivities(),
-            loadDashboard()
-        ]);
-        /*
-         * Reset the form after successful creation.
-         */
-        taskForm.reset();
-
-        /*
-         * Restore the default form values because
-         * reset() returns controls to their HTML
-         * default values, and we want these values
-         * to be explicit.
-         */
-        priorityInput.value =
-            "medium";
-
-        statusInput.value =
-            "pending";
-
-    } catch (error) {
-        console.error(
-            "Failed to create task:",
-            error
-        );
-
-        showFormError(
-            error.message ||
-            "Failed to create task."
-        );
-    }
+    showFormError(error.message || "Failed to create task.");
+  }
 }
-
 
 // ========================================
 // TASK FORM
 // ========================================
 
 function getTaskFormData() {
-    /*
-     * The tags input contains something like:
-     *
-     * node, javascript, backend
-     *
-     * We convert that string into:
-     *
-     * [
-     *     "node",
-     *     "javascript",
-     *     "backend"
-     * ]
-     */
-    const tags =
-        tagsInput.value
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(
-                (tag) => tag.length > 0
-            );
+  /*
+   * The tags input contains something like:
+   *
+   * node, javascript, backend
+   *
+   * We convert that string into:
+   *
+   * [
+   *     "node",
+   *     "javascript",
+   *     "backend"
+   * ]
+   */
+  const tags = tagsInput.value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0);
 
-    return {
-        title:
-            titleInput.value.trim(),
+  return {
+    title: titleInput.value.trim(),
 
-        description:
-            descriptionInput.value.trim(),
+    description: descriptionInput.value.trim(),
 
-        status:
-            statusInput.value,
+    status: statusInput.value,
 
-        priority:
-            priorityInput.value,
+    priority: priorityInput.value,
 
-        dueDate:
-            dueDateInput.value || null,
+    dueDate: dueDateInput.value || null,
 
-        tags
-    };
+    tags,
+
+    assignedTo: assigneeInput.value || null,
+  };
 }
 
-
 function validateTaskForm(taskData) {
-    let hasError = false;
+  let hasError = false;
 
-    /*
-     * Validate title.
-     */
-    if (!taskData.title) {
-        titleError.textContent =
-            "Title is required.";
+  /*
+   * Validate title.
+   */
+  if (!taskData.title) {
+    titleError.textContent = "Title is required.";
 
-        hasError = true;
-    }
+    hasError = true;
+  }
 
-    /*
-     * Validate description.
-     */
-    if (!taskData.description) {
-        descriptionError.textContent =
-            "Description is required.";
+  /*
+   * Validate description.
+   */
+  if (!taskData.description) {
+    descriptionError.textContent = "Description is required.";
 
-        hasError = true;
-    }
+    hasError = true;
+  }
 
-    return hasError;
+  return hasError;
 }
 
 function clearFormErrors() {
-    titleError.textContent = "";
-    descriptionError.textContent = "";
-    formError.textContent = "";
+  titleError.textContent = "";
+  descriptionError.textContent = "";
+  formError.textContent = "";
 }
-
 
 function showFormError(message) {
-    formError.textContent = message;
+  formError.textContent = message;
 }
-
 
 // ========================================
 // STATUS UPDATE
 // ========================================
 
-document.addEventListener(
-    "change",
-    handleStatusChange
-);
-
+document.addEventListener("change", handleStatusChange);
 
 async function handleStatusChange(event) {
+  /*
+   * Event delegation:
+   *
+   * Instead of attaching a change listener
+   * to every status <select>, we listen on
+   * the document.
+   *
+   * Then we check whether the changed element
+   * is a .status-select.
+   */
+  const statusSelect = event.target.closest(".status-select");
+
+  /*
+   * If the changed element is not a task
+   * status select, ignore the event.
+   */
+  if (!statusSelect) {
+    return;
+  }
+
+  /*
+   * Get the task ID from:
+   *
+   * data-task-id
+   */
+  const taskId = statusSelect.dataset.taskId;
+
+  /*
+   * Get the newly selected status.
+   */
+  const status = statusSelect.value;
+
+  try {
     /*
-     * Event delegation:
+     * Send only the changed field to
+     * the backend.
      *
-     * Instead of attaching a change listener
-     * to every status <select>, we listen on
-     * the document.
+     * Example:
      *
-     * Then we check whether the changed element
-     * is a .status-select.
-     */
-    const statusSelect =
-        event.target.closest(
-            ".status-select"
-        );
-
-    /*
-     * If the changed element is not a task
-     * status select, ignore the event.
-     */
-    if (!statusSelect) {
-        return;
-    }
-
-    /*
-     * Get the task ID from:
+     * PATCH/PUT /api/tasks/123
      *
-     * data-task-id
+     * body:
+     *
+     * {
+     *     status: "completed"
+     * }
      */
-    const taskId =
-        statusSelect.dataset.taskId;
+    await updateTask(taskId, { status });
 
     /*
-     * Get the newly selected status.
+     * Reload from the backend.
+     *
+     * Why?
+     *
+     * Suppose the current filter is:
+     *
+     * status = pending
+     *
+     * and the user changes a task to:
+     *
+     * completed
+     *
+     * That task should disappear from the
+     * current list.
+     *
+     * Reloading applies the current filters
+     * again.
      */
-    const status =
-        statusSelect.value;
+    await Promise.all([loadTasks(), loadActivities(), loadDashboard()]);
+  } catch (error) {
+    console.error("Failed to update task:", error);
 
-    try {
-        /*
-         * Send only the changed field to
-         * the backend.
-         *
-         * Example:
-         *
-         * PATCH/PUT /api/tasks/123
-         *
-         * body:
-         *
-         * {
-         *     status: "completed"
-         * }
-         */
-        await updateTask(
-            taskId,
-            { status }
-        );
-
-        /*
-         * Reload from the backend.
-         *
-         * Why?
-         *
-         * Suppose the current filter is:
-         *
-         * status = pending
-         *
-         * and the user changes a task to:
-         *
-         * completed
-         *
-         * That task should disappear from the
-         * current list.
-         *
-         * Reloading applies the current filters
-         * again.
-         */
-        await Promise.all([
-            loadTasks(),
-            loadActivities(),
-            loadDashboard()
-        ]);
-
-    } catch (error) {
-        console.error(
-            "Failed to update task:",
-            error
-        );
-
-        showFormError(
-            error.message ||
-            "Failed to update task."
-        );
-    }
+    showFormError(error.message || "Failed to update task.");
+  }
 }
 
 // ========================================
 // PRIORITY UPDATE
 // ========================================
 
-document.addEventListener(
-    "change",
-    handlePriorityChange
-);
-
+document.addEventListener("change", handlePriorityChange);
 
 async function handlePriorityChange(event) {
-    const prioritySelect =
-        event.target.closest(
-            ".priority-select"
-        );
+  const prioritySelect = event.target.closest(".priority-select");
 
-    if (!prioritySelect) {
-        return;
-    }
+  if (!prioritySelect) {
+    return;
+  }
 
-    const taskId =
-        prioritySelect.dataset.taskId;
+  const taskId = prioritySelect.dataset.taskId;
 
-    const priority =
-        prioritySelect.value;
+  const priority = prioritySelect.value;
 
-    try {
-        await updateTask(
-            taskId,
-            { priority }
-        );
+  try {
+    await updateTask(taskId, { priority });
 
-        await Promise.all([
-            loadTasks(),
-            loadActivities(),
-            loadDashboard()
-        ]);
+    await Promise.all([loadTasks(), loadActivities(), loadDashboard()]);
+  } catch (error) {
+    console.error("Failed to update task priority:", error);
 
-    } catch (error) {
-        console.error(
-            "Failed to update task priority:",
-            error
-        );
-
-        showFormError(
-            error.message ||
-            "Failed to update task priority."
-        );
-    }
+    showFormError(error.message || "Failed to update task priority.");
+  }
 }
 
 // ========================================
 // DELETE TASK
 // ========================================
 
-document.addEventListener(
-    "click",
-    handleTaskAction
-);
-
+document.addEventListener("click", handleTaskAction);
 
 async function handleTaskAction(event) {
+  /*
+   * Check whether the clicked element,
+   * or one of its parents, is a delete button.
+   */
+  const deleteButton = event.target.closest(".delete-button");
+
+  /*
+   * If it wasn't a delete button,
+   * ignore the event.
+   */
+  if (!deleteButton) {
+    return;
+  }
+
+  /*
+   * Get the task ID from:
+   *
+   * data-task-id
+   */
+  const taskId = deleteButton.dataset.taskId;
+
+  /*
+   * Ask the user for confirmation.
+   */
+  const shouldDelete = window.confirm(
+    "Are you sure you want to delete this task?",
+  );
+
+  /*
+   * User cancelled.
+   */
+  if (!shouldDelete) {
+    return;
+  }
+
+  try {
     /*
-     * Check whether the clicked element,
-     * or one of its parents, is a delete button.
+     * Delete the task from the backend.
      */
-    const deleteButton =
-        event.target.closest(
-            ".delete-button"
-        );
+    await deleteTask(taskId);
 
     /*
-     * If it wasn't a delete button,
-     * ignore the event.
-     */
-    if (!deleteButton) {
-        return;
-    }
-
-    /*
-     * Get the task ID from:
+     * Reload tasks from the backend.
      *
-     * data-task-id
+     * Again, the backend is our source
+     * of truth.
      */
-    const taskId =
-        deleteButton.dataset.taskId;
+    await Promise.all([loadTasks(), loadDashboard()]);
+  } catch (error) {
+    console.error("Failed to delete task:", error);
 
-    /*
-     * Ask the user for confirmation.
-     */
-    const shouldDelete =
-        window.confirm(
-            "Are you sure you want to delete this task?"
-        );
-
-    /*
-     * User cancelled.
-     */
-    if (!shouldDelete) {
-        return;
-    }
-
-    try {
-        /*
-         * Delete the task from the backend.
-         */
-        await deleteTask(taskId);
-
-        /*
-         * Reload tasks from the backend.
-         *
-         * Again, the backend is our source
-         * of truth.
-         */
-        await Promise.all([
-            loadTasks(),
-            loadDashboard()
-        ]);
-
-    } catch (error) {
-        console.error(
-            "Failed to delete task:",
-            error
-        );
-
-        showFormError(
-            error.message ||
-            "Failed to delete task."
-        );
-    }
+    showFormError(error.message || "Failed to delete task.");
+  }
 }
 
 // ========================================
 // TASK EXPORT
 // ========================================
 
-async function handleTaskExport(
-    format
-) {
+async function handleTaskExport(format) {
+  try {
+    const blob = await downloadTaskExport(format);
 
-    try {
+    const downloadUrl = URL.createObjectURL(blob);
 
-        const blob =
-            await downloadTaskExport(
-                format
-            );
+    const link = document.createElement("a");
 
+    link.href = downloadUrl;
 
-        const downloadUrl =
-            URL.createObjectURL(
-                blob
-            );
+    link.download = `tasks.${format}`;
 
+    document.body.appendChild(link);
 
-        const link =
-            document.createElement(
-                "a"
-            );
+    link.click();
 
+    link.remove();
 
-        link.href =
-            downloadUrl;
+    URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error(`Failed to export tasks as ${format}:`, error);
 
-
-        link.download =
-            `tasks.${format}`;
-
-
-        document.body.appendChild(
-            link
-        );
-
-
-        link.click();
-
-
-        link.remove();
-
-
-        URL.revokeObjectURL(
-            downloadUrl
-        );
-
-    } catch (error) {
-
-        console.error(
-            `Failed to export tasks as ${format}:`,
-            error
-        );
-
-
-        showFormError(
-            error.message ||
-            "Failed to export tasks."
-        );
-    }
+    showFormError(error.message || "Failed to export tasks.");
+  }
 }
 
+exportJsonButton.addEventListener("click", () => handleTaskExport("json"));
 
-exportJsonButton.addEventListener(
-    "click",
-    () => handleTaskExport("json")
-);
-
-
-exportCsvButton.addEventListener(
-    "click",
-    () => handleTaskExport("csv")
-);
+exportCsvButton.addEventListener("click", () => handleTaskExport("csv"));
 
 // ========================================
 // FILTER HANDLING
 // ========================================
 
+statusFilter.addEventListener("change", handleFilterChange);
 
-statusFilter.addEventListener(
-    "change",
-    handleFilterChange
-);
+priorityFilter.addEventListener("change", handleFilterChange);
 
-priorityFilter.addEventListener(
-    "change",
-    handleFilterChange
-);
+tagFilter.addEventListener("change", handleFilterChange);
 
-tagFilter.addEventListener(
-    "change",
-    handleFilterChange
-);
+fromDateFilter.addEventListener("change", handleFilterChange);
 
-fromDateFilter.addEventListener(
-    "change",
-    handleFilterChange
-);
+toDateFilter.addEventListener("change", handleFilterChange);
 
-toDateFilter.addEventListener(
-    "change",
-    handleFilterChange
-);
+sortBy.addEventListener("change", handleFilterChange);
 
-sortBy.addEventListener(
-    "change",
-    handleFilterChange
-);
-
-sortOrder.addEventListener(
-    "change",
-    handleFilterChange
-);
+sortOrder.addEventListener("change", handleFilterChange);
 
 let searchTimeout;
 
-searchInput.addEventListener(
-    "input",
-    () => {
-        clearTimeout(searchTimeout);
+searchInput.addEventListener("input", () => {
+  clearTimeout(searchTimeout);
 
-        searchTimeout = setTimeout(
-            handleFilterChange,
-            500
-        );
-    }
-);
+  searchTimeout = setTimeout(handleFilterChange, 500);
+});
 
 async function handleFilterChange() {
+  const status = statusFilter.value === "all" ? "" : statusFilter.value;
 
-    const status =
-        statusFilter.value === "all"
-            ? ""
-            : statusFilter.value;
+  const priority = priorityFilter.value === "all" ? "" : priorityFilter.value;
 
+  const search = searchInput.value.trim();
 
-    const priority =
-        priorityFilter.value === "all"
-            ? ""
-            : priorityFilter.value;
+  const tag = tagFilter.value.trim();
 
+  const fromDate = fromDateFilter.value;
 
-    const search =
-        searchInput.value.trim();
+  const toDate = toDateFilter.value;
 
+  const sortByValue = sortBy.value;
 
-    const tag =
-        tagFilter.value.trim();
+  const sortOrderValue = sortOrder.value;
 
+  setFilters({
+    status,
 
-    const fromDate =
-        fromDateFilter.value;
+    priority,
 
+    search,
 
-    const toDate =
-        toDateFilter.value;
+    tag,
 
+    fromDate,
 
-    const sortByValue =
-        sortBy.value;
+    toDate,
 
+    sortBy: sortByValue,
 
-    const sortOrderValue =
-        sortOrder.value;
+    sortOrder: sortOrderValue,
+  });
 
+  await loadTasks();
+}
 
-    setFilters({
+function updateKanbanColumnCounts() {
+  kanbanBoard.querySelectorAll(".kanban-column").forEach((column) => {
+    const count = column.querySelector("[data-kanban-count]");
+    const dropZone = column.querySelector(".kanban-drop-zone");
 
-        status,
-
-        priority,
-
-        search,
-
-        tag,
-
-        fromDate,
-
-        toDate,
-
-        sortBy: sortByValue,
-
-        sortOrder: sortOrderValue
-    });
-
-
-    await loadTasks();
+    if (count && dropZone) {
+      count.textContent = dropZone.children.length;
+    }
+  });
 }
 
 //==========================
 //PAGINATION
 //=========================
 function renderPagination(pagination) {
-    const {
-        page,
-        totalPages
-    } = pagination;
+  const { page, totalPages } = pagination;
 
-    pageNumbers.innerHTML = "";
+  pageNumbers.innerHTML = "";
 
-    previousPageButton.disabled =
-        page <= 1;
+  previousPageButton.disabled = page <= 1;
 
-    nextPageButton.disabled =
-        page >= totalPages;
+  nextPageButton.disabled = page >= totalPages;
 
-    if (totalPages <= 1) {
-        return;
+  if (totalPages <= 1) {
+    return;
+  }
+
+  for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.textContent = pageNumber;
+
+    if (pageNumber === page) {
+      button.disabled = true;
     }
 
-    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
-        const button =
-            document.createElement("button");
-
-        button.type = "button";
-        button.textContent = pageNumber;
-
-        if (pageNumber === page) {
-            button.disabled = true;
-        }
-
-        button.addEventListener("click", () => {
-            goToPage(pageNumber);
-        });
-
-        pageNumbers.appendChild(button);
-    }
-}
-async function goToPage(pageNumber) {
-    const pagination = getPagination();
-
-    if (
-        pageNumber < 1 ||
-        pageNumber > pagination.totalPages
-    ) {
-        return;
-    }
-
-    setFilters({
-        page: pageNumber
+    button.addEventListener("click", () => {
+      goToPage(pageNumber);
     });
 
-    await loadTasks();
+    pageNumbers.appendChild(button);
+  }
+}
+async function goToPage(pageNumber) {
+  const pagination = getPagination();
+
+  if (pageNumber < 1 || pageNumber > pagination.totalPages) {
+    return;
+  }
+
+  setFilters({
+    page: pageNumber,
+  });
+
+  await loadTasks();
 }
 
-previousPageButton.addEventListener(
-    "click",
-    async () => {
-        const pagination = getPagination();
+previousPageButton.addEventListener("click", async () => {
+  const pagination = getPagination();
 
-        if (pagination.page <= 1) {
-            return;
-        }
+  if (pagination.page <= 1) {
+    return;
+  }
 
-        await goToPage(
-            pagination.page - 1
-        );
-    }
-);
+  await goToPage(pagination.page - 1);
+});
 
-nextPageButton.addEventListener(
-    "click",
-    async () => {
-        const pagination = getPagination();
+nextPageButton.addEventListener("click", async () => {
+  const pagination = getPagination();
 
-        if (
-            pagination.page >=
-            pagination.totalPages
-        ) {
-            return;
-        }
+  if (pagination.page >= pagination.totalPages) {
+    return;
+  }
 
-        await goToPage(
-            pagination.page + 1
-        );
-    }
-);
-pageLimit.addEventListener(
-    "change",
-    async () => {
-        const limit =
-            Number(pageLimit.value);
+  await goToPage(pagination.page + 1);
+});
+pageLimit.addEventListener("change", async () => {
+  const limit = Number(pageLimit.value);
 
-        setFilters({
-            page: 1,
-            limit
-        });
+  setFilters({
+    page: 1,
+    limit,
+  });
 
-        await loadTasks();
-    }
-);
-document.addEventListener(
-    "change",
-    async (event) => {
-        const assignmentSelect =
-            event.target.closest(
-                ".assignment-select"
-            );
+  await loadTasks();
+});
+document.addEventListener("change", async (event) => {
+  const assignmentSelect = event.target.closest(".assignment-select");
 
-        if (!assignmentSelect) {
-            return;
-        }
+  if (!assignmentSelect) {
+    return;
+  }
 
-        const taskId =
-            assignmentSelect.dataset.taskId;
+  const taskId = assignmentSelect.dataset.taskId;
 
-        const assignedTo =
-            assignmentSelect.value;
+  const assignedTo = assignmentSelect.value;
 
-        try {
-            await assignTask(
-                taskId,
-                assignedTo
-            );
+  try {
+    await assignTask(taskId, assignedTo);
 
-            await Promise.all([
-            loadTasks(),
-            loadActivities(),
-            loadDashboard()
-        ]);
+    await Promise.all([loadTasks(), loadActivities(), loadDashboard()]);
+  } catch (error) {
+    console.error("Failed to assign task:", error);
 
-        } catch (error) {
-            console.error(
-                "Failed to assign task:",
-                error
-            );
-
-            alert(error.message);
-        }
-    }
-);
+    alert(error.message);
+  }
+});
 // ========================================
 // NOTIFICATIONS
 // ========================================
 
-async function handleNotificationAction(
-    event
-) {
-    const markReadButton =
-        event.target.closest(
-            ".mark-read-button"
-        );
+async function handleNotificationAction(event) {
+  const markReadButton = event.target.closest(".mark-read-button");
 
-    if (!markReadButton) {
-        return;
-    }
+  if (!markReadButton) {
+    return;
+  }
 
-    const notificationId =
-        markReadButton.dataset.notificationId;
+  const notificationId = markReadButton.dataset.notificationId;
 
-    try {
-        await markNotificationAsRead(
-            notificationId
-        );
+  try {
+    await markNotificationAsRead(notificationId);
 
-        await loadNotifications();
-    } catch (error) {
-        console.error(
-            "Failed to mark notification as read:",
-            error
-        );
-    }
+    await loadNotifications();
+  } catch (error) {
+    console.error("Failed to mark notification as read:", error);
+  }
 }
 
-document.addEventListener(
-    "click",
-    handleNotificationAction
-);
+document.addEventListener("click", handleNotificationAction);
 
-if (
-    markAllNotificationsReadButton
-) {
-    markAllNotificationsReadButton.addEventListener(
-        "click",
-        handleMarkAllNotificationsRead
-    );
+if (markAllNotificationsReadButton) {
+  markAllNotificationsReadButton.addEventListener(
+    "click",
+    handleMarkAllNotificationsRead,
+  );
 }
 
 async function handleMarkAllNotificationsRead() {
-    try {
-        await markAllNotificationsAsRead();
+  try {
+    await markAllNotificationsAsRead();
 
-        await loadNotifications();
-    } catch (error) {
-        console.error(
-            "Failed to mark all notifications as read:",
-            error
-        );
-    }
+    await loadNotifications();
+  } catch (error) {
+    console.error("Failed to mark all notifications as read:", error);
+  }
 }
 
 // ========================================
 // APPLICATION INITIALIZATION
 // ========================================
 
-
 async function initializeApp() {
-    try {
-        const result = await getCurrentUser();
+  try {
+    const result = await getCurrentUser();
 
-        saveUser(result.data.user);
+    saveUser(result.data.user);
 
-        updateAuthUI();
+    updateAuthUI();
 
-        await loadUsers();
+    await loadUsers();
 
-        await Promise.all([
-            loadTasks(),
-            loadActivities(),
-            loadNotifications(),
-            loadDashboard()
-        ]);
-
-    } catch (error) {
-        clearUser();
-        updateAuthUI();
-    }
+    await Promise.all([
+      loadTasks(),
+      loadActivities(),
+      loadNotifications(),
+      loadDashboard(),
+    ]);
+  } catch (error) {
+    clearUser();
+    updateAuthUI();
+  }
 }
 
 async function waitForReport(jobId) {
-    const POLL_INTERVAL_MS = 1000;
-    const MAX_WAIT_TIME_MS = 5 * 60 * 1000;
+  const POLL_INTERVAL_MS = 1000;
+  const MAX_WAIT_TIME_MS = 5 * 60 * 1000;
 
-    const startTime = Date.now();
+  const startTime = Date.now();
 
-    while (true) {
-        console.log(
-            "Checking report status:",
-            jobId
-        );
+  while (true) {
+    console.log("Checking report status:", jobId);
 
-        const response =
-            await getReportStatus(jobId);
+    const response = await getReportStatus(jobId);
 
-        console.log(
-            "Report status response:",
-            response
-        );
+    console.log("Report status response:", response);
 
-        const job = response.job;
+    const job = response.job;
 
-        console.log(
-            "Current report status:",
-            job.status
-        );
+    console.log("Current report status:", job.status);
 
-        if (job.status === "completed") {
-            console.log(
-                "Report completed."
-            );
+    if (job.status === "completed") {
+      console.log("Report completed.");
 
-            return;
-        }
-
-        if (job.status === "failed") {
-            throw new Error(
-                job.error ||
-                "Report generation failed"
-            );
-        }
-
-        if (
-            Date.now() - startTime >=
-            MAX_WAIT_TIME_MS
-        ) {
-            throw new Error(
-                "Report generation is taking longer than expected. Please try again."
-            );
-        }
-
-        console.log(
-            "Report not ready. Waiting 1 second..."
-        );
-
-        await new Promise(
-            (resolve) =>
-                setTimeout(
-                    resolve,
-                    POLL_INTERVAL_MS
-                )
-        );
-
-        console.log(
-            "Polling again..."
-        );
+      return;
     }
+
+    if (job.status === "failed") {
+      throw new Error(job.error || "Report generation failed");
+    }
+
+    if (Date.now() - startTime >= MAX_WAIT_TIME_MS) {
+      throw new Error(
+        "Report generation is taking longer than expected. Please try again.",
+      );
+    }
+
+    console.log("Report not ready. Waiting 1 second...");
+
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+
+    console.log("Polling again...");
+  }
 }
 
 async function handleGenerateReport() {
-    try {
-        reportStatus.textContent =
-            "Generating report...";
+  try {
+    reportStatus.textContent = "Generating report...";
 
-        const response =
-            await createTaskReport();
+    const response = await createTaskReport();
 
-        await waitForReport(
-            response.jobId
-        );
+    await waitForReport(response.jobId);
 
-        reportStatus.textContent =
-            "Downloading report...";
+    reportStatus.textContent = "Downloading report...";
 
-        const blob =
-            await downloadTaskReport(
-                response.jobId
-            );
+    const blob = await downloadTaskReport(response.jobId);
 
-const downloadUrl =
-    URL.createObjectURL(blob);
+    const downloadUrl = URL.createObjectURL(blob);
 
-const link =
-    document.createElement("a");
+    const link = document.createElement("a");
 
-link.href = downloadUrl;
-link.download =
-    "task-report.json";
+    link.href = downloadUrl;
+    link.download = "task-report.json";
 
-document.body.appendChild(link);
+    document.body.appendChild(link);
 
-link.click();
+    link.click();
 
-link.remove();
+    link.remove();
 
-setTimeout(() => {
-    URL.revokeObjectURL(downloadUrl);
-}, 1000);
+    setTimeout(() => {
+      URL.revokeObjectURL(downloadUrl);
+    }, 1000);
 
-        reportStatus.textContent =
-            "Report downloaded.";
+    reportStatus.textContent = "Report downloaded.";
+  } catch (error) {
+    console.error("Failed to generate report:", error);
 
-    } catch (error) {
-        console.error(
-            "Failed to generate report:",
-            error
-        );
-
-        reportStatus.textContent =
-            error.message ||
-            "Failed to generate report.";
-    }
+    reportStatus.textContent = error.message || "Failed to generate report.";
+  }
 }
 
-generateReportButton.addEventListener(
-    "click",
-    handleGenerateReport
-);
+generateReportButton.addEventListener("click", handleGenerateReport);
 // ========================================
 // START APPLICATION
 // ========================================
 
+initializeRouter();
 initializeApp();

@@ -1,156 +1,159 @@
-const taskListElement =
-    document.querySelector("#task-list");
+const taskListElement = document.querySelector("#task-list");
 
-const emptyStateElement =
-    document.querySelector("#empty-state");
+const taskListViewElement = document.querySelector("#task-list-view");
 
-const dashboardTotalElement =
-    document.querySelector("#dashboard-total");
+const kanbanBoardElement = document.querySelector("#kanban-board");
 
-const dashboardCompletedElement =
-    document.querySelector("#dashboard-completed");
+const emptyStateElement = document.querySelector("#empty-state");
 
-const dashboardPendingElement =
-    document.querySelector("#dashboard-pending");
+const dashboardTotalElement = document.querySelector("#dashboard-total");
 
-const dashboardOverdueElement =
-    document.querySelector("#dashboard-overdue");
+const dashboardCompletedElement = document.querySelector(
+  "#dashboard-completed",
+);
 
-const dashboardLowPriorityElement =
-    document.querySelector("#dashboard-low-priority");
+const dashboardPendingElement = document.querySelector("#dashboard-pending");
 
-const dashboardMediumPriorityElement =
-    document.querySelector("#dashboard-medium-priority");
+const dashboardOverdueElement = document.querySelector("#dashboard-overdue");
 
-const dashboardHighPriorityElement =
-    document.querySelector("#dashboard-high-priority");
+const dashboardLowPriorityElement = document.querySelector(
+  "#dashboard-low-priority",
+);
 
-const dashboardActivityElement =
-    document.querySelector("#dashboard-activity");
+const dashboardMediumPriorityElement = document.querySelector(
+  "#dashboard-medium-priority",
+);
 
-const visibleCountElement =
-    document.querySelector("#visible-count");
+const dashboardHighPriorityElement = document.querySelector(
+  "#dashboard-high-priority",
+);
 
+const dashboardActivityElement = document.querySelector("#dashboard-activity");
 
-export function renderTasks(
-    tasks,
-    users = [],
-    currentUser = null
-) {
-    taskListElement.innerHTML = "";
+const visibleCountElement = document.querySelector("#visible-count");
 
+export function renderTasks(tasks, users = [], currentUser = null) {
+  taskListElement.innerHTML = "";
 
-    updateVisibleCount(tasks);
+  clearKanbanColumns();
+  updateVisibleCount(tasks);
 
-    if (tasks.length === 0) {
-        emptyStateElement.hidden = false;
-        return;
+  if (tasks.length === 0) {
+    emptyStateElement.hidden = false;
+    return;
+  }
+
+  emptyStateElement.hidden = true;
+
+  for (const task of tasks) {
+    const taskCard = createTaskCard(task, users, currentUser);
+
+    taskListElement.append(taskCard);
+
+    const kanbanCard = createKanbanCard(task, users, currentUser);
+
+    const dropZone = kanbanBoardElement.querySelector(
+      `[data-status="${task.status}"]`,
+    );
+
+    if (dropZone) {
+      dropZone.append(kanbanCard);
     }
+  }
 
-    emptyStateElement.hidden = true;
-
-    for (const task of tasks) {
-        const taskCard =
-            createTaskCard(
-                task,
-                users,
-                currentUser
-            );
-
-        taskListElement.append(taskCard);
-    }
+  updateKanbanCounts(tasks);
 }
 
+function clearKanbanColumns() {
+  const dropZones = kanbanBoardElement.querySelectorAll(".kanban-drop-zone");
+
+  for (const zone of dropZones) {
+    zone.innerHTML = "";
+  }
+
+  const counts = kanbanBoardElement.querySelectorAll("[data-kanban-count]");
+
+  for (const count of counts) {
+    count.textContent = "0";
+  }
+}
+
+function updateKanbanCounts(tasks) {
+  const counts = {
+    pending: 0,
+    "in-progress": 0,
+    completed: 0,
+  };
+
+  for (const task of tasks) {
+    if (counts[task.status] !== undefined) {
+      counts[task.status] += 1;
+    }
+  }
+
+  for (const status of Object.keys(counts)) {
+    const countElement = kanbanBoardElement.querySelector(
+      `[data-kanban-count="${status}"]`,
+    );
+
+    if (countElement) {
+      countElement.textContent = counts[status];
+    }
+  }
+}
 
 // ========================================
 // STATISTICS
 // ========================================
 
-export function renderDashboard(
-    dashboard
-) {
-    dashboardTotalElement.textContent =
-        dashboard.total;
+export function renderDashboard(dashboard) {
+  dashboardTotalElement.textContent = dashboard.total;
 
-    dashboardCompletedElement.textContent =
-        dashboard.completed;
+  dashboardCompletedElement.textContent = dashboard.completed;
 
-    dashboardPendingElement.textContent =
-        dashboard.pending;
+  dashboardPendingElement.textContent = dashboard.pending;
 
-    dashboardOverdueElement.textContent =
-        dashboard.overdue;
+  dashboardOverdueElement.textContent = dashboard.overdue;
 
+  dashboardLowPriorityElement.textContent = dashboard.byPriority.low;
 
-    dashboardLowPriorityElement.textContent =
-        dashboard.byPriority.low;
+  dashboardMediumPriorityElement.textContent = dashboard.byPriority.medium;
 
-    dashboardMediumPriorityElement.textContent =
-        dashboard.byPriority.medium;
+  dashboardHighPriorityElement.textContent = dashboard.byPriority.high;
 
-    dashboardHighPriorityElement.textContent =
-        dashboard.byPriority.high;
-
-
-    renderDashboardActivity(
-        dashboard.recentActivity
-    );
+  renderDashboardActivity(dashboard.recentActivity);
 }
 
-function renderDashboardActivity(
-    activities
-) {
-    dashboardActivityElement.innerHTML = "";
+function renderDashboardActivity(activities) {
+  dashboardActivityElement.innerHTML = "";
 
-    if (activities.length === 0) {
-        const emptyMessage =
-            document.createElement("p");
+  if (activities.length === 0) {
+    const emptyMessage = document.createElement("p");
 
-        emptyMessage.textContent =
-            "No recent activity";
+    emptyMessage.textContent = "No recent activity";
 
-        dashboardActivityElement.append(
-            emptyMessage
-        );
+    dashboardActivityElement.append(emptyMessage);
 
-        return;
-    }
+    return;
+  }
 
+  for (const activity of activities) {
+    const activityElement = document.createElement("div");
 
-    for (const activity of activities) {
+    activityElement.className = "dashboard-activity-item";
 
-        const activityElement =
-            document.createElement("div");
+    const messageElement = document.createElement("p");
 
-        activityElement.className =
-            "dashboard-activity-item";
+    messageElement.textContent = activity.message;
 
+    const dateElement = document.createElement("small");
 
-        const messageElement =
-            document.createElement("p");
+    dateElement.textContent = new Date(activity.createdAt).toLocaleString();
 
-        messageElement.textContent =
-            activity.message;
+    activityElement.append(messageElement, dateElement);
 
-
-        const dateElement =
-            document.createElement("small");
-
-        dateElement.textContent =
-            new Date(
-                activity.createdAt
-            ).toLocaleString();
-
-
-        activityElement.append(
-            messageElement,
-            dateElement
-        );
-
-        dashboardActivityElement.append(
-            activityElement
-        );
-    }
+    dashboardActivityElement.append(activityElement);
+  }
 }
 
 // ========================================
@@ -158,750 +161,517 @@ function renderDashboardActivity(
 // ========================================
 
 function updateVisibleCount(tasks) {
-    const count = tasks.length;
+  const count = tasks.length;
 
-    visibleCountElement.textContent =
-        `${count} ${count === 1 ? "task" : "tasks"}`;
+  visibleCountElement.textContent = `${count} ${count === 1 ? "task" : "tasks"}`;
 }
-
 
 // ========================================
 // CREATE TASK CARD
 // ========================================
 
-function createTaskCard(
-    task,
-    users,
-    currentUser
-) {
-    const article =
-        document.createElement("article");
+function createTaskCard(task, users, currentUser) {
+  const article = document.createElement("article");
 
-    article.className =
-        `task-card priority-${task.priority}`;
+  article.className = `task-card priority-${task.priority}`;
 
-    if (task.isOverdue) {
-        article.classList.add("overdue");
-    }
-    // ====================================
-    // HEADER
-    // ====================================
+  if (task.isOverdue) {
+    article.classList.add("overdue");
+  }
+  // ====================================
+  // HEADER
+  // ====================================
 
-    const header =
-        document.createElement("div");
+  const header = document.createElement("div");
 
-    header.className =
-        "task-card-header";
+  header.className = "task-card-header";
 
+  const title = document.createElement("h3");
 
-    const title =
-        document.createElement("h3");
+  title.textContent = task.title;
 
-    title.textContent =
-        task.title;
+  const priority = document.createElement("span");
 
+  priority.className = "priority-badge";
 
-    const priority =
-        document.createElement("span");
+  priority.textContent = `Priority: ${task.priority}`;
 
-    priority.className =
-        "priority-badge";
+  header.append(title, priority);
 
-    priority.textContent =
-        `Priority: ${task.priority}`;
+  // ====================================
+  // DESCRIPTION
+  // ====================================
 
+  const description = document.createElement("p");
 
-    header.append(
-        title,
-        priority
-    );
+  description.className = "task-description";
 
+  description.textContent = task.description || "";
 
-    // ====================================
-    // DESCRIPTION
-    // ====================================
+  // ====================================
+  // OWNERSHIP
+  // ====================================
 
-    const description =
-        document.createElement("p");
+  const ownership = document.createElement("div");
 
-    description.className =
-        "task-description";
+  ownership.className = "task-ownership";
 
-    description.textContent =
-        task.description || "";
+  const ownerName = task.owner?.name || "Unknown";
 
+  const assignedName = task.assignedTo?.name || "Unassigned";
 
-    // ====================================
-    // OWNERSHIP
-    // ====================================
+  const ownerElement = document.createElement("span");
 
-    const ownership =
-        document.createElement("div");
+  ownerElement.textContent = `Owner: ${ownerName}`;
 
-    ownership.className =
-        "task-ownership";
+  const assignedElement = document.createElement("span");
 
+  assignedElement.textContent = `Assigned to: ${assignedName}`;
 
-    const ownerName =
-        task.owner?.name ||
-        "Unknown";
+  ownership.append(ownerElement, assignedElement);
 
+  // ====================================
+  // METADATA
+  // ====================================
 
-    const assignedName =
-        task.assignedTo?.name ||
-        "Unassigned";
+  const metadata = document.createElement("div");
 
+  metadata.className = "task-metadata";
 
-    const ownerElement =
-        document.createElement("span");
+  const dueDate = document.createElement("span");
 
-    ownerElement.textContent =
-        `Owner: ${ownerName}`;
+  dueDate.textContent = `Due: ${formatDateTime(task.dueDate)}`;
 
+  if (task.isOverdue) {
+    dueDate.textContent += " — Overdue";
+  }
 
-    const assignedElement =
-        document.createElement("span");
+  const createdAt = document.createElement("span");
 
-    assignedElement.textContent =
-        `Assigned to: ${assignedName}`;
+  createdAt.textContent = `Created: ${formatDateTime(task.createdAt)}`;
 
+  const updatedAt = document.createElement("span");
 
-    ownership.append(
-        ownerElement,
-        assignedElement
-    );
+  updatedAt.textContent = `Updated: ${formatDateTime(task.updatedAt)}`;
 
+  metadata.append(dueDate, createdAt, updatedAt);
 
-    // ====================================
-    // METADATA
-    // ====================================
+  // ====================================
+  // TAGS
+  // ====================================
 
-    const metadata =
-        document.createElement("div");
+  const tags = document.createElement("div");
 
-    metadata.className =
-        "task-metadata";
+  tags.className = "task-tags";
 
+  for (const tag of task.tags || []) {
+    const tagElement = document.createElement("span");
 
-    const dueDate =
-        document.createElement("span");
+    tagElement.className = "tag";
 
-    dueDate.textContent =
-        `Due: ${formatDateTime(task.dueDate)}`;
+    tagElement.textContent = tag;
 
-    if (task.isOverdue) {
-        dueDate.textContent += " — Overdue";
-    }
-    
-    const createdAt =
-        document.createElement("span");
+    tags.append(tagElement);
+  }
 
-    createdAt.textContent =
-        `Created: ${formatDateTime(task.createdAt)}`;
+  // ====================================
+  // FOOTER
+  // ====================================
 
+  const footer = document.createElement("div");
 
-    const updatedAt =
-        document.createElement("span");
+  footer.className = "task-card-footer";
 
-    updatedAt.textContent =
-        `Updated: ${formatDateTime(task.updatedAt)}`;
+  // ====================================
+  // PERMISSIONS
+  // ====================================
 
+  const isAdmin = currentUser?.role === "admin";
 
-    metadata.append(
-        dueDate,
-        createdAt,
-        updatedAt
-    );
+  const currentUserId = currentUser?.id?.toString();
 
+  const ownerId = task.owner?._id?.toString();
 
-    // ====================================
-    // TAGS
-    // ====================================
+  const assignedUserId = task.assignedTo?._id?.toString();
 
-    const tags =
-        document.createElement("div");
+  const isOwner = currentUserId && ownerId && currentUserId === ownerId;
 
-    tags.className =
-        "task-tags";
+  const isAssignedUser =
+    currentUserId && assignedUserId && currentUserId === assignedUserId;
 
+  /*
+   * Users who can edit:
+   *
+   * - Admin
+   * - Owner
+   * - Assigned user
+   */
 
-    for (const tag of task.tags || []) {
-        const tagElement =
-            document.createElement("span");
+  const canEdit = isAdmin || isOwner || isAssignedUser;
 
-        tagElement.className =
-            "tag";
+  /*
+   * Users who can delete:
+   *
+   * - Admin
+   * - Owner
+   */
 
-        tagElement.textContent =
-            tag;
+  const canDelete = isAdmin || isOwner;
 
-        tags.append(tagElement);
-    }
+  /*
+   * Users who can assign:
+   *
+   * - Admin
+   * - Owner
+   */
 
+  const canAssign = isAdmin || isOwner;
 
-    // ====================================
-    // FOOTER
-    // ====================================
-
-    const footer =
-        document.createElement("div");
-
-    footer.className =
-        "task-card-footer";
-
-
-    // ====================================
-    // PERMISSIONS
-    // ====================================
-
-    const isAdmin =
-        currentUser?.role === "admin";
-
-
-    const currentUserId =
-        currentUser?.id?.toString();
-
-
-    const ownerId =
-        task.owner?._id?.toString();
-
-
-    const assignedUserId =
-        task.assignedTo?._id?.toString();
-
-
-    const isOwner =
-        currentUserId &&
-        ownerId &&
-        currentUserId === ownerId;
-
-
-    const isAssignedUser =
-        currentUserId &&
-        assignedUserId &&
-        currentUserId === assignedUserId;
-
-
-    /*
-     * Users who can edit:
-     *
-     * - Admin
-     * - Owner
-     * - Assigned user
-     */
-
-    const canEdit =
-        isAdmin ||
-        isOwner ||
-        isAssignedUser;
-
-
-    /*
-     * Users who can delete:
-     *
-     * - Admin
-     * - Owner
-     */
-
-    const canDelete =
-        isAdmin ||
-        isOwner;
-
-
-    /*
-     * Users who can assign:
-     *
-     * - Admin
-     * - Owner
-     */
-
-    const canAssign =
-        isAdmin ||
-        isOwner;
-
-
-if (canEdit) {
+  if (canEdit) {
     // ====================================
     // STATUS SELECT
     // ====================================
 
-    const statusSelect =
-        document.createElement("select");
+    const statusSelect = document.createElement("select");
 
-    statusSelect.className =
-        "status-select";
+    statusSelect.className = "status-select";
 
-    statusSelect.dataset.taskId =
-        task._id;
+    statusSelect.dataset.taskId = task._id;
 
     const statuses = [
-        ["pending", "Pending"],
-        ["in-progress", "In Progress"],
-        ["completed", "Completed"]
+      ["pending", "Pending"],
+      ["in-progress", "In Progress"],
+      ["completed", "Completed"],
     ];
 
-    for (
-        const [value, label]
-        of statuses
-    ) {
-        const option =
-            document.createElement("option");
+    for (const [value, label] of statuses) {
+      const option = document.createElement("option");
 
-        option.value =
-            value;
+      option.value = value;
 
-        option.textContent =
-            label;
+      option.textContent = label;
 
-        if (task.status === value) {
-            option.selected = true;
-        }
+      if (task.status === value) {
+        option.selected = true;
+      }
 
-        statusSelect.append(option);
+      statusSelect.append(option);
     }
-
 
     // ====================================
     // PRIORITY SELECT
     // ====================================
 
-    const prioritySelect =
-        document.createElement("select");
+    const prioritySelect = document.createElement("select");
 
-    prioritySelect.className =
-        "priority-select";
+    prioritySelect.className = "priority-select";
 
-    prioritySelect.dataset.taskId =
-        task._id;
+    prioritySelect.dataset.taskId = task._id;
 
     const priorities = [
-        ["low", "Low"],
-        ["medium", "Medium"],
-        ["high", "High"]
+      ["low", "Low"],
+      ["medium", "Medium"],
+      ["high", "High"],
     ];
 
-    for (
-        const [value, label]
-        of priorities
-    ) {
-        const option =
-            document.createElement("option");
+    for (const [value, label] of priorities) {
+      const option = document.createElement("option");
 
-        option.value =
-            value;
+      option.value = value;
 
-        option.textContent =
-            `Priority: ${label}`;
+      option.textContent = `Priority: ${label}`;
 
-        if (task.priority === value) {
-            option.selected = true;
-        }
+      if (task.priority === value) {
+        option.selected = true;
+      }
 
-        prioritySelect.append(option);
+      prioritySelect.append(option);
     }
-
 
     // ====================================
     // ADD CONTROLS
     // ====================================
 
-    footer.append(
-        statusSelect,
-        prioritySelect
-    );
+    footer.append(statusSelect, prioritySelect);
+  }
+
+  // ====================================
+  // ACTIONS
+  // ====================================
+
+  const actions = document.createElement("div");
+
+  actions.className = "task-actions";
+
+  // ====================================
+  // ASSIGNMENT
+  // ====================================
+
+  if (canAssign) {
+    const assignmentSelect = document.createElement("select");
+
+    assignmentSelect.className = "assignment-select";
+
+    assignmentSelect.dataset.taskId = task._id;
+
+    /*
+     * First option allows the owner/admin
+     * to remove the assignment.
+     */
+
+    const unassignedOption = document.createElement("option");
+
+    unassignedOption.value = "";
+
+    unassignedOption.textContent = "Unassigned";
+
+    if (!task.assignedTo) {
+      unassignedOption.selected = true;
+    }
+
+    assignmentSelect.append(unassignedOption);
+
+    // -------------------------------
+    // USER OPTIONS
+    // -------------------------------
+
+    for (const user of users) {
+      const option = document.createElement("option");
+
+      option.value = user._id;
+
+      option.textContent = user.name;
+
+      if (task.assignedTo?._id?.toString() === user._id?.toString()) {
+        option.selected = true;
+      }
+
+      assignmentSelect.append(option);
+    }
+
+    actions.append(assignmentSelect);
+  }
+
+  // ====================================
+  // DELETE BUTTON
+  // ====================================
+
+  if (canDelete) {
+    const deleteButton = document.createElement("button");
+
+    deleteButton.type = "button";
+
+    deleteButton.className = "delete-button";
+
+    deleteButton.dataset.taskId = task._id;
+
+    deleteButton.textContent = "Delete";
+
+    actions.append(deleteButton);
+  }
+
+  // ====================================
+  // ADD ACTIONS
+  // ====================================
+
+  if (actions.children.length > 0) {
+    footer.append(actions);
+  }
+
+  // ====================================
+  // FINAL CARD
+  // ====================================
+
+  article.append(header, description, ownership, metadata, tags, footer);
+
+  return article;
 }
 
+function createKanbanCard(task, users, currentUser) {
+  const card = createTaskCard(task, users, currentUser);
 
-    // ====================================
-    // ACTIONS
-    // ====================================
+  card.classList.add("kanban-card");
 
-    const actions =
-        document.createElement("div");
+  const currentUserId = currentUser?.id?.toString();
 
-    actions.className =
-        "task-actions";
+  const ownerId = task.owner?._id?.toString();
 
+  const assignedUserId = task.assignedTo?._id?.toString();
 
-    // ====================================
-    // ASSIGNMENT
-    // ====================================
+  const canEdit =
+    currentUser?.role === "admin" ||
+    currentUserId === ownerId ||
+    currentUserId === assignedUserId;
 
-    if (canAssign) {
-        const assignmentSelect =
-            document.createElement("select");
+  card.draggable = canEdit;
+  card.dataset.taskId = task._id;
+  card.dataset.status = task.status;
 
-        assignmentSelect.className =
-            "assignment-select";
-
-        assignmentSelect.dataset.taskId =
-            task._id;
-
-
-        /*
-         * First option allows the owner/admin
-         * to remove the assignment.
-         */
-
-        const unassignedOption =
-            document.createElement("option");
-
-        unassignedOption.value = "";
-
-        unassignedOption.textContent =
-            "Unassigned";
-
-
-        if (!task.assignedTo) {
-            unassignedOption.selected =
-                true;
-        }
-
-
-        assignmentSelect.append(
-            unassignedOption
-        );
-
-
-        // -------------------------------
-        // USER OPTIONS
-        // -------------------------------
-
-        for (const user of users) {
-
-            const option =
-                document.createElement("option");
-
-            option.value =
-                user._id;
-
-            option.textContent =
-                user.name;
-
-
-            if (
-                task.assignedTo?._id?.toString() ===
-                user._id?.toString()
-            ) {
-                option.selected = true;
-            }
-
-
-            assignmentSelect.append(option);
-        }
-
-
-        actions.append(
-            assignmentSelect
-        );
-    }
-
-
-    // ====================================
-    // DELETE BUTTON
-    // ====================================
-
-    if (canDelete) {
-        const deleteButton =
-            document.createElement("button");
-
-        deleteButton.type =
-            "button";
-
-        deleteButton.className =
-            "delete-button";
-
-        deleteButton.dataset.taskId =
-            task._id;
-
-        deleteButton.textContent =
-            "Delete";
-
-
-        actions.append(
-            deleteButton
-        );
-    }
-
-
-    // ====================================
-    // ADD ACTIONS
-    // ====================================
-
-    if (actions.children.length > 0) {
-        footer.append(actions);
-    }
-
-
-    // ====================================
-    // FINAL CARD
-    // ====================================
-
-    article.append(
-        header,
-        description,
-        ownership,
-        metadata,
-        tags,
-        footer
-    );
-
-
-    return article;
+  return card;
 }
-
 
 // ========================================
 // FORMAT DATE
 // ========================================
 
 function formatDateTime(dateValue) {
+  if (!dateValue) {
+    return "Not set";
+  }
 
-    if (!dateValue) {
-        return "Not set";
-    }
+  const date = new Date(dateValue);
 
+  if (Number.isNaN(date.getTime())) {
+    return "Invalid date";
+  }
 
-    const date =
-        new Date(dateValue);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return "Invalid date";
-    }
-
-
-    return date.toLocaleString();
+  return date.toLocaleString();
 }
 
 export function renderActivities(activities) {
-    const activityList =
-        document.getElementById("activity-list");
+  const activityList = document.getElementById("activity-list");
 
-    if (!activityList) {
-        return;
-    }
+  if (!activityList) {
+    return;
+  }
 
-    activityList.innerHTML = "";
+  activityList.innerHTML = "";
 
-    if (!activities || activities.length === 0) {
-        const emptyMessage =
-            document.createElement("p");
+  if (!activities || activities.length === 0) {
+    const emptyMessage = document.createElement("p");
 
-        emptyMessage.className =
-            "activity-empty";
+    emptyMessage.className = "activity-empty";
 
-        emptyMessage.textContent =
-            "No activity yet.";
+    emptyMessage.textContent = "No activity yet.";
 
-        activityList.append(
-            emptyMessage
-        );
+    activityList.append(emptyMessage);
 
-        return;
-    }
+    return;
+  }
 
-    for (const activity of activities) {
-        const activityItem =
-            document.createElement("div");
+  for (const activity of activities) {
+    const activityItem = document.createElement("div");
 
-        activityItem.className =
-            "activity-item";
+    activityItem.className = "activity-item";
 
-        const activityContent =
-            document.createElement("div");
+    const activityContent = document.createElement("div");
 
-        activityContent.className =
-            "activity-content";
+    activityContent.className = "activity-content";
 
-        const message =
-            document.createElement("p");
+    const message = document.createElement("p");
 
-        message.className =
-            "activity-message";
+    message.className = "activity-message";
 
-        message.textContent =
-            activity.message;
+    message.textContent = activity.message;
 
-        const activityMeta =
-            document.createElement("div");
+    const activityMeta = document.createElement("div");
 
-        activityMeta.className =
-            "activity-meta";
+    activityMeta.className = "activity-meta";
 
-        const userName =
-            document.createElement("span");
+    const userName = document.createElement("span");
 
-        userName.textContent =
-            activity.user?.name ??
-            "Unknown user";
+    userName.textContent = activity.user?.name ?? "Unknown user";
 
-        const date =
-            document.createElement("span");
+    const date = document.createElement("span");
 
-        date.textContent =
-            new Date(
-                activity.createdAt
-            ).toLocaleString();
+    date.textContent = new Date(activity.createdAt).toLocaleString();
 
-        activityMeta.append(
-            userName,
-            date
-        );
+    activityMeta.append(userName, date);
 
-        activityContent.append(
-            message,
-            activityMeta
-        );
+    activityContent.append(message, activityMeta);
 
-        activityItem.append(
-            activityContent
-        );
+    activityItem.append(activityContent);
 
-        activityList.append(
-            activityItem
-        );
-    }
+    activityList.append(activityItem);
+  }
 }
 
-export function renderNotifications(
-    notifications
-) {
-    const notificationList =
-        document.getElementById(
-            "notification-list"
-        );
+export function renderNotifications(notifications) {
+  const notificationList = document.getElementById("notification-list");
 
-    const unreadCountElement =
-        document.getElementById(
-            "unread-notification-count"
-        );
+  const unreadCountElement = document.getElementById(
+    "unread-notification-count",
+  );
 
-    if (!notificationList) {
-        return;
-    }
+  if (!notificationList) {
+    return;
+  }
 
-    if (
-        !notifications ||
-        notifications.length === 0
-    ) {
-        notificationList.innerHTML = `
+  if (!notifications || notifications.length === 0) {
+    notificationList.innerHTML = `
             <p class="notification-empty">
                 No notifications yet.
             </p>
         `;
 
-        if (unreadCountElement) {
-            unreadCountElement.textContent = "0";
-        }
-
-        return;
-    }
-
-    const unreadCount =
-        notifications.filter(
-            (notification) =>
-                !notification.read
-        ).length;
-
     if (unreadCountElement) {
-        unreadCountElement.textContent =
-            unreadCount;
+      unreadCountElement.textContent = "0";
     }
 
-    notificationList.innerHTML = "";
+    return;
+  }
 
-    for (
-        const notification
-        of notifications
-    ) {
-        const notificationItem =
-            document.createElement("article");
+  const unreadCount = notifications.filter(
+    (notification) => !notification.read,
+  ).length;
 
-        notificationItem.className =
-            notification.read
-                ? "notification-item"
-                : "notification-item unread";
+  if (unreadCountElement) {
+    unreadCountElement.textContent = unreadCount;
+  }
 
-        const content =
-            document.createElement("div");
+  notificationList.innerHTML = "";
 
-        content.className =
-            "notification-content";
+  for (const notification of notifications) {
+    const notificationItem = document.createElement("article");
 
-        const message =
-            document.createElement("p");
+    notificationItem.className = notification.read
+      ? "notification-item"
+      : "notification-item unread";
 
-        message.className =
-            "notification-message";
+    const content = document.createElement("div");
 
-        message.textContent =
-            notification.message;
+    content.className = "notification-content";
 
-        const meta =
-            document.createElement("div");
+    const message = document.createElement("p");
 
-        meta.className =
-            "notification-meta";
+    message.className = "notification-message";
 
-        const taskTitle =
-            document.createElement("span");
+    message.textContent = notification.message;
 
-        taskTitle.textContent =
-            `Task: ${
-                notification.task?.title ??
-                "Unknown task"
-            }`;
+    const meta = document.createElement("div");
 
-        const date =
-            document.createElement("span");
+    meta.className = "notification-meta";
 
-        date.textContent =
-            new Date(
-                notification.createdAt
-            ).toLocaleString();
+    const taskTitle = document.createElement("span");
 
-        meta.append(
-            taskTitle,
-            date
-        );
+    taskTitle.textContent = `Task: ${
+      notification.task?.title ?? "Unknown task"
+    }`;
 
-        content.append(
-            message,
-            meta
-        );
+    const date = document.createElement("span");
 
-        notificationItem.append(
-            content
-        );
+    date.textContent = new Date(notification.createdAt).toLocaleString();
 
-        if (!notification.read) {
-            const readButton =
-                document.createElement("button");
+    meta.append(taskTitle, date);
 
-            readButton.type =
-                "button";
+    content.append(message, meta);
 
-            readButton.className =
-                "mark-read-button";
+    notificationItem.append(content);
 
-            readButton.dataset.notificationId =
-                notification._id;
+    if (!notification.read) {
+      const readButton = document.createElement("button");
 
-            readButton.textContent =
-                "Mark as read";
+      readButton.type = "button";
 
-            notificationItem.append(
-                readButton
-            );
-        }
+      readButton.className = "mark-read-button";
 
-        notificationList.append(
-            notificationItem
-        );
+      readButton.dataset.notificationId = notification._id;
+
+      readButton.textContent = "Mark as read";
+
+      notificationItem.append(readButton);
     }
+
+    notificationList.append(notificationItem);
+  }
 }

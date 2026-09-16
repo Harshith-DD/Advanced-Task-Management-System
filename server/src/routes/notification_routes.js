@@ -1,56 +1,41 @@
 import { Router } from "express";
 
 import {
-    getNotificationsController,
-    markNotificationAsReadController,
-    markAllNotificationsAsReadController
+  getNotificationsController,
+  markNotificationAsReadController,
+  markAllNotificationsAsReadController,
 } from "../controllers/notification_controller.js";
 
-import {
-    authenticateUser
-} from "../middleware/auth_middleware.js";
+import { authenticateUser } from "../middleware/auth_middleware.js";
 
-import {
-    asyncHandler
-} from "../utils/async_handler.js";
+import { asyncHandler } from "../utils/async_handler.js";
 
 const router = Router();
-
 
 // ========================================
 // GET ALL NOTIFICATIONS
 // ========================================
 
-router.get(
-    "/",
-    authenticateUser,
-    asyncHandler(
-    getNotificationsController)
-);
-
+router.get("/", authenticateUser, asyncHandler(getNotificationsController));
 
 // ========================================
 // MARK ALL AS READ
 // ========================================
 
 router.patch(
-    "/read-all",
-    authenticateUser,
-    asyncHandler(
-    markAllNotificationsAsReadController)
+  "/read-all",
+  authenticateUser,
+  asyncHandler(markAllNotificationsAsReadController),
 );
-
 
 // ========================================
 // MARK ONE AS READ
 // ========================================
 
 router.patch(
-    "/:id/read",
-    authenticateUser,
-    asyncHandler(
-    markNotificationAsReadController)
+  "/:id/read",
+  authenticateUser,
+  asyncHandler(markNotificationAsReadController),
 );
-
 
 export default router;

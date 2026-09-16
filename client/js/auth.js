@@ -1,17 +1,17 @@
 let currentUser = null;
 
 export function saveUser(user) {
-    currentUser = user;
+  currentUser = user;
 }
 
 export function getUser() {
-    return currentUser;
+  return currentUser;
 }
 
 export function isLoggedIn() {
-    return Boolean(currentUser);
+  return Boolean(currentUser);
 }
 
 export function clearUser() {
-    currentUser = null;
+  currentUser = null;
 }

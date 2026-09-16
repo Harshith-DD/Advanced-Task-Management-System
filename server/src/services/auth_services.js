@@ -2,71 +2,58 @@ import jwt from "jsonwebtoken";
 
 import User from "../models/user_model.js";
 
-import {
-    AuthenticationError
-} from "../errors/app_error.js";
+import { AuthenticationError } from "../errors/app_error.js";
 
 export async function registerUser(userData) {
-    const {
-        name,
-        email,
-        password
-    } = userData;
+  const { name, email, password } = userData;
 
-    const user = new User({
-        name,
-        email,
-        role: "user"
-    });
-
-    await user.setPassword(password);
-    await user.save();
-
-    return {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-    };
-}
-
-export async function loginUser(
+  const user = new User({
+    name,
     email,
-    password
-) {
-    const authenticate =
-        User.authenticate();
+    role: "user",
+  });
 
-    const result =
-        await authenticate(email, password);
+  await user.setPassword(password);
+  await user.save();
 
-    const user = result.user;
-
-if (!user) {
-    throw new AuthenticationError(
-        "Invalid email or password"
-    );
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
 }
 
-    const token = jwt.sign(
-        {
-            userId: user._id,
-            role: user.role
-        },
-        process.env.JWT_SECRET,
-        {
-            expiresIn: "1d"
-        }
-    );
+export async function loginUser(email, password) {
+  const authenticate = User.authenticate();
 
-    return {
-        token,
+  const result = await authenticate(email, password);
 
-        user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role
-        }
-    };
+  const user = result.user;
+
+  if (!user) {
+    throw new AuthenticationError("Invalid email or password");
+  }
+
+  const token = jwt.sign(
+    {
+      userId: user._id,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1d",
+    },
+  );
+
+  return {
+    token,
+
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  };
 }

@@ -1,660 +1,340 @@
-import {
-    mkdir
-} from "fs/promises";
+import { mkdir } from "fs/promises";
 
-import {
-    createWriteStream
-} from "fs";
+import { createWriteStream } from "fs";
 
-import {
-    finished
-} from "stream/promises";
+import { finished } from "stream/promises";
 
 import path from "path";
 
-import {
-    fileURLToPath
-} from "url";
+import { fileURLToPath } from "url";
 
 import Task from "../models/task_model.js";
 
-import {
-    buildTaskAccessQuery
-} from "../services/task_services.js";
+import { buildTaskAccessQuery } from "../services/task_services.js";
 
-import {
-    ValidationError
-} from "../errors/app_error.js";
+import { ValidationError } from "../errors/app_error.js";
 
+const __filename = fileURLToPath(import.meta.url);
 
-const __filename =
-    fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const __dirname =
-    path.dirname(__filename);
-
-
-const EXPORT_DIRECTORY =
-    path.resolve(
-        __dirname,
-        "../../reports/exports"
-    );
-
+const EXPORT_DIRECTORY = path.resolve(__dirname, "../../reports/exports");
 
 // ========================================
 // GET ACCESSIBLE TASKS
 // ========================================
 
 async function getExportTasks(user) {
+  const query = buildTaskAccessQuery(user);
 
-    const query =
-        buildTaskAccessQuery(user);
+  return Task.find(query)
 
+    .populate("owner", "name email")
 
-    return Task
-        .find(query)
+    .populate("assignedTo", "name email")
 
-        .populate(
-            "owner",
-            "name email"
-        )
-
-        .populate(
-            "assignedTo",
-            "name email"
-        )
-
-        .sort({
-            createdAt: 1
-        });
+    .sort({
+      createdAt: 1,
+    });
 }
-
 
 // ========================================
 // GET ACCESSIBLE TASK CURSOR
 // ========================================
 
 function getExportTaskCursor(user) {
+  const query = buildTaskAccessQuery(user);
 
-    const query =
-        buildTaskAccessQuery(user);
+  return Task.find(query)
 
+    .populate("owner", "name email")
 
-    return Task
-        .find(query)
+    .populate("assignedTo", "name email")
 
-        .populate(
-            "owner",
-            "name email"
-        )
+    .sort({
+      createdAt: 1,
+    })
 
-        .populate(
-            "assignedTo",
-            "name email"
-        )
-
-        .sort({
-            createdAt: 1
-        })
-
-        .cursor();
+    .cursor();
 }
-
 
 // ========================================
 // CREATE EXPORT DIRECTORY
 // ========================================
 
 async function ensureExportDirectory() {
-
-    await mkdir(
-        EXPORT_DIRECTORY,
-        {
-            recursive: true
-        }
-    );
+  await mkdir(EXPORT_DIRECTORY, {
+    recursive: true,
+  });
 }
-
 
 // ========================================
 // CREATE FILE NAME
 // ========================================
 
-function createFileName(
-    prefix,
-    format
-) {
+function createFileName(prefix, format) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
-    const timestamp =
-        new Date()
-            .toISOString()
-            .replace(/[:.]/g, "-");
-
-
-    return `${prefix}-${timestamp}.${format}`;
+  return `${prefix}-${timestamp}.${format}`;
 }
-
 
 // ========================================
 // WRITE STREAM CHUNK
 // ========================================
 
-function writeChunk(
-    stream,
-    chunk
-) {
+function writeChunk(stream, chunk) {
+  return new Promise((resolve, reject) => {
+    const canContinue = stream.write(chunk);
 
-    return new Promise(
-        (resolve, reject) => {
+    if (canContinue) {
+      resolve();
+      return;
+    }
 
-            const canContinue =
-                stream.write(
-                    chunk
-                );
+    stream.once("drain", resolve);
 
-
-            if (canContinue) {
-                resolve();
-                return;
-            }
-
-
-            stream.once(
-                "drain",
-                resolve
-            );
-
-            stream.once(
-                "error",
-                reject
-            );
-        }
-    );
+    stream.once("error", reject);
+  });
 }
-
 
 // ========================================
 // CREATE JSON EXPORT
 // ========================================
 
-async function createJsonExport(
-    user
-) {
+async function createJsonExport(user) {
+  const fileName = createFileName("tasks", "json");
 
-    const fileName =
-        createFileName(
-            "tasks",
-            "json"
-        );
+  const filePath = path.join(EXPORT_DIRECTORY, fileName);
 
+  const stream = createWriteStream(filePath, {
+    encoding: "utf8",
+  });
 
-    const filePath =
-        path.join(
-            EXPORT_DIRECTORY,
-            fileName
-        );
+  try {
+    await writeChunk(stream, "[\n");
 
+    let isFirstTask = true;
 
-    const stream =
-        createWriteStream(
-            filePath,
-            {
-                encoding: "utf8"
-            }
-        );
+    for await (const task of getExportTaskCursor(user)) {
+      if (!isFirstTask) {
+        await writeChunk(stream, ",\n");
+      }
 
+      await writeChunk(stream, JSON.stringify(task, null, 2));
 
-    try {
-
-        await writeChunk(
-            stream,
-            "[\n"
-        );
-
-
-        let isFirstTask =
-            true;
-
-
-        for await (
-            const task
-            of getExportTaskCursor(user)
-        ) {
-
-            if (!isFirstTask) {
-
-                await writeChunk(
-                    stream,
-                    ",\n"
-                );
-            }
-
-
-            await writeChunk(
-                stream,
-                JSON.stringify(
-                    task,
-                    null,
-                    2
-                )
-            );
-
-
-            isFirstTask = false;
-        }
-
-
-        await writeChunk(
-            stream,
-            "\n]"
-        );
-
-
-        stream.end();
-
-        await finished(
-            stream
-        );
-
-
-        return {
-            filePath,
-            fileName,
-            contentType:
-                "application/json"
-        };
-
-    } catch (error) {
-
-        stream.destroy();
-
-        throw error;
+      isFirstTask = false;
     }
-}
 
+    await writeChunk(stream, "\n]");
+
+    stream.end();
+
+    await finished(stream);
+
+    return {
+      filePath,
+      fileName,
+      contentType: "application/json",
+    };
+  } catch (error) {
+    stream.destroy();
+
+    throw error;
+  }
+}
 
 // ========================================
 // CSV VALUE
 // ========================================
 
-function escapeCsvValue(
-    value
-) {
+function escapeCsvValue(value) {
+  const stringValue =
+    value === null || value === undefined ? "" : String(value);
 
-    const stringValue =
-        value === null ||
-        value === undefined
-            ? ""
-            : String(value);
-
-
-    return `"${stringValue.replaceAll(
-        '"',
-        '""'
-    )}"`;
+  return `"${stringValue.replaceAll('"', '""')}"`;
 }
-
 
 // ========================================
 // CREATE CSV EXPORT
 // ========================================
 
-async function createCsvExport(
-    user
-) {
+async function createCsvExport(user) {
+  const fileName = createFileName("tasks", "csv");
 
-    const fileName =
-        createFileName(
-            "tasks",
-            "csv"
-        );
+  const filePath = path.join(EXPORT_DIRECTORY, fileName);
 
+  const stream = createWriteStream(filePath, {
+    encoding: "utf8",
+  });
 
-    const filePath =
-        path.join(
-            EXPORT_DIRECTORY,
-            fileName
-        );
+  const headers = [
+    "id",
+    "title",
+    "description",
+    "status",
+    "priority",
+    "dueDate",
+    "tags",
+    "owner",
+    "assignedTo",
+    "isOverdue",
+    "createdAt",
+    "updatedAt",
+  ];
 
+  try {
+    await writeChunk(stream, headers.map(escapeCsvValue).join(",") + "\n");
 
-    const stream =
-        createWriteStream(
-            filePath,
-            {
-                encoding: "utf8"
-            }
-        );
+    for await (const task of getExportTaskCursor(user)) {
+      const row = [
+        task._id,
+        task.title,
+        task.description,
+        task.status,
+        task.priority,
 
+        task.dueDate ? task.dueDate.toISOString() : "",
 
-    const headers = [
-        "id",
-        "title",
-        "description",
-        "status",
-        "priority",
-        "dueDate",
-        "tags",
-        "owner",
-        "assignedTo",
-        "isOverdue",
-        "createdAt",
-        "updatedAt"
-    ];
+        Array.isArray(task.tags) ? task.tags.join(", ") : "",
 
+        task.owner?.name || "",
 
-    try {
+        task.assignedTo?.name || "",
 
-        await writeChunk(
-            stream,
-            headers
-                .map(
-                    escapeCsvValue
-                )
-                .join(",") + "\n"
-        );
+        task.isOverdue,
 
+        task.createdAt?.toISOString() || "",
 
-        for await (
-            const task
-            of getExportTaskCursor(user)
-        ) {
+        task.updatedAt?.toISOString() || "",
+      ]
+        .map(escapeCsvValue)
+        .join(",");
 
-            const row = [
-                task._id,
-                task.title,
-                task.description,
-                task.status,
-                task.priority,
-
-                task.dueDate
-                    ? task.dueDate.toISOString()
-                    : "",
-
-                Array.isArray(
-                    task.tags
-                )
-                    ? task.tags.join(", ")
-                    : "",
-
-                task.owner?.name ||
-                    "",
-
-                task.assignedTo?.name ||
-                    "",
-
-                task.isOverdue,
-
-                task.createdAt
-                    ?.toISOString() ||
-                    "",
-
-                task.updatedAt
-                    ?.toISOString() ||
-                    ""
-            ]
-                .map(
-                    escapeCsvValue
-                )
-                .join(",");
-
-
-            await writeChunk(
-                stream,
-                `${row}\n`
-            );
-        }
-
-
-        stream.end();
-
-        await finished(
-            stream
-        );
-
-
-        return {
-            filePath,
-            fileName,
-            contentType:
-                "text/csv"
-        };
-
-    } catch (error) {
-
-        stream.destroy();
-
-        throw error;
+      await writeChunk(stream, `${row}\n`);
     }
-}
 
+    stream.end();
+
+    await finished(stream);
+
+    return {
+      filePath,
+      fileName,
+      contentType: "text/csv",
+    };
+  } catch (error) {
+    stream.destroy();
+
+    throw error;
+  }
+}
 
 // ========================================
 // EXPORT TASKS
 // ========================================
 
-export async function exportTasks(
-    format,
-    user
-) {
+export async function exportTasks(format, user) {
+  if (format !== "json" && format !== "csv") {
+    throw new ValidationError("Unsupported export format");
+  }
 
-    if (
-        format !== "json" &&
-        format !== "csv"
-    ) {
+  await ensureExportDirectory();
 
-        throw new ValidationError(
-            "Unsupported export format"
-        );
-    }
+  if (format === "json") {
+    return createJsonExport(user);
+  }
 
-
-    await ensureExportDirectory();
-
-
-    if (format === "json") {
-
-        return createJsonExport(
-            user
-        );
-    }
-
-
-    return createCsvExport(
-        user
-    );
+  return createCsvExport(user);
 }
-
 
 // ========================================
 // GENERATE BACKGROUND TASK REPORT
 // ========================================
 
-export async function generateTaskReport(
-    user
-) {
+export async function generateTaskReport(user) {
+  await ensureExportDirectory();
 
-    await ensureExportDirectory();
+  const tasks = await getExportTasks(user);
 
-    const tasks =
-        await getExportTasks(
-            user
-        );
+  const report = {
+    generatedAt: new Date().toISOString(),
 
+    summary: {
+      totalTasks: tasks.length,
 
-    const report = {
+      completedTasks: tasks.filter((task) => task.status === "completed")
+        .length,
 
-        generatedAt:
-            new Date()
-                .toISOString(),
+      pendingTasks: tasks.filter((task) => task.status === "pending").length,
 
+      inProgressTasks: tasks.filter((task) => task.status === "in-progress")
+        .length,
 
-        summary: {
+      overdueTasks: tasks.filter((task) => task.isOverdue).length,
+    },
 
-            totalTasks:
-                tasks.length,
+    byPriority: {
+      low: tasks.filter((task) => task.priority === "low").length,
 
+      medium: tasks.filter((task) => task.priority === "medium").length,
 
-            completedTasks:
-                tasks.filter(
-                    (task) =>
-                        task.status ===
-                        "completed"
-                ).length,
+      high: tasks.filter((task) => task.priority === "high").length,
+    },
 
+    tasks: tasks.map((task) => ({
+      id: task._id,
 
-            pendingTasks:
-                tasks.filter(
-                    (task) =>
-                        task.status ===
-                        "pending"
-                ).length,
+      title: task.title,
 
+      status: task.status,
 
-            inProgressTasks:
-                tasks.filter(
-                    (task) =>
-                        task.status ===
-                        "in-progress"
-                ).length,
+      priority: task.priority,
 
+      dueDate: task.dueDate,
 
-            overdueTasks:
-                tasks.filter(
-                    (task) =>
-                        task.isOverdue
-                ).length
-        },
+      owner: task.owner
+        ? {
+            name: task.owner.name,
 
+            email: task.owner.email,
+          }
+        : null,
 
-        byPriority: {
+      assignedTo: task.assignedTo
+        ? {
+            name: task.assignedTo.name,
 
-            low:
-                tasks.filter(
-                    (task) =>
-                        task.priority ===
-                        "low"
-                ).length,
+            email: task.assignedTo.email,
+          }
+        : null,
+    })),
+  };
 
+  const fileName = createFileName("task-report", "json");
 
-            medium:
-                tasks.filter(
-                    (task) =>
-                        task.priority ===
-                        "medium"
-                ).length,
+  const filePath = path.join(EXPORT_DIRECTORY, fileName);
 
+  const reportJson = JSON.stringify(report, null, 2);
 
-            high:
-                tasks.filter(
-                    (task) =>
-                        task.priority ===
-                        "high"
-                ).length
-        },
+  const stream = createWriteStream(filePath, {
+    encoding: "utf8",
+  });
 
+  try {
+    await writeChunk(stream, reportJson);
 
-        tasks:
-            tasks.map(
-                (task) => ({
+    stream.end();
 
-                    id:
-                        task._id,
+    await finished(stream);
 
-                    title:
-                        task.title,
-
-                    status:
-                        task.status,
-
-                    priority:
-                        task.priority,
-
-                    dueDate:
-                        task.dueDate,
-
-                    owner:
-                        task.owner
-                            ? {
-                                name:
-                                    task.owner.name,
-
-                                email:
-                                    task.owner.email
-                            }
-                            : null,
-
-                    assignedTo:
-                        task.assignedTo
-                            ? {
-                                name:
-                                    task.assignedTo.name,
-
-                                email:
-                                    task.assignedTo.email
-                            }
-                            : null
-                })
-            )
+    return {
+      filePath,
+      fileName,
+      contentType: "application/json",
     };
+  } catch (error) {
+    stream.destroy();
 
-
-    const fileName =
-        createFileName(
-            "task-report",
-            "json"
-        );
-
-
-    const filePath =
-        path.join(
-            EXPORT_DIRECTORY,
-            fileName
-        );
-
-
-    const reportJson =
-        JSON.stringify(
-            report,
-            null,
-            2
-        );
-
-
-    const stream =
-        createWriteStream(
-            filePath,
-            {
-                encoding: "utf8"
-            }
-        );
-
-
-    try {
-
-        await writeChunk(
-            stream,
-            reportJson
-        );
-
-
-        stream.end();
-
-        await finished(
-            stream
-        );
-
-
-        return {
-            filePath,
-            fileName,
-            contentType:
-                "application/json"
-        };
-
-    } catch (error) {
-
-        stream.destroy();
-
-        throw error;
-    }
+    throw error;
+  }
 }

@@ -1,50 +1,24 @@
 import { Router } from "express";
 
 import {
-    registerController,
-    loginController,
-    getCurrentUserController,
-    logoutController
+  registerController,
+  loginController,
+  getCurrentUserController,
+  logoutController,
 } from "../controllers/auth_controller.js";
 
-import {
-    authenticateUser
-} from "../middleware/auth_middleware.js";
+import { authenticateUser } from "../middleware/auth_middleware.js";
 
-import {
-    asyncHandler
-} from "../utils/async_handler.js";
+import { asyncHandler } from "../utils/async_handler.js";
 
 const router = Router();
 
+router.post("/register", asyncHandler(registerController));
 
-router.post(
-    "/register",
-    asyncHandler(
-    registerController)
-);
+router.post("/login", asyncHandler(loginController));
 
+router.get("/me", authenticateUser, asyncHandler(getCurrentUserController));
 
-router.post(
-    "/login",
-    asyncHandler(
-    loginController)
-);
-
-
-router.get(
-    "/me",
-    authenticateUser,
-    asyncHandler(
-    getCurrentUserController)
-);
-
-
-router.post(
-    "/logout",
-    asyncHandler(
-    logoutController)
-);
-
+router.post("/logout", asyncHandler(logoutController));
 
 export default router;
