@@ -135,6 +135,9 @@ const kanbanWindowButton = document.querySelector("#kanban-window-button");
 
 const reportStatus = document.querySelector("#report-status");
 
+let authSessionVersion = 0;
+let taskLoadRequestId = 0;
+
 // ========================================
 // AUTH ELEMENTS
 // ========================================
@@ -166,15 +169,23 @@ const markAllNotificationsReadButton = document.getElementById(
 // ========================================
 
 async function loadUsers() {
+  const sessionVersion = authSessionVersion;
+
   try {
     const users = await getUsers();
+
+    if (sessionVersion !== authSessionVersion || !isLoggedIn()) {
+      return;
+    }
 
     setUsers(users);
     populateTaskAssigneeSelect(users);
   } catch (error) {
     console.error("Failed to load users:", error);
 
-    setUsers([]);
+    if (sessionVersion === authSessionVersion) {
+      setUsers([]);
+    }
   }
 }
 function populateTaskAssigneeSelect(users) {
@@ -193,12 +204,29 @@ function populateTaskAssigneeSelect(users) {
 }
 
 async function loadTasks() {
+  const sessionVersion = authSessionVersion;
+  const requestId = ++taskLoadRequestId;
+
   try {
     const filters = getFilters();
 
     const result = await getTasks(filters);
 
-    setTasks(result.data);
+    if (
+      sessionVersion !== authSessionVersion ||
+      requestId !== taskLoadRequestId ||
+      !isLoggedIn()
+    ) {
+      return;
+    }
+
+    const uniqueTasks = Array.from(
+      new Map(
+        result.data.map((task) => [String(task._id), task]),
+      ).values(),
+    );
+
+    setTasks(uniqueTasks);
 
     setPagination(result.pagination);
 
@@ -206,7 +234,7 @@ async function loadTasks() {
 
     const currentUser = getUser();
 
-    renderTasks(result.data, users, currentUser);
+    renderTasks(uniqueTasks, users, currentUser);
 
     renderPagination(result.pagination);
   } catch (error) {
@@ -215,8 +243,14 @@ async function loadTasks() {
 }
 
 async function loadActivities() {
+  const sessionVersion = authSessionVersion;
+
   try {
     const activities = await getActivities();
+
+    if (sessionVersion !== authSessionVersion || !isLoggedIn()) {
+      return;
+    }
 
     renderActivities(activities);
   } catch (error) {
@@ -225,8 +259,14 @@ async function loadActivities() {
 }
 
 async function loadNotifications() {
+  const sessionVersion = authSessionVersion;
+
   try {
     const notifications = await getNotifications();
+
+    if (sessionVersion !== authSessionVersion || !isLoggedIn()) {
+      return;
+    }
 
     setNotifications(notifications);
 
@@ -252,8 +292,14 @@ function updateNotificationNavCount(notifications) {
 }
 
 async function loadDashboard() {
+  const sessionVersion = authSessionVersion;
+
   try {
     const dashboard = await getDashboard();
+
+    if (sessionVersion !== authSessionVersion || !isLoggedIn()) {
+      return;
+    }
 
     setDashboard(dashboard);
 
@@ -261,6 +307,35 @@ async function loadDashboard() {
   } catch (error) {
     console.error("Failed to load dashboard:", error);
   }
+}
+
+function clearSessionData() {
+  setTasks([]);
+  setUsers([]);
+  setNotifications([]);
+  resetDashboard();
+
+  setPagination({
+    page: 1,
+    totalPages: 1,
+    totalTasks: 0,
+  });
+
+  renderTasks([], [], null);
+  renderActivities([]);
+  renderNotifications([]);
+  renderDashboard({
+    total: 0,
+    completed: 0,
+    pending: 0,
+    overdue: 0,
+    byPriority: {
+      low: 0,
+      medium: 0,
+      high: 0,
+    },
+    recentActivity: [],
+  });
 }
 
 //==========================================
@@ -355,6 +430,8 @@ if (loginForm) {
         password,
       });
 
+      authSessionVersion += 1;
+      clearSessionData();
       saveUser(result.data.user);
 
       loginForm.reset();
@@ -381,26 +458,12 @@ if (logoutButton) {
     try {
       await logoutUser();
     } finally {
+      authSessionVersion += 1;
       clearUser();
+      clearSessionData();
       updateAuthUI();
+      navigate("dashboard");
     }
-
-    setTasks([]);
-
-    setUsers([]);
-
-    setNotifications([]);
-
-    resetDashboard();
-
-    setPagination({
-      page: 1,
-      totalPages: 1,
-      totalTasks: 0,
-    });
-
-    renderTasks([]);
-    navigate("dashboard");
   });
 }
 
@@ -1282,6 +1345,7 @@ async function initializeApp() {
   try {
     const result = await getCurrentUser();
 
+    authSessionVersion += 1;
     saveUser(result.data.user);
 
     updateAuthUI();
