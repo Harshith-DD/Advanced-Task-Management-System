@@ -1,85 +1,102 @@
 # Advanced Task Management System
 
-A full-stack task management application built with **JavaScript, Node.js, Express.js, MongoDB, Mongoose, and a vanilla JavaScript frontend**.
+A full-stack task management application built with **Node.js, Express.js, MongoDB, Mongoose, and a vanilla JavaScript frontend**.
 
-The project started as a simple task CRUD application and gradually evolved into a more complete backend architecture covering database querying, authentication, authorization, task assignment, event-driven features, notifications, dashboards, reminders, background jobs, retry handling, file exports, reports, and class-based service design.
+The project started as a basic task CRUD application and was progressively expanded into a structured application covering:
 
-> **Current status:** Milestones 1–12 are implemented. The application supports task management, backend filtering/search/sorting/pagination, authentication and authorization, task assignment, activity logging, in-app notifications, dashboard statistics, reminders, overdue tracking, a MongoDB-backed background job queue, retry handling, streamed JSON/CSV exports, background report generation, centralized error handling, debounced frontend search, and class-based `TaskService`, `NotificationService`, and `QueueWorker` components. Automated testing and final UI cleanup are the remaining project-level tasks.
+- Task CRUD and ownership
+- Task assignment
+- MongoDB-backed filtering, search, sorting, and pagination
+- JWT authentication with HttpOnly cookies
+- Role-based authorization
+- Event-driven activities and notifications
+- Dashboard statistics
+- Task reminders and overdue tracking
+- MongoDB-backed background jobs
+- Retry and failure handling
+- JSON/CSV task exports
+- Background task reports
+- Centralized backend error handling
+- Class-based service and worker components
+- Frontend routing, state management, Kanban interaction, and debounced search
+
+> **Current status:** Milestones 1–12 are implemented. The recent cleanup and UI/reliability pass has also addressed frontend state/session issues, Kanban rendering/drop behavior, and background report downloading during local development. The project is now at the final manual/integration testing and UI-polish stage.
 
 ---
 
 ## Table of Contents
 
-* [Project Overview](#project-overview)
-* [Implementation Progress](#implementation-progress)
-* [Current Review Status](#current-review-status)
-* [Core Specifications](#core-specifications)
-* [Current Features](#current-features)
-* [Technology Stack](#technology-stack)
-* [Architecture](#architecture)
-* [Project Structure](#project-structure)
-* [Data Models](#data-models)
-* [Authentication and Security](#authentication-and-security)
-* [Task Access Rules](#task-access-rules)
-* [Task Querying](#task-querying)
-* [Event-Driven Features](#event-driven-features)
-* [Notifications](#notifications)
-* [Reminders and Overdue Tasks](#reminders-and-overdue-tasks)
-* [Background Job Queue](#background-job-queue)
-* [Retry and Failure Handling](#retry-and-failure-handling)
-* [File Exports and Reports](#file-exports-and-reports)
-* [Dashboard](#dashboard)
-* [Service Classes and `this`](#service-classes-and-this)
-* [API Reference](#api-reference)
-* [Environment Variables](#environment-variables)
-* [Prerequisites](#prerequisites)
-* [Installation](#installation)
-* [Running the Project](#running-the-project)
-* [Local HTTPS Setup](#local-https-setup)
-* [Testing with Postman](#testing-with-postman)
-* [Frontend Usage](#frontend-usage)
-* [Request Flow](#request-flow)
-* [Background Reminder Flow](#background-reminder-flow)
-* [Background Job Flow](#background-job-flow)
-* [Background Report Flow](#background-report-flow)
-* [Important Design Decisions](#important-design-decisions)
-* [Development Commands](#development-commands)
-* [Git Workflow](#git-workflow)
-* [Planned Extensions](#planned-extensions)
-* [Learning Objectives](#learning-objectives)
-* [Known Limitations](#known-limitations)
-* [Security Notes](#security-notes)
-* [Project Philosophy](#project-philosophy)
-* [License](#license)
+- [Project Overview](#project-overview)
+- [Implementation Progress](#implementation-progress)
+- [Current Architecture](#current-architecture)
+- [Core Features](#core-features)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Authentication and Security](#authentication-and-security)
+- [Task Access Rules](#task-access-rules)
+- [Task Querying](#task-querying)
+- [Event-Driven Features](#event-driven-features)
+- [Notifications](#notifications)
+- [Reminders and Overdue Tasks](#reminders-and-overdue-tasks)
+- [Background Job Queue](#background-job-queue)
+- [Retry and Failure Handling](#retry-and-failure-handling)
+- [File Exports and Reports](#file-exports-and-reports)
+- [Dashboard](#dashboard)
+- [Frontend Architecture](#frontend-architecture)
+- [Backend Architecture](#backend-architecture)
+- [Data Models](#data-models)
+- [API Reference](#api-reference)
+- [Environment Variables](#environment-variables)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Running the Project](#running-the-project)
+- [Local HTTPS Setup](#local-https-setup)
+- [Live Server Development Configuration](#live-server-development-configuration)
+- [Testing with Postman](#testing-with-postman)
+- [Frontend Usage](#frontend-usage)
+- [Request and Background Flows](#request-and-background-flows)
+- [Important Design Decisions](#important-design-decisions)
+- [Development Commands](#development-commands)
+- [Git Workflow](#git-workflow)
+- [Planned Extensions](#planned-extensions)
+- [Learning Objectives](#learning-objectives)
+- [Known Limitations](#known-limitations)
+- [Security Notes](#security-notes)
+- [Project Philosophy](#project-philosophy)
+- [License](#license)
 
 ---
-
-# Current Review Status
-
-The latest codebase was reviewed after the backend cleanup work.
-
-Static verification performed on the current source:
-
-```text
-JavaScript files checked: 49
-Syntax errors found: 0
-```
-
-The current codebase is structurally ready to move to the next stage of the project:
-
-1. Final UI cleanup/polish.
-2. Manual and integration testing.
-3. Fix any runtime issues discovered by those tests.
-
-This does **not** mean runtime testing has already been completed. The application still needs to be exercised against a running MongoDB instance, the local HTTPS certificates, the frontend, and the authenticated API flows.
 
 # Project Overview
 
 The Advanced Task Management System provides authenticated users with a task-management workspace.
 
+The application has two main parts:
+
+```text
+Frontend
+HTML + CSS + Vanilla JavaScript
+        ↓
+Frontend API Layer
+        ↓
+HTTPS REST API
+        ↓
+Express Backend
+        ↓
+Services / Events / Queue / Workers
+        ↓
+MongoDB
+```
+
+The frontend does not communicate directly with MongoDB.
+
+The backend is responsible for authentication, authorization, business rules, querying, persistence, background work, reports, and error handling.
+
+---
+
 # Implementation Progress
 
-The project was built incrementally so that each architectural feature was introduced after the preceding task-management functionality was working.
+The project was developed incrementally so that each architectural feature was introduced after the preceding functionality was working.
 
 ```text
 Milestone 1
@@ -113,81 +130,47 @@ Milestone 10
 JSON/CSV exports and background reports
         ↓
 Milestone 11
-Background worker / lease / heartbeat reliability work
+Background worker / lease / heartbeat reliability
         ↓
 Milestone 12
-Centralized error handling and final backend feature cleanup
+Centralized error handling and backend cleanup
+        ↓
+Post-milestone cleanup
+Frontend state/session fixes
+Kanban fixes
+Report download development fix
+UI cleanup
 ```
 
-The later cleanup/review pass also addressed reliability and maintainability issues found after the feature milestones.
+The later cleanup pass focused on reliability and maintainability rather than adding unrelated features.
 
-Recent fixes include:
+Recent fixes and architectural improvements include:
 
-* MongoDB job queue persistence replacing the earlier in-memory queue.
-* Protection against stale-job duplicate processing using leases.
-* Environment validation at application startup.
-* Report polling timeout on the frontend.
-* Correct reminder-state reset only when the due date actually changes.
-* Explicit unassignment events.
-* Replacement of deprecated Mongoose update options with `returnDocument: "after"`.
-* Date-filter validation and normalization for `fromDate` and `toDate`.
-* Escaping task-search input before constructing MongoDB regular expressions.
-* Parallel execution of the task count and paginated task query with `Promise.all()`.
-* MongoDB polling error handling in `QueueWorker`.
-* Streaming JSON and CSV exports instead of loading all export rows into memory at once.
-* Limiting activity and notification retrieval to the latest 50 records.
-* Debounced task search in the frontend to avoid an API request on every keystroke.
-
-
-Users can:
-
-* Register and log in.
-* Create tasks.
-* View tasks they are authorized to access.
-* Update and delete permitted tasks.
-* Assign tasks to users.
-* Search and filter tasks.
-* Sort and paginate task results.
-* View task activities.
-* Receive in-app notifications.
-* Mark notifications as read.
-* View dashboard statistics.
-* Receive reminders for upcoming tasks.
-* See tasks marked as overdue.
-* Export tasks as JSON or CSV.
-* Generate background task reports.
-
-Administrators have broader access to tasks and can manage tasks across users.
-
-The backend follows a layered architecture:
-
-```text
-HTTP Request
-     ↓
-Express Route
-     ↓
-Authentication Middleware
-     ↓
-Controller
-     ↓
-Service
-     ↓
-Mongoose Model
-     ↓
-MongoDB
-     ↓
-Service
-     ↓
-Controller
-     ↓
-HTTP Response
-```
-
-Secondary actions such as activities and notifications are separated from the primary task operation through events and background jobs.
+- MongoDB job persistence replacing the earlier in-memory queue.
+- Atomic job claiming with leases to reduce duplicate processing.
+- Worker lease refresh/heartbeat behavior.
+- Stale processing jobs becoming reclaimable.
+- Environment validation at application startup.
+- Frontend report polling timeout.
+- Correct reminder-state reset when a task due date changes.
+- Explicit task unassignment events.
+- Replacement of deprecated Mongoose update options.
+- Date-filter validation and normalization.
+- Escaping task-search input before building MongoDB regular expressions.
+- Parallel task-count and paginated-task queries where appropriate.
+- MongoDB polling error handling in the worker.
+- Streaming JSON and CSV exports.
+- Bounded retrieval of recent activity and notifications.
+- Debounced frontend task search.
+- Frontend session/load guards to prevent stale requests from overwriting newer user state.
+- Defensive task de-duplication before rendering.
+- Kanban rendering using explicit drop-zone selectors.
+- Kanban status changes reloading authoritative task data after a successful backend update.
+- Live Server configuration that ignores backend-generated report files so report generation does not trigger an unwanted browser reload during development.
 
 ---
 
-# Core Specifications
+# Core Features
 
 ## Task Management
 
@@ -226,67 +209,9 @@ high
 
 ---
 
-## Task Retrieval
+## Task Ownership
 
-The task API supports combinations of:
-
-* Status filtering
-* Priority filtering
-* Text search
-* Tag filtering
-* Due-date range filtering
-* Sorting
-* Pagination
-
----
-
-## Users
-
-The system supports:
-
-* User registration
-* User login
-* User roles
-* Task ownership
-* Task assignment
-
-Current roles:
-
-```text
-user
-admin
-```
-
----
-
-## Authentication
-
-Browser authentication uses:
-
-* Passport-Local-Mongoose
-* JWT
-* HttpOnly cookies
-* Secure cookies
-* HTTPS during local development
-* `/api/auth/me` for session restoration
-
-The JWT is not stored in browser `localStorage`.
-
----
-
-# Current Features
-
-## 1. Task CRUD
-
-Create, read, update, and delete tasks.
-
----
-
-## 2. Task Ownership
-
-New tasks are associated with the authenticated user on the backend.
-
-The frontend does not decide who owns a newly created task.
+When a task is created, the backend assigns ownership from the authenticated user:
 
 ```text
 Authenticated Request
@@ -296,23 +221,31 @@ req.user.userId
 Task.owner
 ```
 
+The frontend cannot choose another user as the owner simply by sending an owner ID.
+
 ---
 
-## 3. Task Assignment
+## Task Assignment
 
-Tasks can be assigned to users.
+Tasks can be assigned to users through:
 
 ```http
 PATCH /api/tasks/:id/assign
 ```
 
-Assignments can also be removed.
+Assignments can also be removed by sending:
 
-The backend validates the target user and applies authorization rules before changing the assignment.
+```json
+{
+  "assignedTo": null
+}
+```
+
+The backend validates the target user and authorization before changing the assignment.
 
 ---
 
-## 4. Search
+## Task Search
 
 Search applies to:
 
@@ -321,14 +254,13 @@ title
 description
 ```
 
-Search is performed by MongoDB rather than retrieving the entire task collection and filtering it in the browser.
+The search is performed by MongoDB rather than by downloading the complete task collection and filtering it in the browser.
 
-The frontend debounces the search input by 500 ms before requesting filtered tasks, reducing unnecessary requests while the user is typing.
-
+The frontend debounces search input before requesting filtered tasks to reduce unnecessary API requests while typing.
 
 ---
 
-## 5. Filtering
+## Task Filtering
 
 Supported filters include:
 
@@ -346,9 +278,11 @@ Example:
 /api/tasks?status=pending&priority=high
 ```
 
+Date filters are validated and normalized by the backend.
+
 ---
 
-## 6. Sorting
+## Sorting
 
 Supported task sort fields include:
 
@@ -370,7 +304,7 @@ The backend validates the requested sort field against an allowed list.
 
 ---
 
-## 7. Pagination
+## Pagination
 
 Task retrieval supports:
 
@@ -387,12 +321,47 @@ Example:
 
 ---
 
-## 8. Activity Logging
+## Kanban Board
 
-Task operations create activity records through the event system.
+The frontend provides a Kanban-style task view based on task status:
 
-The activity retrieval endpoint currently returns the latest 50 accessible activity records. This is a bounded retrieval safeguard, not full activity-history pagination. Pagination can be introduced later if the UI requires browsing older activity.
+```text
+Pending
+   ↓
+In Progress
+   ↓
+Completed
+```
 
+Users with permission to edit a task can drag it between valid Kanban columns.
+
+The status change flow is backend-authoritative:
+
+```text
+Drag Task
+    ↓
+PUT /api/tasks/:id
+    ↓
+Backend updates task
+    ↓
+Frontend reloads tasks
+    ↓
+State is replaced with API data
+    ↓
+Kanban re-renders
+```
+
+This avoids keeping a manually moved DOM card as a separate source of truth from application state.
+
+---
+
+## Activity Logging
+
+Task operations can create activity records through the event system.
+
+The current activity endpoint returns the latest 50 accessible activity records. This is intentionally bounded rather than full history pagination.
+
+Flow:
 
 ```text
 Task Event
@@ -401,25 +370,20 @@ Activity Listener
     ↓
 Activity Job
     ↓
-Background Queue
+MongoDB-backed Queue
     ↓
-Queue Worker
+QueueWorker
     ↓
 Activity Service
     ↓
 MongoDB
 ```
 
-This keeps activity persistence separate from the primary task operation.
-
 ---
 
-## 9. Notifications
+## Notifications
 
-The notification system is currently **in-app only**.
-
-Notification retrieval currently returns the latest 50 notifications for the authenticated user. Full notification-history pagination is intentionally left for a later UI requirement.
-
+Notifications are currently **in-app only**.
 
 Current notification types include:
 
@@ -432,20 +396,22 @@ taskReminder
 
 Users can:
 
-* View notifications.
-* See unread notifications.
-* Mark one notification as read.
-* Mark all notifications as read.
+- View notifications.
+- View unread notifications.
+- Mark one notification as read.
+- Mark all notifications as read.
 
-Notification creation is performed through the background job queue.
+The notification endpoint currently returns the latest 50 notifications for the authenticated user.
+
+Notification creation is handled through background jobs.
 
 Email/SMTP delivery is not currently implemented.
 
 ---
 
-## 10. Dashboard
+## Dashboard
 
-Dashboard information is calculated on the backend.
+Dashboard information is calculated by the backend.
 
 Current values include:
 
@@ -462,741 +428,22 @@ Normal users receive statistics based on tasks they are authorized to access.
 
 Administrators have broader task visibility.
 
-Independent dashboard operations use `Promise.all()` where appropriate.
-
----
-
-## 11. Task Reminders
-
-Tasks with approaching due dates can generate reminder notifications.
-
-The current reminder window is:
-
-```text
-1 hour before due date
-```
-
-The reminder system:
-
-* Detects upcoming tasks.
-* Ignores completed tasks.
-* Queues reminder notifications.
-* Prevents duplicate reminders.
-* Records `reminderSentAt`.
-* Detects past-due incomplete tasks.
-* Sets `isOverdue`.
-
----
-
-## 12. Overdue Tracking
-
-Overdue state is separate from workflow status.
-
-Task status remains:
-
-```text
-pending
-in-progress
-completed
-```
-
-while overdue state is represented by:
-
-```text
-isOverdue
-```
-
-Therefore a task can be:
-
-```text
-status = pending
-isOverdue = true
-```
-
-without introducing `overdue` as a workflow status.
-
----
-
-## 13. Background Job Queue
-
-The application uses a MongoDB-backed background job queue.
-
-Jobs are persisted in MongoDB, allowing queued jobs to survive a Node.js process restart.
-
-The worker claims jobs atomically and tracks their lifecycle through MongoDB.
-
-Jobs are not kept only in a JavaScript array. A queued job is stored as a MongoDB document, so pending work can remain available if the Node.js process restarts.
-
-The queue also uses a lease ID and stale-job timeout. A job that remains in `processing` beyond the stale threshold can be reclaimed by another worker cycle. The worker refreshes the lease while processing a job.
-
-The current implementation intentionally runs one job at a time.
-
-Current job types:
-
-```text
-activity
-notification
-report
-```
-
-The continuously running worker processes jobs and tracks their lifecycle:
-
-```text
-pending
-   ↓
-processing
-   ↓
-completed
-```
-
-Failed jobs are represented by:
-
-```text
-failed
-```
-
-with the associated error stored on the job.
-
----
-
-## 14. Retry and Failure Handling
-
-Background jobs support retry handling.
-
-Each job tracks:
-
-```text
-attempts
-maxAttempts
-error
-```
-
-The current maximum is:
-
-```text
-3 total attempts
-```
-
-Retry delays increase between attempts.
-
-Example:
-
-```text
-Attempt 1 → failure
-     ↓
-  1 second
-     ↓
-Attempt 2 → failure
-     ↓
-  2 seconds
-     ↓
-Attempt 3 → failure
-     ↓
-permanently failed
-```
-
-A permanently failed job does not stop the worker. The worker releases its busy state and continues processing later jobs.
-
----
-
-## 15. File Exports and Reports
-
-The application supports:
-
-* JSON task exports
-* CSV task exports
-* Saved generated files
-* Streaming downloads
-* Background task report generation
-* Report job status tracking
-* Downloading completed reports
-
-Generated files are stored under:
-
-```text
-server/reports/exports/
-```
-
-Direct exports use the authenticated user's task access rules.
-
-### Direct Export Memory Behavior
-
-JSON and CSV task exports use a MongoDB cursor and a writable file stream.
-
-```text
-MongoDB cursor
-      ↓
-one task at a time
-      ↓
-file write stream
-      ↓
-saved export
-```
-
-This avoids constructing one large in-memory array containing every exported task.
-
-The background task report is different by design: it calculates summary values and embeds task information in one JSON report, so its report-generation path currently loads the accessible task set before building the report.
-
-
-Background reports use the same authorization-aware task query.
-
-Report generation is handled as a background job instead of blocking the API request.
-
----
-
-## 16. Class-Based Service Design
-
-The project now uses classes for components where instance behavior and state are useful.
-
-Implemented classes:
-
-```text
-TaskService
-NotificationService
-QueueWorker
-```
-
-### TaskService
-
-`TaskService` encapsulates task-related business logic such as:
-
-```text
-createTask()
-getAllTasks()
-getTaskById()
-updateTask()
-deleteTask()
-assignTask()
-```
-
-A service instance is exported and used by the task controller.
-
-A pure access-query helper remains a standalone function because it does not require instance state.
-
----
-
-### NotificationService
-
-`NotificationService` encapsulates notification persistence and retrieval:
-
-```text
-createNotification()
-getNotifications()
-markNotificationAsRead()
-markAllNotificationsAsRead()
-```
-
-The notification controller and background job handler use the service instance.
-
----
-
-### QueueWorker
-
-`QueueWorker` encapsulates worker state and behavior:
-
-```text
-pollInterval
-retryDelay
-isBusy
-processJob()
-runWorker()
-start()
-```
-
-The worker is created once and started during server initialization.
-
----
-
-# Technology Stack
-
-| Layer                          | Technology                    |
-| ------------------------------ | ----------------------------- |
-| Runtime                        | Node.js                       |
-| Backend                        | Express.js                    |
-| Database                       | MongoDB                       |
-| ODM                            | Mongoose                      |
-| Authentication                 | JWT                           |
-| Password authentication        | Passport-Local-Mongoose       |
-| Browser authentication storage | HttpOnly cookie               |
-| Local transport security       | HTTPS                         |
-| Cookies                        | cookie-parser                 |
-| CORS                           | cors                          |
-| Environment configuration      | dotenv                        |
-| Development server             | nodemon                       |
-| Frontend                       | HTML, CSS, vanilla JavaScript |
-| Event system                   | Node.js EventEmitter          |
-| Background queue               | MongoDB-backed job queue      |
-| Background worker              | Async Node.js class           |
-| Timers                         | `setInterval()`               |
-| Package format                 | ES Modules                    |
-
-### Main Dependencies
-
-```text
-express
-mongoose
-jsonwebtoken
-passport-local-mongoose
-cookie-parser
-cors
-dotenv
-```
-
-### Development Dependency
-
-```text
-nodemon
-```
-
----
-
-# Architecture
-
-The backend uses a layered architecture.
-
-## Routes
-
-Routes define:
-
-* HTTP methods
-* URL paths
-* Middleware order
-* Controller entry points
-
-Routes should not contain database queries or large business rules.
-
-Example:
-
-```text
-POST /api/tasks
-       ↓
-authenticateUser
-       ↓
-createTaskController
-```
-
----
-
-## Middleware
-
-Middleware performs reusable request-level processing.
-
-Authentication middleware:
-
-1. Reads the JWT from the authentication cookie.
-2. Verifies the token.
-3. Extracts authenticated user information.
-4. Places the information on:
-
-```js
-req.user
-```
-
-Protected controllers can then use the authenticated identity.
-
----
-
-## Controllers
-
-Controllers handle the HTTP layer.
-
-They are responsible for:
-
-* Reading request data
-* Calling services
-* Sending responses
-* Handling controller-level errors
-
-Controllers should not contain the application's complete business logic.
-
----
-
-## Services
-
-Services contain application and business logic.
-
-Current service components include:
-
-```text
-auth_services.js
-task_services.js
-user_services.js
-activity_services.js
-notification_services.js
-dashboard_services.js
-reminder_services.js
-reminder_scheduler.js
-```
-
-Some services are class-based while others remain functions because not every component benefits from instance-based state.
-
-The class-based services are:
-
-```text
-TaskService
-NotificationService
-```
-
-The background worker is also class-based:
-
-```text
-QueueWorker
-```
-
-This is an intentional gradual architectural approach rather than converting every function into a class.
-
----
-
-## Models
-
-Mongoose models define MongoDB document structures.
-
-Current models include:
-
-```text
-user_model.js
-task_model.js
-activity_model.js
-notification_model.js
-```
-
----
-
-## Events
-
-The event system separates secondary actions from the primary task operation.
-
-```text
-Task Updated
-     ↓
-Task Event
-     ├── Activity Listener
-     │       ↓
-     │   Activity Job
-     │
-     └── Notification Listener
-             ↓
-        Notification Job
-```
-
----
-
-## Queue
-
-The queue stores jobs in application memory.
-
-A job contains information such as:
-
-```text
-id
-type
-data
-status
-attempts
-maxAttempts
-createdAt
-startedAt
-completedAt
-failedAt
-error
-```
-
-Jobs are lost if the Node.js process stops.
-
----
-
-## Worker
-
-The `QueueWorker` continuously checks for pending jobs.
-
-```text
-Pending Job
-    ↓
-QueueWorker
-    ↓
-processing
-    ↓
-Job Handler
-    ↓
-completed
-```
-
-If processing fails:
-
-```text
-processing
-    ↓
-retry
-    ↓
-completed
-or
-failed
-```
-
-The worker currently processes one job at a time.
-
----
-
-# Project Structure
-
-```text
-task-management-system/
-│
-├── client/
-│   ├── css/
-│   │   └── style.css
-│   │
-│   ├── js/
-│   │   ├── api.js
-│   │   ├── app.js
-│   │   ├── auth.js
-│   │   ├── render.js
-│   │   └── state.js
-│   │
-│   └── index.html
-│
-├── server/
-│   ├── reports/
-│   │   └── exports/        # Generated files, ignored by Git
-│   │
-│   └── src/
-│       ├── config/
-│       │   └── database.js
-│       │
-│       ├── controllers/
-│       │   ├── activity_controller.js
-│       │   ├── auth_controller.js
-│       │   ├── dashboard_controller.js
-│       │   ├── notification_controller.js
-│       │   ├── report_controller.js
-│       │   ├── task_controller.js
-│       │   └── user_controller.js
-│       │
-│       ├── events/
-│       │   ├── task_activity_listener.js
-│       │   ├── task_events.js
-│       │   └── task_notification_listener.js
-│       │
-│       ├── middleware/
-│       │   └── auth_middleware.js
-│       │
-│       ├── models/
-│       │   ├── activity_model.js
-│       │   ├── notification_model.js
-│       │   ├── task_model.js
-│       │   └── user_model.js
-│       │
-│       ├── queue/
-│       │   ├── job_queue.js
-│       │   └── job_types.js
-│       │
-│       ├── reports/
-│       │   └── report_service.js
-│       │
-│       ├── routes/
-│       │   ├── activity_routes.js
-│       │   ├── auth_routes.js
-│       │   ├── dashboard_routes.js
-│       │   ├── notification_routes.js
-│       │   ├── report_routes.js
-│       │   ├── task_routes.js
-│       │   └── user_routes.js
-│       │
-│       ├── services/
-│       │   ├── activity_services.js
-│       │   ├── auth_services.js
-│       │   ├── dashboard_services.js
-│       │   ├── notification_services.js
-│       │   ├── reminder_scheduler.js
-│       │   ├── reminder_services.js
-│       │   ├── task_services.js
-│       │   └── user_services.js
-│       │
-│       ├── utils/
-│       │   └── retry.js
-│       │
-│       ├── workers/
-│       │   ├── job_handlers.js
-│       │   └── queue_worker.js
-│       │
-│       └── server.js
-│
-├── certs/                  # Local HTTPS certificates, ignored by Git
-├── .env
-├── .env.example
-├── .gitignore
-├── package.json
-└── package-lock.json
-```
-
-### Frontend Responsibilities
-
-#### `app.js`
-
-Coordinates application behavior:
-
-```text
-User Action
-    ↓
-Event Handler
-    ↓
-API Call
-    ↓
-State Update
-    ↓
-UI Rendering
-```
-
-#### `api.js`
-
-Central frontend API layer.
-
-It communicates with the Express backend and sends:
-
-```text
-credentials: "include"
-```
-
-so the browser can send the authentication cookie.
-
-#### `auth.js`
-
-Maintains the current authenticated user in frontend memory.
-
-It does not store the JWT in `localStorage`.
-
-#### `state.js`
-
-Stores frontend application state such as:
-
-```text
-Tasks
-Users
-Notifications
-Dashboard
-Filters
-Pagination
-```
-
-#### `render.js`
-
-Converts application state/data into UI elements.
-
-It renders:
-
-* Tasks
-* Dashboard
-* Activities
-* Notifications
-* Assignment controls
-* Overdue task indicators
-
-### Backend Responsibilities
-
-```text
-routes       → HTTP endpoint definitions
-controllers  → HTTP request/response handling
-services     → business logic
-models       → MongoDB data structures
-middleware   → reusable request processing
-events       → task event definitions/listeners
-queue        → background job storage/lifecycle
-workers      → background job execution
-config       → infrastructure configuration
-```
-
----
-
-# Data Models
-
-## User
-
-Application-specific fields include:
-
-```text
-name
-email
-role
-createdAt
-updatedAt
-```
-
-Passport-Local-Mongoose adds the fields required for password authentication.
-
-Roles:
-
-```text
-user
-admin
-```
-
----
-
-## Task
-
-```text
-title
-description
-status
-priority
-dueDate
-tags
-owner
-assignedTo
-reminderSentAt
-isOverdue
-createdAt
-updatedAt
-```
-
----
-
-## Activity
-
-```text
-type
-task
-user
-message
-createdAt
-updatedAt
-```
-
-Current activity types include task-related operations such as:
-
-```text
-taskCreated
-taskUpdated
-taskAssigned
-taskCompleted
-```
-
----
-
-## Notification
-
-```text
-user
-type
-task
-message
-read
-createdAt
-updatedAt
-```
-
-Current notification types:
-
-```text
-taskAssigned
-taskCompleted
-taskPriorityChanged
-taskReminder
-```
+Independent calculations can run concurrently with `Promise.all()` where appropriate.
 
 ---
 
 # Authentication and Security
+
+The application uses:
+
+- Passport-Local-Mongoose for password authentication.
+- JWT for authenticated sessions.
+- HttpOnly cookies for JWT storage.
+- Secure cookies during local HTTPS development.
+- CORS credentials.
+- `/api/auth/me` for session restoration.
+
+The JWT is **not** stored in browser `localStorage`.
 
 ## Registration
 
@@ -1205,14 +452,18 @@ Register
     ↓
 Passport-Local-Mongoose
     ↓
-Password Hash
+Password Hashing
     ↓
 MongoDB
 ```
 
-The application uses the user's email as the username field.
+The user's email is used as the username field.
 
----
+Normal registration creates:
+
+```text
+role = user
+```
 
 ## Login
 
@@ -1230,9 +481,7 @@ HttpOnly Cookie
 Browser
 ```
 
-The JWT itself is not returned as a frontend JSON credential.
-
----
+The JWT is not returned as a frontend JSON credential.
 
 ## Protected Request
 
@@ -1250,35 +499,29 @@ req.user
 Controller
 ```
 
----
+## Session Restoration
 
-## HttpOnly Cookies
-
-The JWT is not stored in:
+When the frontend starts:
 
 ```text
-localStorage
+Frontend starts
+      ↓
+GET /api/auth/me
+      ↓
+Browser sends HttpOnly cookie
+      ↓
+Backend verifies JWT
+      ↓
+Current user returned
+      ↓
+Frontend stores user state in memory
 ```
 
-Instead, it is stored in an HttpOnly cookie.
-
-JavaScript running in the page therefore cannot directly read the JWT.
-
-The frontend stores only the current user's application state in memory.
-
----
-
-## HTTPS
-
-HTTPS protects data while it travels between the browser and backend.
-
-The local project uses HTTPS so the Secure authentication cookie can be used during development.
-
----
+This allows the application to restore the authenticated session after a page refresh without exposing the JWT to frontend JavaScript.
 
 ## Cookie Configuration
 
-The authentication cookie uses settings such as:
+The authentication cookie uses secure browser settings such as:
 
 ```text
 httpOnly: true
@@ -1286,7 +529,7 @@ secure: true
 sameSite: lax
 ```
 
-The Secure behavior is controlled through:
+The Secure option is controlled through:
 
 ```env
 COOKIE_SECURE=true
@@ -1296,9 +539,7 @@ COOKIE_SECURE=true
 
 # Task Access Rules
 
-Authorization is enforced by the backend.
-
-The frontend is not the security boundary.
+Authorization is enforced by the backend. Frontend controls such as hidden buttons are only UI behavior and are not the security boundary.
 
 ## Normal User
 
@@ -1310,17 +551,13 @@ OR
 assignedTo == current user
 ```
 
----
-
 ## Administrator
 
-Administrators have broader access to tasks and can operate across the task collection.
-
----
+Administrators have broader task access and can operate across the task collection.
 
 ## Ownership
 
-When a task is created, the owner is taken from:
+Task ownership is taken from:
 
 ```js
 req.user.userId
@@ -1350,18 +587,16 @@ limit
 Example:
 
 ```text
-/api/tasks?status=pending&priority=high&search=api&page=1&limit=10
+GET /api/tasks?status=pending&priority=high&search=api&page=1&limit=10
 ```
 
-MongoDB/Mongoose performs filtering and sorting on the backend.
+Filtering and sorting are performed by MongoDB/Mongoose on the backend.
 
 ---
 
 # Event-Driven Features
 
-The project uses Node.js `EventEmitter`.
-
-The purpose is to decouple primary task operations from secondary actions.
+The project uses Node.js `EventEmitter` to separate primary task operations from secondary actions.
 
 ```text
 Create / Update / Assign Task
@@ -1373,30 +608,13 @@ Create / Update / Assign Task
         ↓           ↓
     Activity    Notification
         ↓           ↓
-     Queue Job   Queue Job
+      Queue Job   Queue Job
         └─────┬─────┘
               ↓
            Worker
 ```
 
-The task service does not directly persist activity or notification records.
-
----
-
-# Notifications
-
-Notification triggers include:
-
-| Trigger          | Result                              |
-| ---------------- | ----------------------------------- |
-| Task assigned    | Assigned user receives notification |
-| Task completed   | Relevant user receives notification |
-| Priority changed | Relevant user receives notification |
-| Task reminder    | Relevant user receives reminder     |
-
-Notifications are currently in-app only.
-
-Email/SMTP delivery is not implemented.
+The task service does not directly persist every activity and notification record. Instead, task events allow those secondary actions to be processed independently.
 
 ---
 
@@ -1404,73 +622,80 @@ Email/SMTP delivery is not implemented.
 
 The reminder scheduler runs periodically while the Node.js process is alive.
 
-The scheduler determines **when** reminder processing should happen.
-
-The reminder service determines **what** should happen.
-
-The queue worker determines **how** background jobs are executed.
+Responsibilities are separated:
 
 ```text
-Scheduler
-    ↓
+Reminder Scheduler
+        ↓
+      WHEN
+        ↓
 Reminder Service
-    ↓
-Queue
-    ↓
-QueueWorker
+        ↓
+      WHAT
+        ↓
+Background Queue
+        ↓
+    QueueWorker
+        ↓
+      HOW
 ```
 
-Upcoming tasks:
+## Upcoming Tasks
+
+The current reminder window is:
 
 ```text
-Task
- ↓
-Due Date Check
- ↓
-Upcoming
- ↓
-Notification Job
- ↓
-QueueWorker
- ↓
-Notification
+1 hour before due date
 ```
 
-Past-due incomplete tasks:
+The reminder system:
+
+- Detects approaching due dates.
+- Ignores completed tasks.
+- Queues reminder notifications.
+- Prevents duplicate reminders.
+- Records `reminderSentAt`.
+
+## Overdue Tasks
+
+Past-due incomplete tasks can be marked:
 
 ```text
-Task
- ↓
-Due Date Check
- ↓
-Past Due
- ↓
 isOverdue = true
 ```
 
-`reminderSentAt` prevents duplicate reminder generation.
+Overdue state is separate from workflow status.
 
-If the due date changes, reminder state can be reset so the new due date can be processed independently.
+For example:
+
+```text
+status = pending
+isOverdue = true
+```
+
+A task does not need an `overdue` workflow status.
+
+If a task's due date changes, reminder state can be reset so the new due date can be processed independently.
 
 ---
 
 # Background Job Queue
 
-The queue is backed by MongoDB.
+The application uses a **MongoDB-backed background job queue**.
+
+Jobs are persisted as MongoDB documents rather than stored only in a JavaScript array. This allows pending work to survive a Node.js process restart.
 
 ## Why a Queue?
 
-Without a background queue:
+Without background processing:
 
 ```text
 Task Request
-     ↓
+    ↓
 Task Service
-     ↓
-Emit Event
-     ↓
+    ↓
 Create Activity / Notification
-     ↓
+    ↓
 HTTP Response
 ```
 
@@ -1478,31 +703,17 @@ With the queue:
 
 ```text
 Task Request
-     ↓
+    ↓
 Task Service
-     ↓
+    ↓
 Emit Event
-     ↓
+    ↓
 Add Job
-     ↓
+    ↓
 HTTP Response
 ```
 
-The worker then performs the secondary operation:
-
-```text
-Background Queue
-       ↓
-QueueWorker
-       ↓
-Job Handler
-       ↓
-Database Operation
-```
-
-This keeps slower secondary work separate from the primary API operation.
-
----
+The worker performs the secondary operation afterward.
 
 ## Job Types
 
@@ -1511,8 +722,6 @@ activity
 notification
 report
 ```
-
----
 
 ## Job Lifecycle
 
@@ -1524,53 +733,83 @@ processing
 completed
 ```
 
-With failure handling:
+Failed work can enter:
+
+```text
+failed
+```
+
+with the associated error stored on the job.
+
+## Leases and Stale Jobs
+
+The worker uses a lease ID and stale-job timeout.
+
+Conceptually:
 
 ```text
 pending
    ↓
-processing
+worker claims job
    ↓
-attempt fails
+processing + lease
    ↓
-retry
-   ↓
-processing
+worker refreshes lease while active
    ↓
 completed
-or
-failed
 ```
+
+If a worker stops unexpectedly and a job remains in `processing` beyond the stale threshold, the job can become eligible for reclamation.
+
+The current worker intentionally processes one job at a time.
 
 ---
 
 # Retry and Failure Handling
 
-The reusable retry utility is located at:
+Background jobs support retry handling.
+
+Each job tracks values such as:
+
+```text
+attempts
+maxAttempts
+error
+```
+
+The current maximum is:
+
+```text
+3 total attempts
+```
+
+Retry delays increase between attempts.
+
+Example:
+
+```text
+Attempt 1 → failure
+      ↓
+   1 second
+      ↓
+Attempt 2 → failure
+      ↓
+   2 seconds
+      ↓
+Attempt 3 → failure
+      ↓
+permanently failed
+```
+
+A permanently failed job does not stop the worker. The worker continues processing later jobs.
+
+The reusable retry logic is located at:
 
 ```text
 server/src/utils/retry.js
 ```
 
-The worker supplies the operation that should be retried.
-
-The retry utility handles:
-
-* Promise rejection
-* Delays
-* Retry attempts
-* Increasing backoff
-* Final failure
-
-The worker handles:
-
-* Job state
-* Job execution
-* Final completion
-* Permanent failure
-* Continuing to process later jobs
-
-This separates responsibilities:
+Responsibility is separated as follows:
 
 ```text
 retry.js
@@ -1581,7 +820,7 @@ QueueWorker
     ↓
 when jobs are processed
 
-job_handlers
+job_handlers.js
     ↓
 what each job does
 ```
@@ -1590,142 +829,66 @@ what each job does
 
 # File Exports and Reports
 
-Direct exports:
+The application supports:
 
-```text
-GET /api/reports/tasks/json
-GET /api/reports/tasks/csv
-```
+- JSON task exports.
+- CSV task exports.
+- Streaming export generation.
+- Background task report generation.
+- Report job status tracking.
+- Downloading completed reports.
+- Streaming completed report downloads.
 
-Background report generation:
-
-```text
-POST /api/reports/tasks/report
-```
-
-The API returns a job ID and the worker generates the report asynchronously.
-
-Generated reports are saved under:
+Generated report files are stored under:
 
 ```text
 server/reports/exports/
 ```
 
-Completed reports can then be downloaded through the report job endpoint.
+That directory is ignored by Git.
 
-Streaming is used for downloads so the application does not need to load the entire generated file into memory before sending it.
+## Direct Task Exports
 
----
-
-# Service Classes and `this`
-
-The class-based architecture was introduced where instance behavior is useful rather than converting every function into a class.
-
-Current classes:
-
-```text
-TaskService
-NotificationService
-QueueWorker
+```http
+GET /api/reports/tasks/json
+GET /api/reports/tasks/csv
 ```
 
-## `this`
+Direct exports use the authenticated user's task access rules.
 
-Inside a class method, `this` refers to the object instance when the method is called through that instance.
-
-For example:
-
-```js
-queueWorker.runWorker();
-```
-
-Here, `this` inside `runWorker()` refers to `queueWorker`.
-
----
-
-## Method References
-
-A method can also be passed as a callback:
-
-```js
-obj.method
-```
-
-However, passing the method reference does not automatically preserve the original object as `this`.
-
-A wrapper can preserve it:
-
-```js
-() => obj.method()
-```
-
-Or the method can be explicitly bound:
-
-```js
-obj.method.bind(obj)
-```
-
----
-
-## QueueWorker Callback
-
-The worker uses a bound class method when passing `runWorker` to `setInterval()`:
-
-```js
-setInterval(
-    this.runWorker.bind(this),
-    this.pollInterval
-);
-```
-
-This ensures that when the timer invokes the method, `this` still refers to the `QueueWorker` instance.
+JSON and CSV exports use MongoDB cursors and writable streams so the complete task collection does not have to be loaded into one large array.
 
 Conceptually:
 
 ```text
-QueueWorker
-    ↓
-start()
-    ↓
-bind(this)
-    ↓
-setInterval()
-    ↓
-runWorker()
-    ↓
-this.isBusy
-this.processJob()
-this.pollInterval
+MongoDB Cursor
+      ↓
+one task at a time
+      ↓
+Writable File Stream
+      ↓
+Generated Export
 ```
 
-This is an actual application use of `bind()` rather than a separate artificial example.
+## Background Reports
 
----
+A background report is started with:
 
-## Why This Matters
-
-Without preserving `this`, a detached class method can lose its original object context.
-
-That can cause code such as:
-
-```js
-this.isBusy
+```http
+POST /api/reports/tasks/report
 ```
 
-or:
+The request returns a job ID rather than waiting for report generation to finish.
 
-```js
-this.processJob()
+The generated report contains summary information and task details, so the report-generation path currently builds the complete report object in memory before writing the file.
+
+Completed reports can be downloaded through:
+
+```http
+GET /api/reports/jobs/:jobId/download
 ```
 
-to fail because `this` is no longer the expected `QueueWorker` instance.
-
-This is especially important when class methods are passed to:
-
-* Timers
-* Event listeners
-* Promise callbacks
-* Other APIs expecting a function
+The download is streamed to the client.
 
 ---
 
@@ -1742,15 +905,331 @@ byPriority
 recentActivity
 ```
 
-Normal users receive statistics based on authorized tasks.
+Normal users receive statistics based on their authorized tasks.
 
-Administrators can receive statistics across all tasks.
+Administrators have broader task visibility.
 
-Independent calculations can run concurrently using:
+Independent dashboard calculations can use:
 
 ```js
 Promise.all()
 ```
+
+where the calculations do not depend on one another.
+
+---
+
+# Frontend Architecture
+
+The frontend is a vanilla JavaScript application with separate API, authentication, state, rendering, routing, and application-coordination responsibilities.
+
+## `app.js`
+
+Coordinates application behavior:
+
+```text
+User Action
+    ↓
+Event Handler
+    ↓
+API Call
+    ↓
+State Update / Reload
+    ↓
+UI Rendering
+```
+
+It also coordinates startup, session restoration, task operations, Kanban interactions, report generation, and other UI actions.
+
+## `api.js`
+
+Central frontend API layer.
+
+It communicates with the Express backend and sends:
+
+```js
+credentials: "include"
+```
+
+so the browser can send the authentication cookie.
+
+## `auth.js`
+
+Maintains the current authenticated user in frontend memory.
+
+It does not store the JWT in `localStorage`.
+
+## `state.js`
+
+Stores frontend application state such as:
+
+```text
+current user
+tasks
+users
+notifications
+dashboard
+activities
+filters
+pagination
+```
+
+## `render.js`
+
+Converts application data into UI elements.
+
+It renders areas such as:
+
+- Task list.
+- Kanban board.
+- Dashboard.
+- Activities.
+- Notifications.
+- Assignment controls.
+- Overdue indicators.
+- Pagination.
+
+## `router.js`
+
+Controls frontend view routing between application sections.
+
+---
+
+# Backend Architecture
+
+The backend follows a layered architecture:
+
+```text
+HTTP Request
+     ↓
+Express Route
+     ↓
+Middleware
+     ↓
+Controller
+     ↓
+Service
+     ↓
+Mongoose Model
+     ↓
+MongoDB
+     ↓
+Service
+     ↓
+Controller
+     ↓
+HTTP Response
+```
+
+## Routes
+
+Routes define:
+
+- HTTP methods.
+- URL paths.
+- Middleware order.
+- Controller entry points.
+
+Routes do not contain the application's main business logic.
+
+Example:
+
+```text
+POST /api/tasks
+       ↓
+authenticateUser
+       ↓
+createTaskController
+```
+
+## Middleware
+
+Middleware performs reusable request-level processing.
+
+Authentication middleware:
+
+1. Reads the JWT from the authentication cookie.
+2. Verifies the JWT.
+3. Extracts authenticated user information.
+4. Places the identity on `req.user`.
+
+## Controllers
+
+Controllers handle HTTP concerns:
+
+- Reading request data.
+- Calling services.
+- Sending responses.
+- Passing errors to the centralized error handler.
+
+## Services
+
+Services contain application and business logic.
+
+Current services include:
+
+```text
+activity_services.js
+auth_services.js
+dashboard_services.js
+notification_services.js
+reminder_scheduler.js
+reminder_services.js
+task_services.js
+user_services.js
+```
+
+Some services are class-based where instance state or behavior is useful.
+
+Current class-based components are:
+
+```text
+TaskService
+NotificationService
+QueueWorker
+```
+
+Not every service was converted into a class.
+
+## Models
+
+Mongoose models define MongoDB document structures.
+
+Current models include:
+
+```text
+user_model.js
+task_model.js
+activity_model.js
+notification_model.js
+job_model.js
+```
+
+## Events
+
+Task events allow activity and notification work to be separated from the primary task operation.
+
+## Queue and Workers
+
+The queue stores jobs in MongoDB.
+
+The worker claims and processes jobs in the background.
+
+```text
+MongoDB Job
+    ↓
+QueueWorker
+    ↓
+Job Handler
+    ↓
+Service / File Operation
+    ↓
+completed or failed
+```
+
+---
+
+# Data Models
+
+## User
+
+Application-specific fields include:
+
+```text
+name
+email
+role
+createdAt
+updatedAt
+```
+
+Passport-Local-Mongoose provides the fields and methods required for password authentication.
+
+Roles:
+
+```text
+user
+admin
+```
+
+## Task
+
+```text
+title
+description
+status
+priority
+dueDate
+tags
+owner
+assignedTo
+reminderSentAt
+isOverdue
+createdAt
+updatedAt
+```
+
+## Activity
+
+```text
+type
+task
+user
+message
+createdAt
+updatedAt
+```
+
+Current activity types include task-related operations such as:
+
+```text
+taskCreated
+taskUpdated
+taskAssigned
+taskCompleted
+```
+
+## Notification
+
+```text
+user
+type
+task
+message
+read
+createdAt
+updatedAt
+```
+
+Current notification types:
+
+```text
+taskAssigned
+taskCompleted
+taskPriorityChanged
+taskReminder
+```
+
+## Job
+
+The background job document stores job lifecycle information such as:
+
+```text
+type
+data
+status
+attempts
+maxAttempts
+leaseId
+startedAt
+completedAt
+failedAt
+error
+createdAt
+updatedAt
+```
+
+The exact fields are maintained by the queue implementation and support persistence, retries, leases, and failure tracking.
 
 ---
 
@@ -1761,6 +1240,8 @@ Base URL:
 ```text
 https://127.0.0.1:3000/api
 ```
+
+Unless otherwise stated, protected endpoints require authentication through the HttpOnly cookie.
 
 ## Health
 
@@ -1817,10 +1298,10 @@ Example:
 
 On success:
 
-* JWT is generated.
-* JWT is stored in the HttpOnly authentication cookie.
-* User information is returned.
-* JWT is not returned as a JSON field.
+- JWT is generated.
+- JWT is stored in the HttpOnly authentication cookie.
+- User information is returned.
+- JWT is not returned as a JSON field.
 
 ### Current User
 
@@ -1846,7 +1327,7 @@ The server clears the authentication cookie.
 
 ---
 
-# Tasks
+# Tasks API
 
 ## Create Task
 
@@ -1875,8 +1356,6 @@ Example:
 
 The owner is determined from the authenticated user.
 
----
-
 ## Get All Tasks
 
 ```http
@@ -1891,11 +1370,9 @@ Required
 
 Example:
 
-```text
+```http
 GET /api/tasks?status=pending&priority=high&search=api&page=1&limit=10
 ```
-
----
 
 ## Get One Task
 
@@ -1909,8 +1386,6 @@ Authentication:
 Required
 ```
 
----
-
 ## Update Task
 
 ```http
@@ -1923,8 +1398,6 @@ Authentication:
 Required
 ```
 
----
-
 ## Delete Task
 
 ```http
@@ -1936,8 +1409,6 @@ Authentication:
 ```text
 Required
 ```
-
----
 
 ## Assign Task
 
@@ -1959,7 +1430,7 @@ Example:
 }
 ```
 
-Remove an assignment:
+Remove assignment:
 
 ```json
 {
@@ -1969,7 +1440,7 @@ Remove an assignment:
 
 ---
 
-# Users
+# Users API
 
 ## Get Users
 
@@ -1983,11 +1454,11 @@ Authentication:
 Required
 ```
 
-Used by the frontend when displaying users available for task assignment.
+Used by the frontend for task-assignment controls.
 
 ---
 
-# Activities
+# Activities API
 
 ## Get Activities
 
@@ -2001,9 +1472,11 @@ Authentication:
 Required
 ```
 
+Returns the latest accessible activity records.
+
 ---
 
-# Notifications
+# Notifications API
 
 ## Get Notifications
 
@@ -2043,7 +1516,7 @@ Required
 
 ---
 
-# Dashboard
+# Dashboard API
 
 ## Get Dashboard
 
@@ -2059,7 +1532,7 @@ Required
 
 ---
 
-# Reports and Exports
+# Reports and Exports API
 
 ## Export Tasks as JSON
 
@@ -2073,7 +1546,7 @@ Authentication:
 Required
 ```
 
-Returns the authenticated user's authorized tasks as a downloadable JSON file.
+Returns authorized tasks as a downloadable JSON file.
 
 ## Export Tasks as CSV
 
@@ -2087,9 +1560,9 @@ Authentication:
 Required
 ```
 
-Returns the authenticated user's authorized tasks as a downloadable CSV file.
+Returns authorized tasks as a downloadable CSV file.
 
-## Start Task Report Generation
+## Start Background Task Report
 
 ```http
 POST /api/reports/tasks/report
@@ -2101,7 +1574,7 @@ Authentication:
 Required
 ```
 
-The endpoint queues a background report job and returns `202 Accepted` with a job ID.
+Returns `202 Accepted` with a job ID.
 
 Example:
 
@@ -2148,15 +1621,13 @@ Required
 
 The report must be completed before it can be downloaded.
 
-The generated file is streamed to the client.
-
 ---
 
 # Environment Variables
 
 Create a local `.env` file in the project root.
 
-Example:
+Use `.env.example` as the template:
 
 ```env
 PORT=3000
@@ -2166,13 +1637,17 @@ JWT_SECRET=your-secret
 COOKIE_SECURE=true
 ```
 
-| Variable        | Purpose                             |
-| --------------- | ----------------------------------- |
-| `PORT`          | Backend HTTPS port                  |
-| `MONGODB_URI`   | MongoDB connection string           |
-| `CORS_ORIGIN`   | Allowed frontend origin             |
-| `JWT_SECRET`    | Secret used to sign and verify JWTs |
-| `COOKIE_SECURE` | Controls the cookie Secure option   |
+| Variable | Purpose |
+|---|---|
+| `PORT` | HTTPS backend port |
+| `MONGODB_URI` | MongoDB connection string |
+| `CORS_ORIGIN` | Allowed frontend origin |
+| `JWT_SECRET` | Secret used to sign and verify JWTs |
+| `COOKIE_SECURE` | Controls the cookie Secure option |
+
+`PORT`, `MONGODB_URI`, `CORS_ORIGIN`, and `JWT_SECRET` are required by startup environment validation.
+
+`COOKIE_SECURE` is optional; when supplied, it must be `true` or `false`.
 
 Never commit:
 
@@ -2184,25 +1659,25 @@ Never commit:
 
 # Prerequisites
 
-Install:
+Install the following before running the project:
 
-* Node.js
-* npm
-* MongoDB
-* VS Code
-* VS Code Live Server
-* mkcert
+- Node.js
+- npm
+- MongoDB
+- VS Code
+- VS Code Live Server extension
+- mkcert
 
-Verify Node/npm:
+Verify Node.js and npm:
 
 ```bash
 node -v
 npm -v
 ```
 
-MongoDB must be running.
+MongoDB must be running before the backend starts.
 
-Default local configuration:
+The default local MongoDB database used by the example configuration is:
 
 ```text
 mongodb://localhost:27017/task_management
@@ -2212,11 +1687,29 @@ mongodb://localhost:27017/task_management
 
 # Installation
 
-Install dependencies:
+## 1. Clone or extract the project
+
+Open the project root in VS Code.
+
+The project root is the directory containing:
+
+```text
+package.json
+client/
+server/
+certs/
+.env.example
+```
+
+## 2. Install dependencies
+
+From the project root:
 
 ```bash
 npm install
 ```
+
+## 3. Create `.env`
 
 Create:
 
@@ -2224,38 +1717,87 @@ Create:
 .env
 ```
 
-using `.env.example` as the template.
+Copy the required variables from `.env.example` and fill in the local values.
 
-Make sure MongoDB is running.
+Example:
 
----
+```env
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017/task_management
+CORS_ORIGIN=https://127.0.0.1:5500
+JWT_SECRET=replace-with-a-local-secret
+COOKIE_SECURE=true
+```
 
-# Running the Project
+## 4. Set up local HTTPS
 
-## Start Backend
+Follow the [Local HTTPS Setup](#local-https-setup) section before starting the application.
 
-Development mode:
+## 5. Make sure MongoDB is running
+
+The backend connects to MongoDB during startup.
+
+## 6. Start the backend
+
+Run:
 
 ```bash
 npm run dev
 ```
 
-Backend:
+## 7. Start the frontend
+
+Open the `client` directory with VS Code and start Live Server.
+
+The expected frontend address is:
+
+```text
+https://127.0.0.1:5500
+```
+
+---
+
+# Running the Project
+
+This section contains the normal day-to-day startup procedure.
+
+## Step 1 — Start MongoDB
+
+Make sure the local MongoDB service/server is running.
+
+The default application connection is:
+
+```text
+mongodb://localhost:27017/task_management
+```
+
+## Step 2 — Start the backend
+
+From the project root:
+
+```bash
+npm run dev
+```
+
+The backend uses:
 
 ```text
 https://127.0.0.1:3000
 ```
 
-The backend starts:
+Startup responsibilities include:
 
 ```text
 MongoDB connection
+       ↓
 Reminder scheduler
-Background job worker
+       ↓
+Background queue worker
+       ↓
 HTTPS server
 ```
 
-Expected startup output is similar to:
+A successful startup is expected to include messages similar to:
 
 ```text
 Database connected successfully
@@ -2264,19 +1806,32 @@ Background job worker started
 HTTPS server is running on https://127.0.0.1:3000
 ```
 
----
+## Step 3 — Start the frontend
 
-## Start Frontend
+In VS Code:
 
-Open the `client` directory in VS Code and use Live Server.
-
-Frontend:
+1. Open the `client` folder.
+2. Open `client/index.html`.
+3. Start **Live Server**.
+4. Open:
 
 ```text
 https://127.0.0.1:5500
 ```
 
----
+## Step 4 — Use the application
+
+From the frontend you can:
+
+1. Register a user.
+2. Log in.
+3. Create and manage tasks.
+4. Assign tasks.
+5. Use filtering/search/sorting/pagination.
+6. Move editable tasks through the Kanban board.
+7. View activities, notifications, and dashboard data.
+8. Export tasks.
+9. Generate and download background reports.
 
 ## Hostname Rule
 
@@ -2312,6 +1867,16 @@ localhost
 
 because it is a separate database connection.
 
+## Stop the Project
+
+Stop the backend with:
+
+```text
+Ctrl + C
+```
+
+Stop Live Server through the VS Code Live Server controls.
+
 ---
 
 # Local HTTPS Setup
@@ -2322,13 +1887,15 @@ They are not production certificates.
 
 ## 1. Install mkcert
 
-Then:
+Install `mkcert` for your operating system.
+
+Then run:
 
 ```bash
 mkcert -install
 ```
 
-## 2. Create Certificate Directory
+## 2. Create the Certificate Directory
 
 From the project root:
 
@@ -2336,19 +1903,26 @@ From the project root:
 mkdir certs
 ```
 
-## 3. Generate Certificates
+## 3. Generate the Certificates
+
+Run:
 
 ```bash
 mkcert localhost 127.0.0.1
 ```
 
-The generated filenames should match the names expected by the backend configuration.
-
-Current backend expectation:
+The generated files should match the paths expected by the backend:
 
 ```text
 certs/localhost+2.pem
 certs/localhost+2-key.pem
+```
+
+The backend reads these files from:
+
+```text
+./certs/localhost+2.pem
+./certs/localhost+2-key.pem
 ```
 
 ## 4. Backend HTTPS
@@ -2375,6 +1949,8 @@ Machine-specific configuration belongs in:
 .vscode/settings.json
 ```
 
+The repository ignores `.vscode/`, so these local paths are not intended to be committed.
+
 ## 6. Keep Certificates Out of Git
 
 The following are ignored:
@@ -2388,11 +1964,76 @@ Never commit private development keys.
 
 ---
 
+# Live Server Development Configuration
+
+The project generates report files under:
+
+```text
+server/reports/exports/
+```
+
+VS Code Live Server can otherwise detect generated backend files and reload the frontend during development.
+
+That can interrupt the frontend's report-status polling before the completed report reaches the download request.
+
+The workspace Live Server configuration should therefore ignore the backend directory.
+
+In:
+
+```text
+.vscode/settings.json
+```
+
+use:
+
+```json
+{
+    "liveServer.settings.host": "127.0.0.1",
+
+    "liveServer.settings.https": {
+        "enable": true,
+        "cert": "C:/path/to/project/certs/localhost+2.pem",
+        "key": "C:/path/to/project/certs/localhost+2-key.pem",
+        "passphrase": ""
+    },
+
+    "liveServer.settings.ignoreFiles": [
+        "**/server/**"
+    ]
+}
+```
+
+Replace the certificate paths with the paths on the local machine.
+
+This configuration is development-specific and should remain local because `.vscode/` is ignored by Git.
+
+The important setting for report generation is:
+
+```json
+"liveServer.settings.ignoreFiles": [
+    "**/server/**"
+]
+```
+
+Nodemon's `--ignore` settings and Live Server's `ignoreFiles` setting solve different problems:
+
+```text
+Nodemon ignore
+    ↓
+Prevents backend restart
+
+Live Server ignore
+    ↓
+Prevents frontend browser reload
+```
+
+---
+
 # Testing with Postman
 
-The browser uses the HttpOnly cookie automatically.
+Postman can be used to test the authenticated API independently of the frontend.
 
-Postman can also be used to test the API.
+Because authentication uses an HttpOnly cookie, Postman must retain the cookie returned by the login response.
 
 ## Register
 
@@ -2425,14 +2066,42 @@ Example:
 }
 ```
 
-The browser-oriented login flow stores the JWT in the authentication cookie rather than returning it as JSON.
+After login, retain the authentication cookie.
 
-If Postman retains the cookie from the login response, protected requests can use that cookie.
-
-Example:
+## Check Current User
 
 ```http
 GET https://127.0.0.1:3000/api/auth/me
+```
+
+## Test Protected Tasks
+
+```http
+GET https://127.0.0.1:3000/api/tasks
+```
+
+## Test Report Generation
+
+```http
+POST https://127.0.0.1:3000/api/reports/tasks/report
+```
+
+Then poll:
+
+```http
+GET https://127.0.0.1:3000/api/reports/jobs/JOB_ID
+```
+
+When the job reaches:
+
+```text
+completed
+```
+
+request:
+
+```http
+GET https://127.0.0.1:3000/api/reports/jobs/JOB_ID/download
 ```
 
 ---
@@ -2441,83 +2110,101 @@ GET https://127.0.0.1:3000/api/auth/me
 
 ## Authentication
 
-On application startup:
+The frontend restores the session through:
 
 ```text
-Frontend starts
-      ↓
 GET /api/auth/me
-      ↓
-Browser sends HttpOnly cookie
-      ↓
-Backend verifies JWT
-      ↓
-Current user returned
-      ↓
-Frontend stores user in memory
 ```
 
-This restores the session without exposing the JWT to frontend JavaScript.
+The browser automatically sends the HttpOnly authentication cookie.
 
----
+The frontend keeps application-level user information in memory.
 
-## Task Operations
+## Task Management
 
-The frontend communicates with the backend through `api.js`.
+The frontend supports:
+
+- Creating tasks.
+- Viewing accessible tasks.
+- Editing tasks.
+- Deleting permitted tasks.
+- Assigning tasks.
+- Removing assignments.
+- Filtering tasks.
+- Searching tasks.
+- Sorting tasks.
+- Paginating results.
+- Switching between task views.
+- Moving editable tasks through the Kanban board.
+
+## Notifications and Activities
+
+Users can view:
+
+- Recent activities.
+- In-app notifications.
+- Unread notification state.
+- Read notifications.
+
+## Dashboard
+
+The frontend displays backend-calculated dashboard information instead of independently calculating the authoritative statistics from the task list.
+
+## Reports
+
+The report workflow is:
 
 ```text
-Browser
-   ↓
-api.js
-   ↓
-Express API
-   ↓
-Service
-   ↓
-MongoDB
+Generate Report
+      ↓
+Background Job
+      ↓
+Frontend Polling
+      ↓
+Job Completed
+      ↓
+Download Request
+      ↓
+Browser Download
 ```
-
-The frontend never communicates directly with MongoDB.
 
 ---
 
-# Request Flow
+# Request and Background Flows
 
 ## Creating a Task
 
 ```text
 1. User submits task form
-          ↓
+            ↓
 2. app.js handles UI event
-          ↓
+            ↓
 3. api.js sends POST /api/tasks
-          ↓
+            ↓
 4. Browser sends authentication cookie
-          ↓
+            ↓
 5. authenticateUser verifies JWT
-          ↓
+            ↓
 6. Task controller receives authenticated request
-          ↓
-7. Controller calls TaskService
-          ↓
-8. TaskService creates MongoDB document
-          ↓
+            ↓
+7. TaskService applies task business logic
+            ↓
+8. MongoDB task document is created
+            ↓
 9. Task-created event is emitted
-          ↓
-10. Activity listener reacts
-          ↓
-11. Activity job is added to queue
-          ↓
-12. Response returns to frontend
-          ↓
-13. QueueWorker processes activity job
-          ↓
-14. Activity is persisted in MongoDB
+            ↓
+10. Activity/notification listeners react where applicable
+            ↓
+11. Background jobs are added
+            ↓
+12. HTTP response returns to frontend
+            ↓
+13. QueueWorker processes background jobs
+            ↓
+14. Secondary records are persisted
 ```
 
----
-
-## Protected Request
+## Protected Task Request
 
 ```text
 GET /api/tasks
@@ -2537,11 +2224,31 @@ Authorization Query
 MongoDB
 ```
 
----
+## Kanban Status Change
 
-# Background Reminder Flow
+```text
+Drag Task
+    ↓
+Kanban Drop Zone
+    ↓
+PUT /api/tasks/:id
+    ↓
+TaskService
+    ↓
+MongoDB
+    ↓
+Successful Response
+    ↓
+Reload Tasks
+    ↓
+Update Frontend State
+    ↓
+Render Kanban
+```
 
-Reminders do not require a user request.
+The backend remains the source of truth.
+
+## Background Reminder Flow
 
 ```text
 Server Starts
@@ -2576,17 +2283,7 @@ NotificationService
 MongoDB
 ```
 
-The scheduler determines **when** to check.
-
-The reminder service determines **what** to do.
-
-The queue worker determines **how** background jobs are processed.
-
----
-
-# Background Job Flow
-
-## Activity
+## Activity Job
 
 ```text
 Task Operation
@@ -2599,18 +2296,18 @@ addJob({
     type: "activity"
 })
       ↓
-Queue
+MongoDB Queue
       ↓
 QueueWorker
       ↓
 Job Handler
       ↓
-createActivity()
+Activity Service
       ↓
 MongoDB
 ```
 
-## Notification
+## Notification Job
 
 ```text
 Task Operation
@@ -2623,7 +2320,7 @@ addJob({
     type: "notification"
 })
       ↓
-Queue
+MongoDB Queue
       ↓
 QueueWorker
       ↓
@@ -2634,31 +2331,7 @@ NotificationService
 MongoDB
 ```
 
-## Reminder Notification
-
-```text
-Reminder Scheduler
-      ↓
-Reminder Service
-      ↓
-Task approaching due date
-      ↓
-addJob({
-    type: "notification"
-})
-      ↓
-Queue
-      ↓
-QueueWorker
-      ↓
-NotificationService
-      ↓
-MongoDB
-```
-
----
-
-# Background Report Flow
+## Background Report Flow
 
 ```text
 Generate Report
@@ -2667,11 +2340,11 @@ POST /api/reports/tasks/report
       ↓
 Report Controller
       ↓
-addJob({
-    type: "report"
-})
+Create report job
       ↓
 202 Accepted + jobId
+      ↓
+MongoDB Queue
       ↓
 QueueWorker
       ↓
@@ -2687,7 +2360,7 @@ writeFile()
       ↓
 Store file result on completed job
       ↓
-Frontend checks job status
+Frontend polls job status
       ↓
 GET /api/reports/jobs/:jobId/download
       ↓
@@ -2706,7 +2379,15 @@ Business logic is kept out of routes and minimized in controllers.
 
 This separates HTTP concerns from application logic.
 
----
+```text
+Route
+  ↓
+Controller
+  ↓
+Service
+  ↓
+Model / infrastructure
+```
 
 ## Class Usage
 
@@ -2720,11 +2401,7 @@ NotificationService
 QueueWorker
 ```
 
-Not every service was converted into a class.
-
-This keeps the architecture gradual rather than introducing classes simply for the sake of using classes.
-
----
+Not every service was converted into a class simply for consistency.
 
 ## Backend Authorization
 
@@ -2732,17 +2409,13 @@ Authorization is enforced on the server.
 
 Hiding a frontend button does not provide security.
 
-The backend must reject unauthorized operations even if a user manually sends the request.
-
----
+The backend must reject unauthorized requests even if a user manually sends them.
 
 ## Backend Filtering
 
-Task filtering is handled through MongoDB queries.
+Task filtering is performed through MongoDB queries.
 
 This avoids retrieving every task and filtering the entire collection in the browser.
-
----
 
 ## Authentication State vs Credential
 
@@ -2754,36 +2427,23 @@ currentUser
 
 in memory.
 
-The JWT remains inside the:
+The JWT remains inside:
 
 ```text
-HttpOnly cookie
+HttpOnly Cookie
 ```
 
 This separates UI state from the authentication credential.
 
----
-
 ## Event-Driven Secondary Actions
 
-Activity and notification behavior is triggered through task events rather than tightly coupling every secondary operation to the task service.
+Activity and notification behavior is triggered through task events rather than tightly coupling every secondary operation to the primary task service.
 
----
+## MongoDB-Backed Queue
 
-## Background Queue
+The queue is persisted in MongoDB rather than held only in process memory.
 
-Activity, notification, and report processing are treated as background work.
-
-The queue itself is persisted in MongoDB rather than held in process memory. This separates queued-job state from the lifetime of the Node.js process.
-
-
-The primary operation can enqueue the work without waiting for the secondary operation to complete.
-
----
-
-
-
----
+This allows queued work to survive a Node.js process restart and provides a persistent location for job state.
 
 ## Reminder Scheduler vs Reminder Service
 
@@ -2805,15 +2465,11 @@ The queue worker determines:
 HOW background work is executed
 ```
 
-This keeps scheduling, business logic, and background execution separate.
-
----
-
 ## Overdue as Separate State
 
 `isOverdue` is separate from task `status`.
 
-This allows a task to be:
+This allows:
 
 ```text
 status = pending
@@ -2822,11 +2478,13 @@ isOverdue = true
 
 without adding `overdue` to the workflow statuses.
 
----
+## Backend as Source of Truth
+
+For state-changing UI operations such as Kanban status changes, the frontend reloads authoritative API data after the backend update instead of relying on a manually mutated DOM element.
 
 ## Local HTTPS
 
-HTTPS is enabled during local development to support secure-cookie behavior and provide a development environment closer to secure deployment conditions.
+HTTPS is enabled during local development to support Secure-cookie behavior and provide a development environment closer to secure deployment conditions.
 
 ---
 
@@ -2838,24 +2496,32 @@ Install dependencies:
 npm install
 ```
 
-Run backend:
+Start the backend in development mode:
 
 ```bash
 npm run dev
 ```
 
-Run tests:
+Start the backend without Nodemon:
+
+```bash
+npm start
+```
+
+Run the current test script:
 
 ```bash
 npm test
 ```
 
-Check Node/npm versions:
+Check Node.js/npm versions:
 
 ```bash
 node -v
 npm -v
 ```
+
+> `npm test` currently uses the placeholder test script from `package.json`; a dedicated automated test suite has not yet been added.
 
 ---
 
@@ -2880,9 +2546,12 @@ feat: add task reminders and overdue tracking
 feat: add background job queue
 feat: add retry and failure handling
 feat: add task exports and background reports
+fix: prevent kanban task duplication
+fix: stabilize frontend session state
+fix: prevent live server reload during report generation
 ```
 
-Generated certificates, environment secrets, generated report files, and machine-specific VS Code configuration are excluded through `.gitignore`.
+Generated files, environment secrets, certificates, and machine-specific VS Code configuration are excluded through `.gitignore`.
 
 ---
 
@@ -2890,59 +2559,64 @@ Generated certificates, environment secrets, generated report files, and machine
 
 The following are intentionally outside the current implementation.
 
+## Automated Testing
+
+A dedicated automated test suite can be added for:
+
+- Unit tests.
+- API integration tests.
+- Authentication tests.
+- Authorization tests.
+- Task service tests.
+- Reminder edge cases.
+- Scheduler behavior.
+- Queue worker behavior.
+- Retry/failure behavior.
+- Report generation.
+- Report access control.
+
 ## Controlled Queue Concurrency
 
 The current worker processes one job at a time.
 
-A future improvement could allow a limited number of jobs to execute simultaneously.
-
-Example:
+A future implementation could introduce controlled concurrency, for example:
 
 ```text
 Maximum concurrency = 2
 
 Job 1 ──────────────→ completed
 Job 2 ──────────────→ completed
-       Job 3 waits
-                      ↓
-                  Job 3 starts
+Job 3 waits
+              ↓
+           Job 3 starts
 ```
 
-This would introduce:
-
-* Active worker tracking
-* Concurrent Promises
-* Controlled concurrency
-* Further event-loop practice
-
-## Automated Testing
-
-Automated testing is the next implementation/testing stage. Planned coverage can include:
-
-* Unit tests
-* API integration tests
-* Authentication tests
-* Authorization tests
-* Async success/failure tests
-* Reminder edge-case tests
-* Scheduler tests
-* Queue worker tests
-* Service tests
-
----
+This would require additional worker-state and concurrency management.
 
 ## External Queue Infrastructure
 
-The current queue is persisted in MongoDB.
+The current queue is intentionally MongoDB-backed.
 
-A future production-oriented implementation could move queue infrastructure to:
+A future production-oriented implementation could evaluate:
 
 ```text
 Redis
 BullMQ
 ```
 
-The MongoDB implementation is intentionally kept as the current learning implementation before considering an external queue system.
+The MongoDB queue is currently the project's learning-focused implementation.
+
+## Email Notifications
+
+The current notification system is in-app only.
+
+A future extension could add SMTP/Nodemailer-based email delivery.
+
+## Activity and Notification Pagination
+
+Activity and notification endpoints currently return the latest 50 records.
+
+Full pagination can be added if the UI later requires browsing older records.
 
 ---
 
@@ -2974,8 +2648,6 @@ classes
 constructors
 method references
 bind()
-call()
-apply()
 Promises
 async/await
 Promise.all()
@@ -2985,17 +2657,13 @@ timers
 setInterval()
 queues
 workers
-FIFO processing
 job state management
 retry logic
-recursion
-exponential backoff
+backoff
 Promise rejection
 finally
 encapsulation
 ```
-
----
 
 ## Node.js
 
@@ -3013,7 +2681,6 @@ background processing
 job queues
 workers
 retry handling
-exponential backoff
 streams
 createWriteStream()
 createReadStream()
@@ -3022,8 +2689,6 @@ CSV generation
 JSON serialization
 file downloads
 ```
-
----
 
 ## Express
 
@@ -3039,9 +2704,8 @@ JSON APIs
 authentication middleware
 authorization
 CORS
+centralized error handling
 ```
-
----
 
 ## MongoDB / Mongoose
 
@@ -3061,9 +2725,8 @@ sorting
 pagination
 aggregation-style calculations
 timestamps
+cursor-based processing
 ```
-
----
 
 ## Authentication
 
@@ -3085,8 +2748,6 @@ roles
 session restoration
 ```
 
----
-
 ## Asynchronous Programming
 
 The project progressively introduces:
@@ -3104,9 +2765,11 @@ queues
 workers
 job states
 retry behavior
+backoff
+streams
 ```
 
-A key learning goal is understanding not only how asynchronous code works, but **why a particular asynchronous design is appropriate for a particular problem**.
+A key learning goal is understanding not only how asynchronous code works, but why a particular asynchronous design is appropriate for a particular problem.
 
 ---
 
@@ -3116,20 +2779,22 @@ The current application is a development-focused learning project rather than a 
 
 Current limitations include:
 
-* Automated tests are not yet implemented; testing remains to be performed.
-* Notifications are currently in-app only.
-* Email/SMTP delivery is not implemented.
-* The current worker processes jobs sequentially.
-* Controlled queue concurrency is not implemented.
-* Local HTTPS uses development certificates.
-* Certificate and VS Code paths are machine-specific.
-* The application currently uses a local MongoDB configuration.
-* The reminder scheduler currently runs inside the Node.js application process.
-* Activity and notification endpoints currently return a bounded latest-50 result rather than full pagination.
-* Background report generation currently builds the complete report object in memory because the report contains summary data and task details.
-* Multi-instance/distributed scheduler coordination is not implemented.
+- A dedicated automated test suite is not yet implemented.
+- Manual/integration testing still needs to cover the complete application systematically.
+- Notifications are currently in-app only.
+- Email/SMTP delivery is not implemented.
+- The current worker processes jobs sequentially.
+- Controlled queue concurrency is not implemented.
+- Local HTTPS uses development certificates.
+- Certificate and VS Code paths are machine-specific.
+- The application currently uses a local MongoDB configuration.
+- The reminder scheduler runs inside the Node.js application process.
+- Activity and notification endpoints return a bounded latest-50 result rather than full pagination.
+- Background report generation builds the complete report object in memory.
+- Multi-instance/distributed scheduler coordination is not implemented.
+- The current project is not configured as a production deployment.
 
-These are extension points for later development rather than missing requirements of the current implementation.
+These are extension points for later development rather than blockers to the current learning implementation.
 
 ---
 
@@ -3137,7 +2802,7 @@ These are extension points for later development rather than missing requirement
 
 The backend uses centralized application error handling.
 
-Custom application errors distinguish common categories such as:
+Custom application errors cover common categories such as:
 
 ```text
 ValidationError
@@ -3160,21 +2825,24 @@ The API uses a consistent error response shape:
 }
 ```
 
-The frontend API layer reads the same error structure and converts failed responses into JavaScript `Error` objects with the HTTP status and application error code attached.
+The frontend API layer reads the same error structure and converts failed responses into JavaScript `Error` objects with the relevant HTTP status and application error code attached.
 
-This keeps normal controller code focused on successful request handling while unexpected errors are handled centrally.
+This keeps normal controllers focused on successful request handling while unexpected errors are handled centrally.
+
+---
 
 # Security Notes
 
 For local development:
 
-* Keep `.env` out of Git.
-* Keep private certificate keys out of Git.
-* Use HTTPS when testing the Secure cookie configuration.
-* Keep frontend and backend origins consistent.
-* Do not move the JWT back into `localStorage`.
-* Treat backend authorization as the actual security boundary.
-* Do not trust ownership or role values supplied by the frontend.
+- Keep `.env` out of Git.
+- Keep private certificate keys out of Git.
+- Use HTTPS when testing Secure-cookie behavior.
+- Keep frontend and backend browser-facing origins consistent.
+- Do not move the JWT back into `localStorage`.
+- Treat backend authorization as the actual security boundary.
+- Do not trust ownership or role values supplied by the frontend.
+- Do not expose private certificate keys or secrets in source control.
 
 The current browser authentication model is:
 
@@ -3194,11 +2862,120 @@ Protected Controller
 
 ---
 
+# Project Structure
+
+```text
+task-management-system/
+│
+├── client/
+│   ├── css/
+│   │   └── style.css
+│   │
+│   ├── js/
+│   │   ├── api.js
+│   │   ├── app.js
+│   │   ├── auth.js
+│   │   ├── render.js
+│   │   ├── router.js
+│   │   └── state.js
+│   │
+│   └── index.html
+│
+├── server/
+│   └── src/
+│       ├── app.js
+│       │
+│       ├── config/
+│       │   ├── database.js
+│       │   └── env.js
+│       │
+│       ├── controllers/
+│       │   ├── activity_controller.js
+│       │   ├── auth_controller.js
+│       │   ├── dashboard_controller.js
+│       │   ├── notification_controller.js
+│       │   ├── report_controller.js
+│       │   ├── task_controller.js
+│       │   └── user_controller.js
+│       │
+│       ├── errors/
+│       │   └── app_error.js
+│       │
+│       ├── events/
+│       │   ├── task_activity_listener.js
+│       │   ├── task_events.js
+│       │   └── task_notification_listener.js
+│       │
+│       ├── middleware/
+│       │   ├── auth_middleware.js
+│       │   └── error_middleware.js
+│       │
+│       ├── models/
+│       │   ├── activity_model.js
+│       │   ├── job_model.js
+│       │   ├── notification_model.js
+│       │   ├── task_model.js
+│       │   └── user_model.js
+│       │
+│       ├── queue/
+│       │   ├── job_queue.js
+│       │   └── job_types.js
+│       │
+│       ├── reports/
+│       │   └── report_service.js
+│       │
+│       ├── routes/
+│       │   ├── activity_routes.js
+│       │   ├── auth_routes.js
+│       │   ├── dashboard_routes.js
+│       │   ├── notification_routes.js
+│       │   ├── report_routes.js
+│       │   ├── task_routes.js
+│       │   └── user_routes.js
+│       │
+│       ├── services/
+│       │   ├── activity_services.js
+│       │   ├── auth_services.js
+│       │   ├── dashboard_services.js
+│       │   ├── notification_services.js
+│       │   ├── reminder_scheduler.js
+│       │   ├── reminder_services.js
+│       │   ├── task_services.js
+│       │   └── user_services.js
+│       │
+│       ├── utils/
+│       │   ├── async_handler.js
+│       │   └── retry.js
+│       │
+│       ├── workers/
+│       │   ├── job_handlers.js
+│       │   └── queue_worker.js
+│       │
+│       └── server.js
+│
+├── certs/                  # Local HTTPS certificates, ignored by Git
+├── .env
+├── .env.example
+├── .gitignore
+├── package.json
+└── package-lock.json
+```
+
+Generated report files are created at runtime under:
+
+```text
+server/reports/exports/
+```
+
+That directory is ignored by Git and does not need to exist in the repository checkout.
+
+---
+
 # Project Philosophy
 
 The project is intentionally structured so that architecture is introduced when it becomes useful rather than creating every possible infrastructure layer from the beginning.
 
-The architecture has evolved around actual application requirements:
+The application evolved around actual requirements:
 
 ```text
 Task CRUD
@@ -3230,17 +3007,25 @@ Background Worker
 File Exports / Reports
     ↓
 Service Classes
+    ↓
+Frontend / Reliability Cleanup
 ```
 
-The next project stage is:
+The current project stage is:
 
 ```text
-Final UI Cleanup
+Feature Implementation
         ↓
-Runtime / Integration Testing
+Architecture Cleanup
         ↓
-Fixes for Issues Found During Testing
+UI / State Reliability Fixes
+        ↓
+Manual / Integration Testing
+        ↓
+Final UI Polish
 ```
+
+The goal is to learn the reasoning behind each layer while keeping the implementation understandable and project-focused.
 
 ---
 
