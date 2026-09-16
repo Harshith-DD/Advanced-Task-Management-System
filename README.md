@@ -4,13 +4,15 @@ A full-stack task management application built with **JavaScript, Node.js, Expre
 
 The project started as a simple task CRUD application and gradually evolved into a more complete backend architecture covering database querying, authentication, authorization, task assignment, event-driven features, notifications, dashboards, reminders, background jobs, retry handling, file exports, reports, and class-based service design.
 
-> **Current status:** The application supports task management, backend filtering/search/sorting/pagination, authentication and authorization, task assignment, activity logging, in-app notifications, dashboard statistics, reminders, overdue tracking, background job processing, retry handling, JSON/CSV exports, background report generation, and class-based `TaskService`, `NotificationService`, and `QueueWorker` components.
+> **Current status:** Milestones 1–12 are implemented. The application supports task management, backend filtering/search/sorting/pagination, authentication and authorization, task assignment, activity logging, in-app notifications, dashboard statistics, reminders, overdue tracking, a MongoDB-backed background job queue, retry handling, streamed JSON/CSV exports, background report generation, centralized error handling, debounced frontend search, and class-based `TaskService`, `NotificationService`, and `QueueWorker` components. Automated testing and final UI cleanup are the remaining project-level tasks.
 
 ---
 
 ## Table of Contents
 
 * [Project Overview](#project-overview)
+* [Implementation Progress](#implementation-progress)
+* [Current Review Status](#current-review-status)
 * [Core Specifications](#core-specifications)
 * [Current Features](#current-features)
 * [Technology Stack](#technology-stack)
@@ -52,9 +54,90 @@ The project started as a simple task CRUD application and gradually evolved into
 
 ---
 
+# Current Review Status
+
+The latest codebase was reviewed after the backend cleanup work.
+
+Static verification performed on the current source:
+
+```text
+JavaScript files checked: 49
+Syntax errors found: 0
+```
+
+The current codebase is structurally ready to move to the next stage of the project:
+
+1. Final UI cleanup/polish.
+2. Manual and integration testing.
+3. Fix any runtime issues discovered by those tests.
+
+This does **not** mean runtime testing has already been completed. The application still needs to be exercised against a running MongoDB instance, the local HTTPS certificates, the frontend, and the authenticated API flows.
+
 # Project Overview
 
 The Advanced Task Management System provides authenticated users with a task-management workspace.
+
+# Implementation Progress
+
+The project was built incrementally so that each architectural feature was introduced after the preceding task-management functionality was working.
+
+```text
+Milestone 1
+Task CRUD foundation
+        ↓
+Milestone 2
+MongoDB filtering / search / sorting / pagination
+        ↓
+Milestone 3
+Authentication / authorization / roles / assignment
+        ↓
+Milestone 4
+Event-driven activity logging
+        ↓
+Milestone 5
+In-app notifications
+        ↓
+Milestone 6
+Backend dashboard and frontend dashboard
+        ↓
+Milestone 7
+Task reminders and overdue tracking
+        ↓
+Milestone 8
+Background job queue foundation
+        ↓
+Milestone 9
+Retry and failure handling
+        ↓
+Milestone 10
+JSON/CSV exports and background reports
+        ↓
+Milestone 11
+Background worker / lease / heartbeat reliability work
+        ↓
+Milestone 12
+Centralized error handling and final backend feature cleanup
+```
+
+The later cleanup/review pass also addressed reliability and maintainability issues found after the feature milestones.
+
+Recent fixes include:
+
+* MongoDB job queue persistence replacing the earlier in-memory queue.
+* Protection against stale-job duplicate processing using leases.
+* Environment validation at application startup.
+* Report polling timeout on the frontend.
+* Correct reminder-state reset only when the due date actually changes.
+* Explicit unassignment events.
+* Replacement of deprecated Mongoose update options with `returnDocument: "after"`.
+* Date-filter validation and normalization for `fromDate` and `toDate`.
+* Escaping task-search input before constructing MongoDB regular expressions.
+* Parallel execution of the task count and paginated task query with `Promise.all()`.
+* MongoDB polling error handling in `QueueWorker`.
+* Streaming JSON and CSV exports instead of loading all export rows into memory at once.
+* Limiting activity and notification retrieval to the latest 50 records.
+* Debounced task search in the frontend to avoid an API request on every keystroke.
+
 
 Users can:
 
@@ -240,6 +323,9 @@ description
 
 Search is performed by MongoDB rather than retrieving the entire task collection and filtering it in the browser.
 
+The frontend debounces the search input by 500 ms before requesting filtered tasks, reducing unnecessary requests while the user is typing.
+
+
 ---
 
 ## 5. Filtering
@@ -305,6 +391,9 @@ Example:
 
 Task operations create activity records through the event system.
 
+The activity retrieval endpoint currently returns the latest 50 accessible activity records. This is a bounded retrieval safeguard, not full activity-history pagination. Pagination can be introduced later if the UI requires browsing older activity.
+
+
 ```text
 Task Event
     ↓
@@ -328,6 +417,9 @@ This keeps activity persistence separate from the primary task operation.
 ## 9. Notifications
 
 The notification system is currently **in-app only**.
+
+Notification retrieval currently returns the latest 50 notifications for the authenticated user. Full notification-history pagination is intentionally left for a later UI requirement.
+
 
 Current notification types include:
 
@@ -433,6 +525,12 @@ Jobs are persisted in MongoDB, allowing queued jobs to survive a Node.js process
 
 The worker claims jobs atomically and tracks their lifecycle through MongoDB.
 
+Jobs are not kept only in a JavaScript array. A queued job is stored as a MongoDB document, so pending work can remain available if the Node.js process restarts.
+
+The queue also uses a lease ID and stale-job timeout. A job that remains in `processing` beyond the stale threshold can be reclaimed by another worker cycle. The worker refreshes the lease while processing a job.
+
+The current implementation intentionally runs one job at a time.
+
 Current job types:
 
 ```text
@@ -521,6 +619,25 @@ server/reports/exports/
 
 Direct exports use the authenticated user's task access rules.
 
+### Direct Export Memory Behavior
+
+JSON and CSV task exports use a MongoDB cursor and a writable file stream.
+
+```text
+MongoDB cursor
+      ↓
+one task at a time
+      ↓
+file write stream
+      ↓
+saved export
+```
+
+This avoids constructing one large in-memory array containing every exported task.
+
+The background task report is different by design: it calculates summary values and embeds task information in one JSON report, so its report-generation path currently loads the accessible task set before building the report.
+
+
 Background reports use the same authorization-aware task query.
 
 Report generation is handled as a background job instead of blocking the API request.
@@ -608,7 +725,7 @@ The worker is created once and started during server initialization.
 | Development server             | nodemon                       |
 | Frontend                       | HTML, CSS, vanilla JavaScript |
 | Event system                   | Node.js EventEmitter          |
-| Background queue               | In-memory JavaScript queue    |
+| Background queue               | MongoDB-backed job queue      |
 | Background worker              | Async Node.js class           |
 | Timers                         | `setInterval()`               |
 | Package format                 | ES Modules                    |
@@ -2657,6 +2774,9 @@ Activity and notification behavior is triggered through task events rather than 
 
 Activity, notification, and report processing are treated as background work.
 
+The queue itself is persisted in MongoDB rather than held in process memory. This separates queued-job state from the lifetime of the Node.js process.
+
+
 The primary operation can enqueue the work without waiting for the secondary operation to complete.
 
 ---
@@ -2797,7 +2917,7 @@ This would introduce:
 
 ## Automated Testing
 
-Future testing can include:
+Automated testing is the next implementation/testing stage. Planned coverage can include:
 
 * Unit tests
 * API integration tests
@@ -2813,16 +2933,16 @@ Future testing can include:
 
 ## External Queue Infrastructure
 
-The current queue is intentionally in memory.
+The current queue is persisted in MongoDB.
 
-A future production-oriented implementation could use:
+A future production-oriented implementation could move queue infrastructure to:
 
 ```text
 Redis
 BullMQ
 ```
 
-while keeping application-level job behavior largely independent of the queue infrastructure.
+The MongoDB implementation is intentionally kept as the current learning implementation before considering an external queue system.
 
 ---
 
@@ -2895,8 +3015,9 @@ workers
 retry handling
 exponential backoff
 streams
-writeFile()
+createWriteStream()
 createReadStream()
+stream backpressure
 CSV generation
 JSON serialization
 file downloads
@@ -2995,7 +3116,7 @@ The current application is a development-focused learning project rather than a 
 
 Current limitations include:
 
-* Automated tests are not yet implemented.
+* Automated tests are not yet implemented; testing remains to be performed.
 * Notifications are currently in-app only.
 * Email/SMTP delivery is not implemented.
 * The current worker processes jobs sequentially.
@@ -3004,11 +3125,44 @@ Current limitations include:
 * Certificate and VS Code paths are machine-specific.
 * The application currently uses a local MongoDB configuration.
 * The reminder scheduler currently runs inside the Node.js application process.
+* Activity and notification endpoints currently return a bounded latest-50 result rather than full pagination.
+* Background report generation currently builds the complete report object in memory because the report contains summary data and task details.
 * Multi-instance/distributed scheduler coordination is not implemented.
 
 These are extension points for later development rather than missing requirements of the current implementation.
 
 ---
+
+# Error Handling
+
+The backend uses centralized application error handling.
+
+Custom application errors distinguish common categories such as:
+
+```text
+ValidationError
+NotFoundError
+AuthorizationError
+ConflictError
+```
+
+Route handlers are wrapped with `asyncHandler`, allowing rejected promises to reach the central Express error middleware.
+
+The API uses a consistent error response shape:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message"
+  }
+}
+```
+
+The frontend API layer reads the same error structure and converts failed responses into JavaScript `Error` objects with the HTTP status and application error code attached.
+
+This keeps normal controller code focused on successful request handling while unexpected errors are handled centrally.
 
 # Security Notes
 
@@ -3078,30 +3232,15 @@ File Exports / Reports
 Service Classes
 ```
 
-The next architectural direction is:
+The next project stage is:
 
 ```text
-Automated Testing
+Final UI Cleanup
+        ↓
+Runtime / Integration Testing
+        ↓
+Fixes for Issues Found During Testing
 ```
-
-The goal is not only to make the application work, but to understand:
-
-* Why each layer exists.
-* Where each responsibility belongs.
-* How requests move through the application.
-* How authentication reaches `req.user`.
-* Why backend authorization is required.
-* Why MongoDB performs filtering.
-* Why events are useful.
-* Why independent operations can use `Promise.all()`.
-* How timers interact with the Node.js event loop.
-* Why periodic background work belongs in a scheduler.
-* Why secondary work can be moved into a background queue.
-* How workers consume queued jobs.
-* How retry behavior protects background processing.
-* How class instances encapsulate related behavior.
-* How `this` behaves when methods are passed as callbacks.
-* Why `bind()` is necessary when a class method must retain its instance context.
 
 ---
 
