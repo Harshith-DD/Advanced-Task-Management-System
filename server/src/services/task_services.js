@@ -6,7 +6,8 @@ import taskEvents, {
 } from "../events/task_events.js";
 
 import {
-    NotFoundError
+    NotFoundError,
+    ValidationError
 } from "../errors/app_error.js";
 
 // ========================================
@@ -30,6 +31,37 @@ export function buildTaskAccessQuery(user) {
     };
 }
 
+function parseDateFilter(
+    value,
+    fieldName,
+    endOfDay = false
+) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        throw new ValidationError(
+            `${fieldName} must be a valid date`
+        );
+    }
+
+    if (endOfDay) {
+        date.setHours(
+            23,
+            59,
+            59,
+            999
+        );
+    } else {
+        date.setHours(
+            0,
+            0,
+            0,
+            0
+        );
+    }
+
+    return date;
+}
 
 // ========================================
 // TASK SERVICE
@@ -163,23 +195,50 @@ class TaskService {
         // DATE FILTER
         // --------------------------------
 
-        if (fromDate || toDate) {
-            const dueDateQuery = {};
+if (fromDate || toDate) {
+    const dueDateQuery = {};
 
-            if (fromDate) {
-                dueDateQuery.$gte =
-                    new Date(fromDate);
-            }
+    const normalizedFromDate =
+        fromDate
+            ? parseDateFilter(
+                fromDate,
+                "fromDate"
+            )
+            : null;
 
-            if (toDate) {
-                dueDateQuery.$lte =
-                    new Date(toDate);
-            }
+    const normalizedToDate =
+        toDate
+            ? parseDateFilter(
+                toDate,
+                "toDate",
+                true
+            )
+            : null;
 
-            conditions.push({
-                dueDate: dueDateQuery
-            });
-        }
+    if (
+        normalizedFromDate &&
+        normalizedToDate &&
+        normalizedFromDate > normalizedToDate
+    ) {
+        throw new ValidationError(
+            "fromDate cannot be later than toDate"
+        );
+    }
+
+    if (normalizedFromDate) {
+        dueDateQuery.$gte =
+            normalizedFromDate;
+    }
+
+    if (normalizedToDate) {
+        dueDateQuery.$lte =
+            normalizedToDate;
+    }
+
+    conditions.push({
+        dueDate: dueDateQuery
+    });
+}
 
 
         // --------------------------------
