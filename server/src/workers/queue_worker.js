@@ -81,41 +81,52 @@ async processJob(job) {
     }
 }
 
-
 async runWorker() {
     if (this.isBusy) return;
 
-    const job = await getNextJob();
-
-    if (!job) return;
-
-    this.isBusy = true;
-
     try {
-        const result = await this.processJob(job);
+        const job =
+            await getNextJob();
 
-        await updateJobStatus(
-    job.id,
-    "completed",
-    null,
-    result,
-    job.leaseId
-);
+        if (!job) return;
+
+        this.isBusy = true;
+
+        try {
+            const result =
+                await this.processJob(job);
+
+            await updateJobStatus(
+                job.id,
+                "completed",
+                null,
+                result,
+                job.leaseId
+            );
+
+        } catch (error) {
+            await updateJobStatus(
+                job.id,
+                "failed",
+                error.message,
+                null,
+                job.leaseId
+            );
+
+            console.error(
+                `Job ${job.id} permanently failed after ${job.attempts} attempts:`,
+                error
+            );
+
+        } finally {
+            this.isBusy = false;
+        }
+
     } catch (error) {
-        await updateJobStatus(
-    job.id,
-    "failed",
-    error.message,
-    null,
-    job.leaseId
-);
-
         console.error(
-            `Job ${job.id} permanently failed after ${job.attempts} attempts:`,
+            "Queue worker polling failed:",
             error
         );
-    } finally {
-        this.isBusy = false;
     }
 }
 
