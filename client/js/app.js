@@ -739,26 +739,24 @@ async function handleKanbanDrop(event) {
     return;
   }
 
-  const previousParent = currentCard.parentElement;
-  const previousStatus = currentCard.dataset.status;
 
   // Move the card immediately so the UI responds without requiring a refresh.
   targetDropZone.appendChild(currentCard);
   currentCard.dataset.status = nextStatus;
   updateKanbanColumnCounts();
 
-  try {
-    await updateTask(taskId, { status: nextStatus });
+try {
+  await updateTask(taskId, { status: nextStatus });
 
-    await Promise.all([loadActivities(), loadDashboard()]);
-  } catch (error) {
-    // Restore the card if the server rejects the status change.
-    previousParent.appendChild(currentCard);
-    currentCard.dataset.status = previousStatus;
-    updateKanbanColumnCounts();
-    console.error("Failed to move task:", error);
-    alert(error.message);
-  }
+  await Promise.all([
+    loadTasks(),
+    loadActivities(),
+    loadDashboard(),
+  ]);
+} catch (error) {
+  console.error("Failed to move task:", error);
+  alert(error.message);
+}
 }
 
 // ========================================
