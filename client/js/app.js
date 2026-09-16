@@ -1292,6 +1292,11 @@ async function initializeApp() {
 }
 
 async function waitForReport(jobId) {
+    const POLL_INTERVAL_MS = 1000;
+    const MAX_WAIT_TIME_MS = 5 * 60 * 1000;
+
+    const startTime = Date.now();
+
     while (true) {
         const response =
             await getReportStatus(jobId);
@@ -1309,9 +1314,21 @@ async function waitForReport(jobId) {
             );
         }
 
+        if (
+            Date.now() - startTime >=
+            MAX_WAIT_TIME_MS
+        ) {
+            throw new Error(
+                "Report generation is taking longer than expected. Please try again."
+            );
+        }
+
         await new Promise(
             (resolve) =>
-                setTimeout(resolve, 1000)
+                setTimeout(
+                    resolve,
+                    POLL_INTERVAL_MS
+                )
         );
     }
 }
