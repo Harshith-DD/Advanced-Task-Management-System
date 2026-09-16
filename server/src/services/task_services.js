@@ -63,6 +63,13 @@ function parseDateFilter(
     return date;
 }
 
+function escapeRegex(value) {
+    return value.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+    );
+}
+
 // ========================================
 // TASK SERVICE
 // ========================================
@@ -157,25 +164,29 @@ class TaskService {
         // --------------------------------
         // SEARCH FILTER
         // --------------------------------
+        const escapedSearch =
+    search
+        ? escapeRegex(search)
+        : null;
 
-        if (search) {
-            conditions.push({
-                $or: [
-                    {
-                        title: {
-                            $regex: search,
-                            $options: "i"
-                        }
-                    },
-                    {
-                        description: {
-                            $regex: search,
-                            $options: "i"
-                        }
-                    }
-                ]
-            });
-        }
+if (escapedSearch) {
+    conditions.push({
+        $or: [
+            {
+                title: {
+                    $regex: escapedSearch,
+                    $options: "i"
+                }
+            },
+            {
+                description: {
+                    $regex: escapedSearch,
+                    $options: "i"
+                }
+            }
+        ]
+    });
+}
 
 
         // --------------------------------
