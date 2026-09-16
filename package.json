@@ -4,15 +4,11 @@
   "description": "",
   "main": "index.js",
   "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server/src/server.js"
-  },
-  "nodemonConfig": {
-    "ignore": [
-      "server/reports/**"
-    ]
-  },
+"scripts": {
+  "test": "echo \"Error: no test specified\" && exit 1",
+  "dev": "nodemon --ignore server/reports --ignore server/reports/** server/src/server.js",
+  "start": "node server/src/server.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",

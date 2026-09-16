@@ -309,14 +309,13 @@ export async function getReportStatus(jobId) {
     );
 }
 
-export async function downloadReport(jobId) {
-    const response =
-        await fetch(
-            `${API_BASE_URL}/reports/jobs/${jobId}/download`,
-            {
-                credentials: "include"
-            }
-        );
+export async function downloadTaskReport(jobId) {
+    const response = await fetch(
+        `${API_BASE_URL}/reports/jobs/${jobId}/download`,
+        {
+            credentials: "include"
+        }
+    );
 
     if (!response.ok) {
         let data = null;
@@ -327,10 +326,10 @@ export async function downloadReport(jobId) {
             // Ignore non-JSON error responses.
         }
 
-throw new Error(
-    data?.error?.message ||
-    "Failed to download report"
-);
+        throw new Error(
+            data?.error?.message ||
+            "Failed to download report"
+        );
     }
 
     return response.blob();

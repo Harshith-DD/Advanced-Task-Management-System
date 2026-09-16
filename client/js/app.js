@@ -17,7 +17,7 @@ import {
     downloadTaskExport,
     createTaskReport,
 getReportStatus,
-downloadReport
+downloadTaskReport
 } from "./api.js";
 
 import {
@@ -1298,12 +1298,31 @@ async function waitForReport(jobId) {
     const startTime = Date.now();
 
     while (true) {
+        console.log(
+            "Checking report status:",
+            jobId
+        );
+
         const response =
             await getReportStatus(jobId);
 
+        console.log(
+            "Report status response:",
+            response
+        );
+
         const job = response.job;
 
+        console.log(
+            "Current report status:",
+            job.status
+        );
+
         if (job.status === "completed") {
+            console.log(
+                "Report completed."
+            );
+
             return;
         }
 
@@ -1323,12 +1342,20 @@ async function waitForReport(jobId) {
             );
         }
 
+        console.log(
+            "Report not ready. Waiting 1 second..."
+        );
+
         await new Promise(
             (resolve) =>
                 setTimeout(
                     resolve,
                     POLL_INTERVAL_MS
                 )
+        );
+
+        console.log(
+            "Polling again..."
         );
     }
 }
@@ -1345,25 +1372,33 @@ async function handleGenerateReport() {
             response.jobId
         );
 
+        reportStatus.textContent =
+            "Downloading report...";
+
         const blob =
-            await downloadReport(
+            await downloadTaskReport(
                 response.jobId
             );
 
-        const downloadUrl =
-            URL.createObjectURL(blob);
+const downloadUrl =
+    URL.createObjectURL(blob);
 
-        const link =
-            document.createElement("a");
+const link =
+    document.createElement("a");
 
-        link.href = downloadUrl;
-        link.download = "task-report.json";
+link.href = downloadUrl;
+link.download =
+    "task-report.json";
 
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+document.body.appendChild(link);
 
-        URL.revokeObjectURL(downloadUrl);
+link.click();
+
+link.remove();
+
+setTimeout(() => {
+    URL.revokeObjectURL(downloadUrl);
+}, 1000);
 
         reportStatus.textContent =
             "Report downloaded.";
