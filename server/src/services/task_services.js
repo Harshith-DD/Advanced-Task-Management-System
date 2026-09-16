@@ -335,10 +335,19 @@ class TaskService {
             ...taskData
         };
 
+        const existingDueDate =
+            existingTask.dueDate
+            ? new Date(existingTask.dueDate).getTime()
+            : null;
+
+        const newDueDate =
+            taskData.dueDate
+                ? new Date(taskData.dueDate).getTime()
+                : null;
+
         const dueDateChanged =
             taskData.dueDate !== undefined &&
-            String(existingTask.dueDate) !==
-            String(taskData.dueDate);
+            existingDueDate !== newDueDate;
 
         if (dueDateChanged) {
             updateData.reminderSentAt = null;
