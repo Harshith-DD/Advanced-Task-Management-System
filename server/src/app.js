@@ -25,6 +25,11 @@ import {
     NotFoundError
 } from "./errors/app_error.js";
 
+import {
+    validateEnvironment
+} from "./config/env.js";
+
+validateEnvironment();
 
 const app = express();
 
