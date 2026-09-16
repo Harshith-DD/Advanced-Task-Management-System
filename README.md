@@ -427,7 +427,11 @@ without introducing `overdue` as a workflow status.
 
 ## 13. Background Job Queue
 
-The application uses an in-memory background job queue.
+The application uses a MongoDB-backed background job queue.
+
+Jobs are persisted in MongoDB, allowing queued jobs to survive a Node.js process restart.
+
+The worker claims jobs atomically and tracks their lifecycle through MongoDB.
 
 Current job types:
 
@@ -1335,7 +1339,7 @@ If the due date changes, reminder state can be reset so the new due date can be 
 
 # Background Job Queue
 
-The queue is intentionally in memory.
+The queue is backed by MongoDB.
 
 ## Why a Queue?
 
@@ -2657,13 +2661,7 @@ The primary operation can enqueue the work without waiting for the secondary ope
 
 ---
 
-## In-Memory Queue
 
-The queue is intentionally stored in application memory.
-
-This keeps the learning project simple and avoids introducing Redis or another external infrastructure dependency.
-
-The trade-off is that queued jobs are lost if the Node.js process stops.
 
 ---
 
@@ -2796,21 +2794,6 @@ This would introduce:
 * Concurrent Promises
 * Controlled concurrency
 * Further event-loop practice
-
----
-
-## Centralized Error Handling
-
-Future work can introduce:
-
-* Custom error classes
-* Central Express error middleware
-* Validation errors
-* Database error handling
-* Consistent API error responses
-* Queue-processing error handling
-
----
 
 ## Automated Testing
 
@@ -3013,11 +2996,8 @@ The current application is a development-focused learning project rather than a 
 Current limitations include:
 
 * Automated tests are not yet implemented.
-* Centralized error middleware is not yet implemented.
 * Notifications are currently in-app only.
 * Email/SMTP delivery is not implemented.
-* The background queue is in-memory and is not persistent.
-* Queued jobs are lost if the Node.js process stops.
 * The current worker processes jobs sequentially.
 * Controlled queue concurrency is not implemented.
 * Local HTTPS uses development certificates.
@@ -3101,8 +3081,6 @@ Service Classes
 The next architectural direction is:
 
 ```text
-Centralized Errors
-    ↓
 Automated Testing
 ```
 

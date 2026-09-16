@@ -1,4 +1,5 @@
 import Job from "../models/job_model.js";
+import crypto from "crypto";
 
 const STALE_JOB_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -15,46 +16,74 @@ export async function addJob(job) {
 
 export async function getNextJob() {
     const now = new Date();
+
     const staleTime = new Date(
         now.getTime() - STALE_JOB_TIMEOUT_MS
     );
 
-    const job = await Job.findOneAndUpdate(
-        {
-            $or: [
-                {
-                    status: "pending"
-                },
-                {
-                    status: "processing",
-                    startedAt: {
-                        $lt: staleTime
+    const leaseId =
+        crypto.randomUUID();
+
+    const job =
+        await Job.findOneAndUpdate(
+            {
+                $or: [
+                    {
+                        status: "pending"
+                    },
+                    {
+                        status: "processing",
+                        startedAt: {
+                            $lt: staleTime
+                        }
                     }
+                ]
+            },
+            {
+                $set: {
+                    status: "processing",
+                    startedAt: now,
+                    leaseId
                 }
-            ]
+            },
+            {
+                sort: {
+                    createdAt: 1
+                },
+                returnDocument: "after"
+            }
+        );
+
+    return job;
+}
+
+export async function touchJob(
+    jobId,
+    leaseId
+) {
+    return Job.findOneAndUpdate(
+        {
+            id: jobId,
+            status: "processing",
+            leaseId
         },
         {
             $set: {
-                status: "processing",
-                startedAt: now
+                startedAt: new Date()
             }
         },
-{
-    sort: {
-        createdAt: 1
-    },
-    returnDocument: "after"
-}
+        {
+            returnDocument: "after"
+        }
     );
-
-    return job;
 }
 
 export async function updateJobStatus(
     jobId,
     status,
     error = null,
-    result = null
+    result = null,
+    leaseId
 ) {
     const update = {
         status
@@ -75,7 +104,11 @@ export async function updateJobStatus(
     }
 
     return Job.findOneAndUpdate(
-        { id: jobId },
+        {
+    id: jobId,
+    status: "processing",
+    leaseId
+},
         { $set: update },
         {
             returnDocument: "after"
@@ -85,10 +118,15 @@ export async function updateJobStatus(
 
 export async function updateJobAttempts(
     jobId,
-    attempts
+    attempts,
+    leaseId
 ) {
     return Job.findOneAndUpdate(
-        { id: jobId },
+        {
+    id: jobId,
+    status: "processing",
+    leaseId
+},
         {
             $set: {
                 attempts

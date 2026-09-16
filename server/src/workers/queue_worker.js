@@ -1,7 +1,8 @@
 import {
     getNextJob,
     updateJobStatus,
-    updateJobAttempts
+    updateJobAttempts,
+    touchJob
 } from "../queue/job_queue.js";
 
 import { handleJob } from "./job_handlers.js";
@@ -12,10 +13,11 @@ import { retry } from "../utils/retry.js";
 class QueueWorker {
 
     constructor() {
-        this.pollInterval = 500;
-        this.retryDelay = 1000;
-        this.isBusy = false;
-    }
+    this.pollInterval = 500;
+    this.retryDelay = 1000;
+    this.heartbeatInterval = 60 * 1000;
+    this.isBusy = false;
+}
 
 
 async processJob(job) {
@@ -23,31 +25,60 @@ async processJob(job) {
         `Processing job ${job.id} (${job.type})`
     );
 
-    const remainingRetries =
-        job.maxAttempts - job.attempts - 1;
+    const heartbeat =
+        setInterval(
+            async () => {
+                try {
+                    await touchJob(
+                        job.id,
+                        job.leaseId
+                    );
+                } catch (error) {
+                    console.error(
+                        `Failed to refresh lease for job ${job.id}:`,
+                        error
+                    );
+                }
+            },
+            this.heartbeatInterval
+        );
 
-    const result = await retry(
-        async () => {
-            job.attempts += 1;
+    try {
+        const remainingRetries =
+            job.maxAttempts -
+            job.attempts -
+            1;
 
-            await updateJobAttempts(
-                job.id,
-                job.attempts
+        const result =
+            await retry(
+                async () => {
+                    job.attempts += 1;
+
+                    await updateJobAttempts(
+                        job.id,
+                        job.attempts,
+                        job.leaseId
+                    );
+
+                    console.log(
+                        `Attempt ${job.attempts} for job ${job.id}`
+                    );
+
+                    return handleJob(job);
+                },
+                remainingRetries,
+                this.retryDelay
             );
 
-            console.log(
-                `Attempt ${job.attempts} for job ${job.id}`
-            );
+        console.log(
+            `Job ${job.id} completed`
+        );
 
-            return handleJob(job);
-        },
-        remainingRetries,
-        this.retryDelay
-    );
+        return result;
 
-    console.log(`Job ${job.id} completed`);
-
-    return result;
+    } finally {
+        clearInterval(heartbeat);
+    }
 }
 
 
@@ -64,17 +95,20 @@ async runWorker() {
         const result = await this.processJob(job);
 
         await updateJobStatus(
-            job.id,
-            "completed",
-            null,
-            result
-        );
+    job.id,
+    "completed",
+    null,
+    result,
+    job.leaseId
+);
     } catch (error) {
         await updateJobStatus(
-            job.id,
-            "failed",
-            error.message
-        );
+    job.id,
+    "failed",
+    error.message,
+    null,
+    job.leaseId
+);
 
         console.error(
             `Job ${job.id} permanently failed after ${job.attempts} attempts:`,

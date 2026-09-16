@@ -47,6 +47,11 @@ const jobSchema = new mongoose.Schema({
         default: null
     },
 
+    leaseId: {
+        type: String,
+        default: null
+    },
+
     completedAt: {
         type: Date,
         default: null
