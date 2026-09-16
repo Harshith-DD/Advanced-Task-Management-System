@@ -28,17 +28,18 @@ export async function getActivities(
                 user: user.userId
             };
 
-    return await Activity
-        .find(query)
-        .populate(
-            "user",
-            "name email"
-        )
-        .populate(
-            "task",
-            "title status priority"
-        )
-        .sort({
-            createdAt: -1
-        });
+return await Activity
+    .find(query)
+    .populate(
+        "user",
+        "name email"
+    )
+    .populate(
+        "task",
+        "title status priority"
+    )
+    .sort({
+        createdAt: -1
+    })
+    .limit(50);
 }

@@ -27,17 +27,18 @@ class NotificationService {
     async getNotifications(
         userId
     ) {
-        return await Notification
-            .find({
-                user: userId
-            })
-            .populate(
-                "task",
-                "title status priority"
-            )
-            .sort({
-                createdAt: -1
-            });
+return await Notification
+    .find({
+        user: userId
+    })
+    .populate(
+        "task",
+        "title status priority"
+    )
+    .sort({
+        createdAt: -1
+    })
+    .limit(50);
     }
 
 
