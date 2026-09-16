@@ -4,15 +4,16 @@
     background: #f5f7fb;
     line-height: 1.5;
     font-synthesis: none;
-    --primary: #4f46e5;
-    --primary-dark: #4338ca;
+    --primary: #10b3b0;
+    --primary-dark: #0d8f8c;
     --text: #172033;
     --muted: #6b7280;
     --border: #e5e7eb;
     --surface: #ffffff;
     --surface-soft: #f8fafc;
-    --sidebar: #111827;
+    --sidebar: #17364a;
     --danger: #dc2626;
+    --accent-coral: #ff7a4f;
     --success: #16a34a;
     --warning: #d97706;
     --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
@@ -46,7 +47,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
-    outline: 3px solid rgba(79, 70, 229, 0.25);
+    outline: 3px solid rgba(16, 179, 176, 0.25);
     outline-offset: 2px;
 }
 
@@ -61,7 +62,7 @@ a { color: inherit; }
 
 /* Header / authentication */
 .app-header {
-    background: linear-gradient(135deg, #111827 0%, #1f2937 55%, #312e81 100%);
+    background: #17364a;
     color: #fff;
 }
 
@@ -81,8 +82,8 @@ a { color: inherit; }
     display: grid;
     place-items: center;
     border-radius: 12px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.16);
+    background: var(--primary);
+    border: 1px solid var(--primary);
     font-weight: 800;
     font-size: 1.25rem;
 }
@@ -150,7 +151,7 @@ a { color: inherit; }
     transition: background 160ms ease, color 160ms ease, transform 160ms ease;
 }
 .nav-link:hover { color: #fff; background: rgba(255,255,255,0.06); transform: translateX(2px); }
-.nav-link.is-active { color: #fff; background: rgba(99,102,241,0.2); box-shadow: inset 3px 0 0 #818cf8; }
+.nav-link.is-active { color: #fff; background: rgba(16,179,176,0.16); box-shadow: inset 3px 0 0 var(--primary); }
 .nav-icon { width: 20px; text-align: center; font-size: 1rem; }
 .nav-badge {
     margin-left: auto;
@@ -199,10 +200,12 @@ button, .button-link {
     text-decoration: none;
     transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
-button:hover, .button-link:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 6px 14px rgba(79,70,229,0.18); }
+button:hover, .button-link:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 6px 14px rgba(16,179,176,0.18); }
 .button-secondary { background: #fff; color: #374151; border: 1px solid var(--border); }
 .button-secondary:hover { background: #f8fafc; color: var(--text); }
 .button-link { display: inline-flex; align-items: center; }
+#open-task-form-button { background: var(--accent-coral); }
+#open-task-form-button:hover { background: #e96842; }
 
 /* Dashboard */
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
@@ -241,7 +244,7 @@ button:hover, .button-link:hover { background: var(--primary-dark); transform: t
 .search-control, .control-group, .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
 .search-control label, .control-group label, .form-group label { color: #374151; font-size: 0.78rem; font-weight: 700; }
 input, select, textarea { width: 100%; padding: 0.68rem 0.75rem; border: 1px solid #d1d5db; border-radius: 9px; background: #fff; color: var(--text); }
-input:focus, select:focus, textarea:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); outline: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16,179,176,0.12); outline: none; }
 textarea { resize: vertical; }
 
 .task-list-section {
@@ -268,16 +271,27 @@ textarea { resize: vertical; }
 .task-card.priority-high { border-left-color: #ef4444; }
 .task-card.priority-medium { border-left-color: #f59e0b; }
 .task-card.priority-low { border-left-color: #22c55e; }
+.task-card.overdue {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    border-left-color: #ef4444;
+}
+.task-card.overdue .task-metadata span:first-child {
+    color: #b91c1c;
+    font-weight: 800;
+}
 .task-card-header, .task-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .task-card h3 { margin: 0; font-size: 1rem; }
 .task-description { margin: 0.7rem 0 0; color: #4b5563; }
 .task-metadata { display: flex; flex-wrap: wrap; gap: 0.5rem 0.85rem; margin-top: 0.85rem; color: var(--muted); font-size: 0.8rem; }
 .task-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.7rem; }
-.tag { padding: 0.2rem 0.55rem; background: #eef2ff; color: #4338ca; border-radius: 999px; font-size: 0.72rem; font-weight: 650; }
+.tag { padding: 0.2rem 0.55rem; background: #e7f8f7; color: #087f7c; border-radius: 999px; font-size: 0.72rem; font-weight: 650; }
 .task-card-footer { flex-wrap: wrap; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border); }
 .task-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.delete-button { background: #dc2626; color: #fff; }
+.delete-button:hover { background: #b91c1c; box-shadow: 0 6px 14px rgba(220,38,38,0.18); }
 .status-select, .priority-select, .assignment-select { max-width: 190px; }
-.overdue { background: #fffafa; }
+/* Overdue tasks use a clear red/pink tint so they are immediately distinguishable. */
 .empty-state, .activity-empty, .notification-empty { padding: 2rem; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed #d1d5db; border-radius: 12px; }
 
 .pagination-container { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; }
@@ -398,6 +412,8 @@ body:not(.is-authenticated) body:not(.is-authenticated) {
     .form-group-wide { grid-column: auto; }
     .task-card-header, .task-card-footer, .report-actions { align-items: flex-start; flex-direction: column; }
     .task-actions, .task-card-footer select { width: 100%; max-width: none; }
+    #kanban-board.is-maximized { padding: 54px 12px 12px; gap: 12px; }
+    #kanban-board.is-maximized .kanban-window-button { right: 12px; }
     .task-actions select { flex: 1; }
     .pagination-container { flex-wrap: wrap; }
     .pagination-limit { width: 100%; margin-left: 0; }
@@ -438,21 +454,42 @@ body:not(.is-authenticated) body:not(.is-authenticated) {
 }
 
 .view-toggle-button:focus-visible {
-    outline: 3px solid rgba(79, 70, 229, 0.25);
+    outline: 3px solid rgba(16, 179, 176, 0.25);
     outline-offset: 2px;
 }
 
 #kanban-board {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     align-items: stretch;
     height: min(64vh, 620px);
     min-height: 380px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 2px 4px 8px 0;
+    overflow: hidden;
+    padding: 48px 4px 8px 0;
     overscroll-behavior: contain;
+}
+
+.kanban-window-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 5;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.78rem;
+    font-weight: 750;
+    box-shadow: 0 4px 12px rgba(15,23,42,0.08);
+}
+
+.kanban-window-button:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
 }
 
 .kanban-column {
@@ -556,19 +593,67 @@ body:not(.is-authenticated) body:not(.is-authenticated) {
     opacity: 0.55;
 }
 
+#kanban-board.is-maximized {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    width: 100vw;
+    height: 100vh;
+    min-height: 0;
+    padding: 58px 24px 24px;
+    background: var(--surface);
+    grid-template-columns: repeat(3, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+#kanban-board.is-maximized .kanban-window-button {
+    top: 16px;
+    right: 24px;
+}
+
+#kanban-board.is-maximized .kanban-column {
+    border-radius: 18px;
+    padding: 18px;
+}
+
+#kanban-board.is-maximized .kanban-column-header {
+    top: -18px;
+    margin: -18px -18px 14px;
+    padding: 18px;
+}
+
+#kanban-board.is-maximized .kanban-card {
+    padding: 1.3rem;
+}
+
+#kanban-board.is-maximized .kanban-drop-zone {
+    gap: 16px;
+}
+
+body.kanban-maximized {
+    overflow: hidden;
+}
+
 @media (max-width: 1000px) {
-    #kanban-board {
+    #kanban-board:not(.is-maximized) {
         grid-template-columns: 1fr;
         height: auto;
         min-height: 0;
         overflow: visible;
     }
 
-    .kanban-column {
+    #kanban-board:not(.is-maximized) .kanban-column {
         height: 430px;
         min-height: 430px;
     }
+
+    #kanban-board.is-maximized {
+        grid-template-columns: repeat(3, minmax(280px, 1fr));
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
 }
+
 
 @media (max-width: 640px) {
     .task-view-controls {

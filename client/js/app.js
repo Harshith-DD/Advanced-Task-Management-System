@@ -42,7 +42,12 @@ import {
   renderDashboard,
 } from "./render.js";
 
-import { initializeRouter, navigate, handleProtectedRoute } from "./router.js";
+import {
+  initializeRouter,
+  navigate,
+  handleProtectedRoute,
+  getCurrentRoute,
+} from "./router.js";
 
 // ========================================
 // FORM ELEMENTS
@@ -125,6 +130,8 @@ const kanbanViewButton = document.querySelector("#kanban-view-button");
 const taskListView = document.querySelector("#task-list-view");
 
 const kanbanBoard = document.querySelector("#kanban-board");
+
+const kanbanWindowButton = document.querySelector("#kanban-window-button");
 
 const reportStatus = document.querySelector("#report-status");
 
@@ -441,6 +448,10 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && taskFormModal && !taskFormModal.hidden) {
     closeTaskForm();
   }
+
+  if (event.key === "Escape" && kanbanBoard?.classList.contains("is-maximized")) {
+    setKanbanMaximized(false);
+  }
 });
 
 function showAuthForm(form) {
@@ -471,6 +482,10 @@ function setTaskView(view) {
   taskListView.hidden = !showList;
   kanbanBoard.hidden = showList;
 
+  if (showList && kanbanBoard.classList.contains("is-maximized")) {
+    setKanbanMaximized(false);
+  }
+
   listViewButton.classList.toggle("active", showList);
 
   kanbanViewButton.classList.toggle("active", !showList);
@@ -487,6 +502,38 @@ listViewButton.addEventListener("click", () => setTaskView("list"));
 kanbanViewButton.addEventListener("click", () => setTaskView("kanban"));
 
 setTaskView(localStorage.getItem("taskflow-task-view") || "kanban");
+
+// ========================================
+// KANBAN WINDOW
+// ========================================
+
+function setKanbanMaximized(isMaximized) {
+  if (!kanbanBoard || !kanbanWindowButton) {
+    return;
+  }
+
+  kanbanBoard.classList.toggle("is-maximized", isMaximized);
+  document.body.classList.toggle("kanban-maximized", isMaximized);
+
+  kanbanWindowButton.textContent = isMaximized ? "Minimize" : "Maximize";
+  kanbanWindowButton.setAttribute("aria-expanded", String(isMaximized));
+  kanbanWindowButton.setAttribute(
+    "aria-label",
+    isMaximized ? "Minimize Kanban board" : "Maximize Kanban board",
+  );
+}
+
+if (kanbanWindowButton) {
+  kanbanWindowButton.addEventListener("click", () => {
+    setKanbanMaximized(!kanbanBoard.classList.contains("is-maximized"));
+  });
+}
+
+window.addEventListener("hashchange", () => {
+  if (getCurrentRoute() !== "tasks" && kanbanBoard.classList.contains("is-maximized")) {
+    setKanbanMaximized(false);
+  }
+});
 
 // ========================================
 // KANBAN DRAG AND DROP
