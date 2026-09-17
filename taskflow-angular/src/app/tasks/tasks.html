@@ -1,3 +1,37 @@
-<h1>Tasks</h1>
+<h1>
+  Tasks
+</h1>
 
-<p>This will become the TaskFlow task management page.</p>
+@if (isLoading) {
+  <p>
+    Loading tasks...
+  </p>
+}
+
+@if (errorMessage) {
+  <p>
+    {{ errorMessage }}
+  </p>
+}
+
+@if (!isLoading && !errorMessage && tasks.length === 0) {
+  <p>
+    No tasks found.
+  </p>
+}
+
+@for (task of tasks; track task._id) {
+  <div>
+    <h3>
+      {{ task.title }}
+    </h3>
+
+    <p>
+      Status: {{ task.status }}
+    </p>
+
+    <p>
+      Priority: {{ task.priority }}
+    </p>
+  </div>
+}

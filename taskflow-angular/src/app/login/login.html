@@ -1,0 +1,51 @@
+<h1>Login</h1>
+
+<form
+  #loginForm="ngForm"
+  (ngSubmit)="login()"
+>
+  <div>
+    <label for="email">
+      Email
+    </label>
+
+    <input
+      id="email"
+      type="email"
+      name="email"
+      [(ngModel)]="email"
+      required
+    />
+  </div>
+
+  <div>
+    <label for="password">
+      Password
+    </label>
+
+    <input
+      id="password"
+      type="password"
+      name="password"
+      [(ngModel)]="password"
+      required
+    />
+  </div>
+
+  @if (errorMessage) {
+    <p>
+      {{ errorMessage }}
+    </p>
+  }
+
+  <button
+    type="submit"
+    [disabled]="loginForm.invalid || isLoading"
+  >
+    @if (isLoading) {
+      Logging in...
+    } @else {
+      Login
+    }
+  </button>
+</form>

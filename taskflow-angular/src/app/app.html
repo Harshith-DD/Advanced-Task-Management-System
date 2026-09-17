@@ -1,3 +1,30 @@
-<h1>{{ title() }}</h1>
+<h1>
+  {{ title() }}
+</h1>
+
+<nav>
+  <a routerLink="/dashboard">
+    Dashboard
+  </a>
+
+  <a routerLink="/tasks">
+    Tasks
+  </a>
+
+  @if (isAuthenticated()) {
+    <button
+      type="button"
+      (click)="logout()"
+    >
+      Logout
+    </button>
+  } @else {
+    <a routerLink="/login">
+      Login
+    </a>
+  }
+</nav>
+
+<hr />
 
 <router-outlet />

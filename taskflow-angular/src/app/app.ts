@@ -1,38 +1,65 @@
-import { Component, signal } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
-import { TaskCard } from './task-card/task-card';
+import {
+  Component,
+  inject,
+  OnInit,
+  signal
+} from '@angular/core';
+
+import {
+  Router,
+  RouterLink,
+  RouterOutlet
+} from '@angular/router';
+
+import {
+  AuthService
+} from './services/auth';
+
 @Component({
-  imports: [RouterLink, RouterOutlet],
   selector: 'app-root',
-  styleUrl: './app.css',
+  imports: [
+    RouterLink,
+    RouterOutlet
+  ],
   templateUrl: './app.html',
+  styleUrl: './app.css'
 })
-export class App {
+export class App implements OnInit {
   protected readonly title = signal('TaskFlow');
 
-  protected readonly taskCount = signal(3);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
-  protected readonly isLoggedIn = signal(true);
-
-protected readonly tasks = signal([
-  { title: 'Build dashboard', status: 'pending' },
-  { title: 'Fix notifications', status: 'completed' },
-  { title: 'Create reports', status: 'pending' },
-]);
-
-  protected incrementTaskCount() {
-    this.taskCount.update(count => count + 1);
+  ngOnInit(): void {
+    this.restoreSession();
   }
-  protected addTask() {
-  this.tasks.update(tasks => [
-    ...tasks,
-    {
-      title: `New Task ${tasks.length + 1}`,
-      status: 'pending'
-    }
-  ]);
 
-  this.taskCount.update(count => count + 1);
-}
-}
+  private restoreSession(): void {
+    this.authService.restoreSession().subscribe({
+      next: user => {
+        this.authService.setUser(user);
+      },
 
+      error: () => {
+        this.authService.clearUser();
+      }
+    });
+  }
+
+  logout(): void {
+    this.authService.logout().subscribe({
+      next: () => {
+        this.authService.clearUser();
+        this.router.navigate(['/login']);
+      },
+
+      error: error => {
+        console.error('Logout failed:', error);
+      }
+    });
+  }
+
+  isAuthenticated(): boolean {
+    return this.authService.isAuthenticated();
+  }
+}
