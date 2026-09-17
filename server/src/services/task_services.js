@@ -210,10 +210,6 @@ class TaskService {
 
     const safeSortOrder = sortOrder === "desc" ? -1 : 1;
 
-    const sort = {
-      [safeSortBy]: safeSortOrder,
-    };
-
     // --------------------------------
     // PAGINATION
     // --------------------------------
@@ -231,12 +227,91 @@ class TaskService {
     const [totalTasks, tasks] = await Promise.all([
       Task.countDocuments(query),
 
-      Task.find(query)
-        .populate("owner", "name email")
-        .populate("assignedTo", "name email")
-        .sort(sort)
-        .skip(skip)
-        .limit(pageLimit),
+      safeSortBy === "priority"
+        ? Task.aggregate([
+            { $match: query },
+
+            {
+              $addFields: {
+                priorityOrder: {
+                  $switch: {
+                    branches: [
+                      {
+                        case: { $eq: ["$priority", "low"] },
+                        then: 1,
+                      },
+                      {
+                        case: { $eq: ["$priority", "medium"] },
+                        then: 2,
+                      },
+                      {
+                        case: { $eq: ["$priority", "high"] },
+                        then: 3,
+                      },
+                    ],
+                    default: 0,
+                  },
+                },
+              },
+            },
+
+            {
+              $sort: {
+                priorityOrder: safeSortOrder,
+              },
+            },
+
+            { $skip: skip },
+            { $limit: pageLimit },
+
+            {
+              $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+              },
+            },
+
+            {
+              $unwind: {
+                path: "$owner",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+
+            {
+              $lookup: {
+                from: "users",
+                localField: "assignedTo",
+                foreignField: "_id",
+                as: "assignedTo",
+              },
+            },
+
+            {
+              $unwind: {
+                path: "$assignedTo",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+
+            {
+              $project: {
+                priorityOrder: 0,
+                "owner.password": 0,
+                "assignedTo.password": 0,
+              },
+            },
+          ])
+        : Task.find(query)
+            .populate("owner", "name email")
+            .populate("assignedTo", "name email")
+            .sort({
+              [safeSortBy]: safeSortOrder,
+            })
+            .skip(skip)
+            .limit(pageLimit),
     ]);
 
     // --------------------------------

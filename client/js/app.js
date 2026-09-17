@@ -221,9 +221,7 @@ async function loadTasks() {
     }
 
     const uniqueTasks = Array.from(
-      new Map(
-        result.data.map((task) => [String(task._id), task]),
-      ).values(),
+      new Map(result.data.map((task) => [String(task._id), task])).values(),
     );
 
     setTasks(uniqueTasks);
@@ -512,7 +510,10 @@ document.addEventListener("keydown", (event) => {
     closeTaskForm();
   }
 
-  if (event.key === "Escape" && kanbanBoard?.classList.contains("is-maximized")) {
+  if (
+    event.key === "Escape" &&
+    kanbanBoard?.classList.contains("is-maximized")
+  ) {
     setKanbanMaximized(false);
   }
 });
@@ -593,7 +594,10 @@ if (kanbanWindowButton) {
 }
 
 window.addEventListener("hashchange", () => {
-  if (getCurrentRoute() !== "tasks" && kanbanBoard.classList.contains("is-maximized")) {
+  if (
+    getCurrentRoute() !== "tasks" &&
+    kanbanBoard.classList.contains("is-maximized")
+  ) {
     setKanbanMaximized(false);
   }
 });
@@ -739,24 +743,19 @@ async function handleKanbanDrop(event) {
     return;
   }
 
-
   // Move the card immediately so the UI responds without requiring a refresh.
   targetDropZone.appendChild(currentCard);
   currentCard.dataset.status = nextStatus;
   updateKanbanColumnCounts();
 
-try {
-  await updateTask(taskId, { status: nextStatus });
+  try {
+    await updateTask(taskId, { status: nextStatus });
 
-  await Promise.all([
-    loadTasks(),
-    loadActivities(),
-    loadDashboard(),
-  ]);
-} catch (error) {
-  console.error("Failed to move task:", error);
-  alert(error.message);
-}
+    await Promise.all([loadTasks(), loadActivities(), loadDashboard()]);
+  } catch (error) {
+    console.error("Failed to move task:", error);
+    alert(error.message);
+  }
 }
 
 // ========================================

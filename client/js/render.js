@@ -53,7 +53,7 @@ export function renderTasks(tasks, users = [], currentUser = null) {
     const kanbanCard = createKanbanCard(task, users, currentUser);
 
     const dropZone = kanbanBoardElement.querySelector(
-        `.kanban-drop-zone[data-status="${task.status}"]`,
+      `.kanban-drop-zone[data-status="${task.status}"]`,
     );
 
     if (dropZone) {
