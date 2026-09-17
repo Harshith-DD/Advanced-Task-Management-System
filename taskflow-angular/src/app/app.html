@@ -1,0 +1,18 @@
+<h1>{{ title() }}</h1>
+
+<p>Total tasks: {{ taskCount() }}</p>
+
+@if (isLoggedIn()) {
+  <p>Logged in</p>
+} @else {
+  <p>Not logged in</p>
+}
+
+<h2>Tasks</h2>
+
+@for (task of tasks(); track task.title) {
+  <app-task-card [task]="task" />
+}
+<button (click)="addTask()">
+  Add Task
+</button>
