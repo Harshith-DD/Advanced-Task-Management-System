@@ -28,18 +28,20 @@ export class TaskCard {
     return this.auth.currentUser()?.id ?? null;
   }
 
+  get currentUserRole(): string | null {
+    return this.auth.currentUser()?.role ?? null;
+  }
+
   get isAdmin(): boolean {
-    return this.auth.currentUser()?.role === 'admin';
+    return this.currentUserRole === 'admin';
   }
 
   get isOwner(): boolean {
-    const ownerId = this.task().owner?._id;
-    return !!ownerId && ownerId === this.currentUserId;
+    return !!this.currentUserId && this.task().owner?._id === this.currentUserId;
   }
 
   get isAssignedUser(): boolean {
-    const assignedId = this.task().assignedTo?._id;
-    return !!assignedId && assignedId === this.currentUserId;
+    return !!this.currentUserId && this.task().assignedTo?._id === this.currentUserId;
   }
 
   get canEdit(): boolean {
@@ -54,21 +56,31 @@ export class TaskCard {
     return this.isAdmin || this.isOwner;
   }
 
+  get permissionLabel(): string {
+    if (this.isAdmin) return 'Administrator';
+    if (this.isOwner) return 'You are the owner';
+    if (this.isAssignedUser) return 'Assigned to you';
+    return 'View access';
+  }
+
+  get permissionDetails(): string {
+    const permissions: string[] = [];
+    if (this.canEdit) permissions.push('Can edit');
+    if (this.canAssign) permissions.push('Can assign');
+    if (this.canDelete) permissions.push('Can delete');
+    return permissions.join(' · ');
+  }
+
   get ownerLabel(): string {
-    const owner = this.task().owner?.name ?? 'Unknown';
-    return this.isOwner ? `${owner} (You)` : owner;
+    const owner = this.task().owner;
+    if (!owner) return 'Unknown';
+    return owner._id === this.currentUserId ? `${owner.name} (You)` : owner.name;
   }
 
   get assignedLabel(): string {
     const assigned = this.task().assignedTo;
     if (!assigned) return 'Unassigned';
-    return assigned._id === this.currentUserId
-      ? `${assigned.name} (You)`
-      : assigned.name;
-  }
-
-  trackUser(_: number, user: TaskUser): string {
-    return user._id;
+    return assigned._id === this.currentUserId ? `${assigned.name} (You)` : assigned.name;
   }
 
   onAssignmentChange(event: Event): void {

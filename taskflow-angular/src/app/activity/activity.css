@@ -1,1 +1,1 @@
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.1rem;box-shadow:var(--shadow)}.activity-list{display:grid;gap:.8rem}.activity-item{display:flex;justify-content:space-between;gap:1rem;padding:.8rem 0;border-bottom:1px solid var(--border)}.activity-item span,.activity-item small{display:block;color:var(--muted);font-size:.78rem;margin-top:.2rem}.error{color:var(--danger)}@media(max-width:600px){.activity-item{display:grid}}
+/* Activity styling is shared through src/styles.css to preserve the vanilla UI. */

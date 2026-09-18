@@ -1,21 +1,80 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
 import { API_BASE_URL } from '../api-config';
+import { map } from 'rxjs';
+
+export type NotificationType =
+  | 'taskAssigned'
+  | 'taskCompleted'
+  | 'taskPriorityChanged'
+  | 'taskReminder';
 
 export interface NotificationItem {
-  _id:string; type:string; message:string; read:boolean; createdAt:string;
-  task?: { title:string; status:string; priority:string };
+  _id: string;
+  type: NotificationType;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  task?: {
+    title: string;
+    status: string;
+    priority: string;
+  };
 }
 
-@Injectable({providedIn:'root'})
-export class NotificationService {
-  private readonly http=inject(HttpClient);
-  readonly notifications=signal<NotificationItem[]>([]);
-  readonly unreadCount=computed(()=>this.notifications().filter(n=>!n.read).length);
+interface NotificationResponse {
+  success: boolean;
+  data: NotificationItem[];
+}
 
-  load(){return this.http.get<{success:boolean;data:NotificationItem[]}>(`${API_BASE_URL}/notifications`)
-    .subscribe({next:r=>this.notifications.set(r.data)});}
-  getNotifications(){return this.http.get<{success:boolean;data:NotificationItem[]}>(`${API_BASE_URL}/notifications`);}
-  markRead(id:string){return this.http.patch<{success:boolean;data:NotificationItem}>(`${API_BASE_URL}/notifications/${id}/read`,{});}
-  markAllRead(){return this.http.patch<{success:boolean;data:unknown}>(`${API_BASE_URL}/notifications/read-all`,{});}
+@Injectable({ providedIn: 'root' })
+export class NotificationService {
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${API_BASE_URL}/notifications`;
+
+  readonly notifications = signal<NotificationItem[]>([]);
+  readonly unreadCount = computed(
+    () => this.notifications().filter(notification => !notification.read).length
+  );
+
+  refresh(): Observable<NotificationItem[]> {
+return this.http.get<NotificationResponse>(this.apiUrl).pipe(
+  map(response => response.data)
+);
+  }
+
+  load(): Observable<NotificationItem[]> {
+    return this.refresh();
+  }
+
+  getNotifications(): Observable<NotificationResponse> {
+    return this.http.get<NotificationResponse>(this.apiUrl);
+  }
+
+  markRead(id: string): Observable<{ success: boolean; data: NotificationItem }> {
+    return this.http.patch<{ success: boolean; data: NotificationItem }>(
+      `${this.apiUrl}/${id}/read`,
+      {}
+    ).pipe(
+      tap(response => this.notifications.update(items =>
+        items.map(item => item._id === id ? response.data : item)
+      ))
+    );
+  }
+
+  markAllRead(): Observable<{ success: boolean; data: unknown }> {
+    return this.http.patch<{ success: boolean; data: unknown }>(
+      `${this.apiUrl}/read-all`,
+      {}
+    ).pipe(
+      tap(() => this.notifications.update(items =>
+        items.map(item => ({ ...item, read: true }))
+      ))
+    );
+  }
+
+  clear(): void {
+    this.notifications.set([]);
+  }
 }

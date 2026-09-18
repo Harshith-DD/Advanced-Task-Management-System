@@ -1,19 +1,56 @@
 <section class="route-view">
-  <div class="page-heading"><div><p class="eyebrow">Inbox</p><h2>Notifications</h2><p>Stay up to date with task assignments and changes.</p></div>
-    <button type="button" class="button-secondary" (click)="markAll()" [disabled]="!items().length">Mark all as read</button></div>
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Inbox</p>
+      <h2>Notifications</h2>
+      <p>Stay up to date with task assignments and changes.</p>
+    </div>
+    <button
+      type="button"
+      class="button-secondary"
+      (click)="markAll()"
+      [disabled]="!service.notifications().length || service.unreadCount() === 0"
+    >
+      Mark all as read
+    </button>
+  </div>
+
   <section class="panel">
-    <div class="notification-summary"><strong>{{items().filter(n=>!n.read).length}} unread</strong></div>
-    @if(loading()){<p>Loading notifications...</p>}
-    @else if(error()){<p class="error">{{error()}}</p>}
-    @else if(items().length){
-      <div class="notification-list">
-        @for(item of items();track item._id){
-          <article class="notification-item" [class.unread]="!item.read">
-            <div><strong>{{item.message}}</strong><small>{{item.task?.title??'Task'}} · {{item.createdAt|date:'medium'}}</small></div>
-            @if(!item.read){<button type="button" (click)="markRead(item._id)">Mark read</button>}
+    <div class="notification-summary">
+      <span class="notification-dot" aria-hidden="true"></span>
+      <strong><span>{{ service.unreadCount() }}</span> unread</strong>
+    </div>
+
+    @if (loading()) {
+      <p class="state-message">Loading notifications...</p>
+    } @else if (error()) {
+      <p class="state-message error">{{ error() }}</p>
+    } @else if (service.notifications().length) {
+      <div class="notification-list" aria-live="polite">
+        @for (notification of service.notifications(); track notification._id) {
+          <article class="notification-item" [class.unread]="!notification.read">
+            <div class="notification-content">
+              <p class="notification-message">{{ notification.message }}</p>
+              <div class="notification-meta">
+                <span>Task: {{ notification.task?.title ?? 'Unknown task' }}</span>
+                <span>{{ notification.createdAt | date:'medium' }}</span>
+              </div>
+            </div>
+
+            @if (!notification.read) {
+              <button
+                type="button"
+                class="mark-read-button"
+                (click)="markRead(notification)"
+              >
+                Mark as read
+              </button>
+            }
           </article>
         }
       </div>
-    } @else {<p>No notifications yet.</p>}
+    } @else {
+      <p class="notification-empty">No notifications yet.</p>
+    }
   </section>
 </section>

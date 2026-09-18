@@ -1,24 +1,47 @@
 import { inject } from '@angular/core';
-import { CanActivateChildFn, CanActivateFn, Router } from '@angular/router';
-import { catchError, map, of } from 'rxjs';
+import {
+  CanActivateFn,
+  Router
+} from '@angular/router';
+
+import {
+  catchError,
+  map,
+  of
+} from 'rxjs';
+
 import { AuthService } from '../services/auth';
 
-export const authGuard: CanActivateChildFn = () => {
-  const auth = inject(AuthService);
+export const authGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
   const router = inject(Router);
-  if (auth.isAuthenticated()) return true;
-  return auth.restoreSession().pipe(
+
+  if (authService.isAuthenticated()) {
+    return true;
+  }
+
+  return authService.restoreSession().pipe(
     map(() => true),
-    catchError(() => of(router.createUrlTree(['/login'])))
+    catchError(() => {
+      authService.clearUser();
+      return of(router.createUrlTree(['/login']));
+    })
   );
 };
 
 export const guestGuard: CanActivateFn = () => {
-  const auth = inject(AuthService);
+  const authService = inject(AuthService);
   const router = inject(Router);
-  if (auth.isAuthenticated()) return router.createUrlTree(['/dashboard']);
-  return auth.restoreSession().pipe(
+
+  if (authService.isAuthenticated()) {
+    return router.createUrlTree(['/dashboard']);
+  }
+
+  return authService.restoreSession().pipe(
     map(() => router.createUrlTree(['/dashboard'])),
-    catchError(() => of(true))
+    catchError(() => {
+      authService.clearUser();
+      return of(true);
+    })
   );
 };

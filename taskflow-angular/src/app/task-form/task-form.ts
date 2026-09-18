@@ -26,6 +26,7 @@ export class TaskForm {
   @Input() users: TaskUser[] = [];
   @Input() isSaving = false;
   @Input() task: Task | null = null;
+  @Input() canAssign = true;
 
   @Output() submitted = new EventEmitter<TaskFormSubmit>();
   @Output() cancelled = new EventEmitter<void>();

@@ -1,18 +1,33 @@
 <section class="route-view">
-  <div class="page-heading"><div><p class="eyebrow">History</p><h2>Activity</h2><p>Track changes made to your tasks.</p></div></div>
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">History</p>
+      <h2>Activity</h2>
+      <p>Track changes made to your tasks.</p>
+    </div>
+  </div>
+
   <section class="panel">
-    @if(loading()){<p>Loading activity...</p>}
-    @else if(error()){<p class="error">{{error()}}</p>}
-    @else if(items().length){
+    @if (loading()) {
+      <p class="state-message">Loading activity...</p>
+    } @else if (error()) {
+      <p class="state-message error">{{ error() }}</p>
+    } @else if (items().length) {
       <div class="activity-list">
-        @for(item of items();track item._id){
+        @for (item of items(); track item._id) {
           <article class="activity-item">
-            <div><strong>{{item.task?.title??'Task'}}</strong>
-              <span>{{item.message??item.action??'Task activity'}}</span></div>
-            <small>{{item.user?.name??'User'}} · {{item.createdAt|date:'medium'}}</small>
+            <div class="activity-content">
+              <p class="activity-message">{{ item.message ?? item.action ?? 'Task activity' }}</p>
+              <div class="activity-meta">
+                <span>{{ item.user?.name ?? 'Unknown user' }}</span>
+                <span>{{ item.createdAt | date:'medium' }}</span>
+              </div>
+            </div>
           </article>
         }
       </div>
-    } @else {<p>No activity yet.</p>}
+    } @else {
+      <p class="activity-empty">No activity yet.</p>
+    }
   </section>
 </section>

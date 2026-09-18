@@ -1,85 +1,58 @@
-import {
-  Routes
-} from '@angular/router';
+import { Routes } from '@angular/router';
 
-import {
-  Dashboard
-} from './dashboard/dashboard';
+import { Dashboard } from './dashboard/dashboard';
+import { Login } from './login/login';
+import { Tasks } from './tasks/tasks';
+import { Activity } from './activity/activity';
+import { Notifications } from './notifications/notifications';
+import { Reports } from './reports/reports';
+import { AppShell } from './layout/app-shell/app-shell';
 
-import {
-  Login
-} from './login/login';
-
-import {
-  Tasks
-} from './tasks/tasks';
-
-import {
-  Activity
-} from './activity/activity';
-
-import {
-  Notifications
-} from './notifications/notifications';
-
-import {
-  Reports
-} from './reports/reports';
-
-import {
-  AppShell
-} from './layout/app-shell/app-shell';
-
-import {
-  authGuard,
-  guestGuard
-} from './guards/auth.guard';
+import { authGuard, guestGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'dashboard',
-    pathMatch: 'full'
+    pathMatch: 'full',
+    redirectTo: 'dashboard'
   },
 
   {
     path: 'login',
     component: Login,
-    canActivate: [
-      guestGuard
-    ]
+    canActivate: [guestGuard]
   },
 
   {
     path: '',
     component: AppShell,
-    canActivateChild: [
-      authGuard
-    ],
+    canActivate: [authGuard],
     children: [
       {
         path: 'dashboard',
         component: Dashboard
       },
-
       {
         path: 'tasks',
         component: Tasks
       },
-
       {
         path: 'activity',
         component: Activity
       },
-
       {
         path: 'notifications',
         component: Notifications
       },
-
       {
         path: 'reports',
         component: Reports
+      },
+
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'dashboard'
       }
     ]
   },

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, finalize, Subject, takeUntil } from 'rxjs';
@@ -7,6 +7,10 @@ import { TaskCard } from '../task-card/task-card';
 import { TaskForm, TaskFormSubmit } from '../task-form/task-form';
 import { TaskService } from '../services/task';
 import { TaskStateService } from '../services/task-state';
+import { NotificationService } from '../services/notifications';
+import { AuthService } from '../services/auth';
+
+type TaskView = 'list' | 'kanban';
 
 @Component({
   selector: 'app-tasks',
@@ -17,12 +21,22 @@ import { TaskStateService } from '../services/task-state';
 export class Tasks implements OnInit, OnDestroy {
   protected readonly taskState = inject(TaskStateService);
   private readonly taskService = inject(TaskService);
+  private readonly notificationService = inject(NotificationService);
+  protected readonly authService = inject(AuthService);
   private readonly destroy$ = new Subject<void>();
 
   readonly users = signal<TaskUser[]>([]);
   readonly isFormOpen = signal(false);
   readonly isSaving = signal(false);
   readonly editingTask = signal<Task | null>(null);
+  readonly taskView = signal<TaskView>(this.getInitialTaskView());
+  readonly isKanbanMaximized = signal(false);
+  readonly pageNumbers = computed(() => Array.from({ length: this.taskState.pagination().totalPages }, (_, index) => index + 1));
+  readonly kanbanColumns: Array<{ status: TaskStatus; title: string; description: string }> = [
+    { status: 'pending', title: 'Pending', description: 'Not started' },
+    { status: 'in-progress', title: 'In progress', description: 'Currently active' },
+    { status: 'completed', title: 'Completed', description: 'Finished work' }
+  ];
 
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly statusControl = new FormControl<TaskStatus | ''>('', { nonNullable: true });
@@ -30,51 +44,101 @@ export class Tasks implements OnInit, OnDestroy {
   readonly tagControl = new FormControl('', { nonNullable: true });
   readonly fromDateControl = new FormControl('', { nonNullable: true });
   readonly toDateControl = new FormControl('', { nonNullable: true });
-  readonly sortByControl = new FormControl<'createdAt'|'updatedAt'|'dueDate'|'priority'>('createdAt', { nonNullable: true });
-  readonly sortOrderControl = new FormControl<'asc'|'desc'>('desc', { nonNullable: true });
+  readonly sortByControl = new FormControl<TaskFilters['sortBy']>('createdAt', { nonNullable: true });
+  readonly sortOrderControl = new FormControl<'asc' | 'desc'>('asc', { nonNullable: true });
 
-  readonly visibleTasks = signal<Task[]>([]);
+  private taskRequestId = 0;
+  private draggedTaskId: string | null = null;
 
-  ngOnInit(): void {
-    this.searchControl.valueChanges.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(search => this.applyFilters({ search }));
+ngOnInit(): void {
+  this.searchControl.valueChanges.pipe(
+    debounceTime(500),
+    distinctUntilChanged(),
+    takeUntil(this.destroy$)
+  ).subscribe(search => this.applyFilters({ search: search.trim() }));
 
-    for (const control of [
-      this.statusControl, this.priorityControl, this.tagControl,
-      this.fromDateControl, this.toDateControl,
-      this.sortByControl, this.sortOrderControl
-    ]) {
-      control.valueChanges.pipe(takeUntil(this.destroy$))
-        .subscribe(() => this.applyAllFilters());
+  this.statusControl.valueChanges
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => this.applyAllFilters());
+
+  this.priorityControl.valueChanges
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => this.applyAllFilters());
+
+  this.fromDateControl.valueChanges
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => this.applyAllFilters());
+
+  this.toDateControl.valueChanges
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => this.applyAllFilters());
+
+  this.sortByControl.valueChanges
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => this.applyAllFilters());
+
+  this.sortOrderControl.valueChanges
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => this.applyAllFilters());
+
+  this.loadUsers();
+  this.loadTasks();
+}
+
+  private getInitialTaskView(): TaskView {
+    try {
+      return localStorage.getItem('taskflow-task-view') === 'list' ? 'list' : 'kanban';
+    } catch {
+      return 'kanban';
     }
+  }
 
-    this.loadUsers();
-    this.loadTasks();
+  setTaskView(view: TaskView): void {
+    this.taskView.set(view);
+    if (view === 'list') this.isKanbanMaximized.set(false);
+
+    try {
+      localStorage.setItem('taskflow-task-view', view);
+    } catch {
+      // Ignore unavailable local storage.
+    }
+  }
+
+  toggleKanbanMaximized(): void {
+    this.isKanbanMaximized.update(value => !value);
   }
 
   private loadUsers(): void {
-    this.taskService.getUsers().subscribe({
+    this.taskService.getUsers().pipe(takeUntil(this.destroy$)).subscribe({
       next: response => this.users.set(response.data),
       error: error => console.error('Failed to load users:', error)
     });
   }
 
   loadTasks(): void {
+    const requestId = ++this.taskRequestId;
     this.taskState.setLoading(true);
     this.taskState.clearError();
 
     this.taskService.getTasks(this.taskState.filters()).pipe(
-      finalize(() => this.taskState.setLoading(false)),
+      finalize(() => {
+        if (requestId === this.taskRequestId) this.taskState.setLoading(false);
+      }),
       takeUntil(this.destroy$)
     ).subscribe({
       next: response => {
-        this.taskState.setTasks(response.data);
+        if (requestId !== this.taskRequestId) return;
+
+        const uniqueTasks = Array.from(
+          new Map(response.data.map(task => [String(task._id), task])).values()
+        );
+
+        this.taskState.setTasks(uniqueTasks);
         this.taskState.setPagination(response.pagination);
       },
       error: error => {
+        if (requestId !== this.taskRequestId) return;
+
         console.error('Failed to load tasks:', error);
         this.taskState.setError(
           error?.error?.error?.message ??
@@ -102,6 +166,10 @@ export class Tasks implements OnInit, OnDestroy {
       page: 1
     });
     this.loadTasks();
+  }
+
+  applyTagFilter(): void {
+    this.applyFilters({ tag: this.tagControl.value.trim() });
   }
 
   openCreate(): void {
@@ -144,37 +212,31 @@ export class Tasks implements OnInit, OnDestroy {
           tags: value.tags
         });
 
-    request.subscribe({
+    request.pipe(takeUntil(this.destroy$)).subscribe({
       next: response => {
         const taskId = response.data._id;
         const previousAssignment = editing?.assignedTo?._id ?? null;
         const assignmentChanged = previousAssignment !== value.assignedTo;
+        const shouldAssign = editing ? assignmentChanged : value.assignedTo !== null;
 
-        // A newly-created task starts unassigned. Only call the separate
-        // assignment endpoint when the requested assignment is non-null.
-        // For an existing task, call it whenever the assignment changed,
-        // including changing an assignee to Unassigned.
-        const shouldAssign = editing
-          ? assignmentChanged
+        const notificationMayHaveChanged = editing
+          ? editing.status !== value.status ||
+            editing.priority !== value.priority ||
+            assignmentChanged
           : value.assignedTo !== null;
 
         if (!shouldAssign) {
-          this.afterMutation();
-          this.isSaving.set(false);
+          this.afterMutation(notificationMayHaveChanged);
           return;
         }
 
-        this.taskService.assignTask(taskId, value.assignedTo).subscribe({
-          next: () => {
-            this.afterMutation();
-            this.isSaving.set(false);
-          },
+        this.taskService.assignTask(taskId, value.assignedTo).pipe(
+          takeUntil(this.destroy$)
+        ).subscribe({
+          next: () => this.afterMutation(notificationMayHaveChanged),
           error: error => {
             console.error('Assignment failed:', error);
-            this.taskState.setError(
-              error?.error?.error?.message ??
-              'Task saved, but assignment failed.'
-            );
+            this.taskState.setError(error?.error?.error?.message ?? 'Task saved, but assignment failed.');
             this.isSaving.set(false);
           }
         });
@@ -191,43 +253,57 @@ export class Tasks implements OnInit, OnDestroy {
     });
   }
 
-  changeStatus(event: {task: Task; status: TaskStatus}): void {
-    this.taskService.updateTask(event.task._id, { status: event.status })
-      .subscribe({
-        next: () => this.loadTasks(),
-        error: error => this.taskState.setError(error?.error?.error?.message ?? 'Failed to update status.')
-      });
+  changeStatus(event: { task: Task; status: TaskStatus }): void {
+    this.updateAndRefresh(event.task._id, { status: event.status }, 'Failed to update status.', true);
   }
 
   changeAssignment(event: { task: Task; assignedTo: string | null }): void {
-    this.taskService.assignTask(event.task._id, event.assignedTo).subscribe({
-      next: () => this.loadTasks(),
-      error: error => this.taskState.setError(
-        error?.error?.error?.message ?? 'Failed to update assignment.'
-      )
+    this.taskService.assignTask(event.task._id, event.assignedTo).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: () => this.refreshAfterMutation(true),
+      error: error => this.taskState.setError(error?.error?.error?.message ?? 'Failed to update assignment.')
     });
   }
 
-  changePriority(event: {task: Task; priority: TaskPriority}): void {
-    this.taskService.updateTask(event.task._id, { priority: event.priority })
-      .subscribe({
-        next: () => this.loadTasks(),
-        error: error => this.taskState.setError(error?.error?.error?.message ?? 'Failed to update priority.')
-      });
+  changePriority(event: { task: Task; priority: TaskPriority }): void {
+    this.updateAndRefresh(event.task._id, { priority: event.priority }, 'Failed to update priority.', true);
   }
 
   deleteTask(task: Task): void {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
 
-    this.taskService.deleteTask(task._id).subscribe({
-      next: () => this.loadTasks(),
+    this.taskService.deleteTask(task._id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => this.refreshAfterMutation(),
       error: error => this.taskState.setError(error?.error?.error?.message ?? 'Failed to delete task.')
     });
   }
 
+  private updateAndRefresh(
+    taskId: string,
+    data: Partial<Pick<Task, 'status' | 'priority'>>,
+    fallback: string,
+    refreshNotifications = false
+  ): void {
+    this.taskService.updateTask(taskId, data).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => this.refreshAfterMutation(refreshNotifications),
+      error: error => this.taskState.setError(error?.error?.error?.message ?? fallback)
+    });
+  }
+
+  private refreshAfterMutation(refreshNotifications = false): void {
+    this.loadTasks();
+
+    if (!refreshNotifications) return;
+
+    this.notificationService.refresh().pipe(takeUntil(this.destroy$)).subscribe({
+      error: error => console.error('Failed to refresh notifications:', error)
+    });
+  }
+
   goToPage(page: number): void {
-    const p = this.taskState.pagination();
-    if (page < 1 || page > p.totalPages) return;
+    const pagination = this.taskState.pagination();
+    if (page < 1 || page > pagination.totalPages) return;
     this.taskState.patchFilters({ page });
     this.loadTasks();
   }
@@ -237,10 +313,74 @@ export class Tasks implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  private afterMutation(): void {
+  tasksForStatus(status: TaskStatus): Task[] {
+    return this.taskState.tasks().filter(task => task.status === status);
+  }
+
+  canDrag(task: Task): boolean {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) return false;
+    return currentUser.role === 'admin' ||
+      task.owner?._id === currentUser.id ||
+      task.assignedTo?._id === currentUser.id;
+  }
+
+  onDragStart(event: DragEvent, task: Task): void {
+    if (!this.canDrag(task) || (event.target as HTMLElement)?.closest('button, select, input, textarea, a')) {
+      event.preventDefault();
+      return;
+    }
+
+    this.draggedTaskId = task._id;
+    event.dataTransfer?.setData('text/plain', task._id);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  onDragEnd(): void {
+    this.draggedTaskId = null;
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  }
+
+  onDrop(event: DragEvent, nextStatus: TaskStatus): void {
+    event.preventDefault();
+
+    const taskId = this.draggedTaskId ?? event.dataTransfer?.getData('text/plain');
+    this.draggedTaskId = null;
+    if (!taskId) return;
+
+    const task = this.taskState.tasks().find(item => item._id === taskId);
+    if (!task || !this.canDrag(task) || task.status === nextStatus) return;
+
+    this.taskState.setTasks(this.taskState.tasks().map(item =>
+      item._id === taskId ? { ...item, status: nextStatus } : item
+    ));
+
+    this.taskService.updateTask(taskId, { status: nextStatus }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: () => this.refreshAfterMutation(true),
+      error: error => {
+        this.taskState.setError(error?.error?.error?.message ?? 'Failed to move task.');
+        this.loadTasks();
+      }
+    });
+  }
+
+  @HostListener('document:keydown.escape')
+  handleEscape(): void {
+    if (this.isFormOpen()) this.closeForm();
+    else if (this.isKanbanMaximized()) this.isKanbanMaximized.set(false);
+  }
+
+  private afterMutation(refreshNotifications = false): void {
     this.isFormOpen.set(false);
     this.editingTask.set(null);
-    this.loadTasks();
+    this.isSaving.set(false);
+    this.refreshAfterMutation(refreshNotifications);
   }
 
   ngOnDestroy(): void {

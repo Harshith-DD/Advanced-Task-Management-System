@@ -1,48 +1,132 @@
-import { Component, inject, OnDestroy, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { ReportService } from '../services/reports';
-import { interval, Subscription, switchMap, takeWhile, catchError, EMPTY } from 'rxjs';
+import { Subject, catchError, EMPTY, switchMap, takeWhile, timer, takeUntil } from 'rxjs';
 
-@Component({selector:'app-reports',imports:[CommonModule],templateUrl:'./reports.html',styleUrl:'./reports.css'})
+@Component({
+  selector: 'app-reports',
+  imports: [],
+  templateUrl: './reports.html',
+  styleUrl: './reports.css'
+})
 export class Reports implements OnDestroy {
-  private readonly service=inject(ReportService);
-  private polling?:Subscription;
-  readonly busy=signal(false);
-  readonly status=signal('');
-  readonly error=signal('');
+  private readonly service = inject(ReportService);
+  private readonly destroy$ = new Subject<void>();
+  private pollingStop$ = new Subject<void>();
 
-  export(format:'json'|'csv'){
-    this.error.set('');this.busy.set(true);
-    this.service.exportTasks(format).subscribe({
-      next:b=>{this.download(b,`tasks.${format}`);this.busy.set(false)},
-      error:e=>{this.error.set(e?.error?.error?.message??'Failed to download export.');this.busy.set(false)}
+  readonly busy = signal(false);
+  readonly status = signal('');
+  readonly error = signal('');
+
+  export(format: 'json' | 'csv'): void {
+    this.error.set('');
+    this.status.set(`Preparing ${format.toUpperCase()} export...`);
+    this.busy.set(true);
+
+    this.service.exportTasks(format).pipe(takeUntil(this.destroy$)).subscribe({
+      next: blob => {
+        this.download(blob, `tasks.${format}`);
+        this.busy.set(false);
+        this.status.set(`Tasks exported as ${format.toUpperCase()}.`);
+      },
+      error: error => {
+        this.error.set(this.getErrorMessage(error, 'Failed to download export.'));
+        this.busy.set(false);
+        this.status.set('');
+      }
     });
   }
 
-  generate(){
-    this.error.set('');this.busy.set(true);this.status.set('Starting report...');
-    this.service.createReport().subscribe({
-      next:r=>this.poll(r.jobId),
-      error:e=>{this.error.set(e?.error?.error?.message??'Failed to create report.');this.busy.set(false)}
+  generate(): void {
+    this.error.set('');
+    this.status.set('Generating report...');
+    this.busy.set(true);
+    this.stopPolling();
+
+    this.service.createReport().pipe(takeUntil(this.destroy$)).subscribe({
+      next: response => this.poll(response.jobId),
+      error: error => {
+        this.error.set(this.getErrorMessage(error, 'Failed to create report.'));
+        this.busy.set(false);
+        this.status.set('');
+      }
     });
   }
 
-  private poll(jobId:string){
-    this.polling?.unsubscribe();
-    this.polling=interval(1500).pipe(
-      switchMap(()=>this.service.getStatus(jobId)),
-      takeWhile(r=>r.job.status==='queued'||r.job.status==='processing',true),
-      catchError(e=>{this.error.set(e?.error?.error?.message??'Report polling failed.');this.busy.set(false);return EMPTY;})
-    ).subscribe(r=>{
-      this.status.set(`Report status: ${r.job.status}`);
-      if(r.job.status==='completed'){this.service.downloadReport(jobId).subscribe({
-        next:b=>{this.download(b,'task-report.json');this.busy.set(false);this.status.set('Report completed and downloaded.');},
-        error:e=>{this.error.set(e?.error?.error?.message??'Failed to download report.');this.busy.set(false);}
-      });}
-      if(r.job.status==='failed'){this.busy.set(false);this.error.set(r.job.error??'Report generation failed.');}
+  private poll(jobId: string): void {
+    const startedAt = Date.now();
+    const stop$ = this.pollingStop$;
+
+    timer(0, 1000).pipe(
+      takeUntil(stop$),
+      takeUntil(this.destroy$),
+      switchMap(() => this.service.getStatus(jobId)),
+      takeWhile(response => response.job.status === 'queued' || response.job.status === 'processing', true),
+      catchError(error => {
+        this.error.set(this.getErrorMessage(error, 'Report polling failed.'));
+        this.busy.set(false);
+        this.status.set('');
+        return EMPTY;
+      })
+    ).subscribe(response => {
+      if (Date.now() - startedAt >= 5 * 60 * 1000 && response.job.status !== 'completed') {
+        this.error.set('Report generation is taking longer than expected. Please try again.');
+        this.busy.set(false);
+        this.status.set('');
+        this.stopPolling();
+        return;
+      }
+
+      this.status.set(`Report status: ${response.job.status}`);
+
+      if (response.job.status === 'completed') {
+        this.stopPolling();
+        this.status.set('Downloading report...');
+
+        this.service.downloadReport(jobId).pipe(takeUntil(this.destroy$)).subscribe({
+          next: blob => {
+            this.download(blob, 'task-report.json');
+            this.busy.set(false);
+            this.status.set('Report downloaded.');
+          },
+          error: error => {
+            this.error.set(this.getErrorMessage(error, 'Failed to download report.'));
+            this.busy.set(false);
+            this.status.set('');
+          }
+        });
+      } else if (response.job.status === 'failed') {
+        this.stopPolling();
+        this.busy.set(false);
+        this.error.set(response.job.error ?? 'Report generation failed.');
+        this.status.set('');
+      }
     });
   }
 
-  private download(blob:Blob,name:string){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
-  ngOnDestroy(){this.polling?.unsubscribe();}
+  private stopPolling(): void {
+    this.pollingStop$.next();
+    this.pollingStop$.complete();
+    this.pollingStop$ = new Subject<void>();
+  }
+
+  private getErrorMessage(error: any, fallback: string): string {
+    return error?.error?.error?.message ?? error?.error?.message ?? fallback;
+  }
+
+  private download(blob: Blob, name: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.stopPolling();
+  }
 }

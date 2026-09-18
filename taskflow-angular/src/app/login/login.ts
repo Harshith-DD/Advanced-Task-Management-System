@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../services/auth';
@@ -8,35 +8,43 @@ type AuthMode = 'login' | 'register';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
 export class Login {
+  private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
   readonly mode = signal<AuthMode>('login');
-  readonly loginEmail = signal('');
-  readonly loginPassword = signal('');
-  readonly registerName = signal('');
-  readonly registerEmail = signal('');
-  readonly registerPassword = signal('');
-
   readonly loginError = signal('');
   readonly registerError = signal('');
   readonly registrationSuccess = signal('');
   readonly isLoginLoading = signal(false);
   readonly isRegisterLoading = signal(false);
 
+  readonly loginForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', Validators.required]
+  });
+
+  readonly registerForm = this.fb.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(100)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', Validators.required]
+  });
+
   showRegister(): void {
     this.mode.set('register');
     this.clearMessages();
+    this.registerForm.reset();
   }
 
   showLogin(): void {
     this.mode.set('login');
     this.clearMessages();
+    this.loginForm.reset();
   }
 
   private clearMessages(): void {
@@ -48,17 +56,24 @@ export class Login {
   login(): void {
     this.loginError.set('');
     this.registrationSuccess.set('');
+
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      return;
+    }
+
     this.isLoginLoading.set(true);
 
+    const { email, password } = this.loginForm.getRawValue();
+
     this.authService.login({
-      email: this.loginEmail().trim(),
-      password: this.loginPassword()
+      email: email.trim(),
+      password
     }).pipe(
       finalize(() => this.isLoginLoading.set(false))
     ).subscribe({
-      next: user => {
-        this.loginEmail.set('');
-        this.loginPassword.set('');
+      next: () => {
+        this.loginForm.reset();
         this.router.navigate(['/dashboard']);
       },
       error: error => {
@@ -75,27 +90,28 @@ export class Login {
   register(): void {
     this.registerError.set('');
     this.registrationSuccess.set('');
+
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
+      return;
+    }
+
     this.isRegisterLoading.set(true);
 
+    const { name, email, password } = this.registerForm.getRawValue();
+
     this.authService.register({
-      name: this.registerName().trim(),
-      email: this.registerEmail().trim(),
-      password: this.registerPassword()
+      name: name.trim(),
+      email: email.trim(),
+      password
     }).pipe(
       finalize(() => this.isRegisterLoading.set(false))
     ).subscribe({
       next: () => {
-        this.registerName.set('');
-        this.registerEmail.set('');
-        this.registerPassword.set('');
+        this.registerForm.reset();
+        this.loginForm.reset({ email: email.trim(), password: '' });
         this.mode.set('login');
-        this.loginEmail.set('');
-        this.loginPassword.set('');
-        this.loginError.set('');
-        this.registerError.set('');
-        this.registrationSuccess.set(
-          'Registration successful. Please log in.'
-        );
+        this.registrationSuccess.set('Registration successful. Please log in.');
       },
       error: error => {
         console.error('Registration failed:', error);

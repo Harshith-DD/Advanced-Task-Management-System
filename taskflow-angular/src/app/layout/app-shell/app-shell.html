@@ -17,10 +17,10 @@
 
     <section
       class="auth-section"
-      aria-labelledby="auth-heading"
+      aria-label="Account"
     >
-      <div class="user-container">
-        @if (authService.currentUser(); as user) {
+      @if (authService.currentUser(); as user) {
+        <div class="user-container">
           <div class="user-info">
             <span class="auth-status">
               You are logged in.
@@ -38,12 +38,8 @@
           >
             Logout
           </button>
-        } @else {
-          <span class="auth-loading">
-            Checking account...
-          </span>
-        }
-      </div>
+        </div>
+      }
     </section>
 
   </div>
@@ -125,7 +121,10 @@
         <span>Notifications</span>
 
         @if (notificationService.unreadCount() > 0) {
-          <span class="nav-badge" aria-label="Unread notifications">
+          <span
+            class="nav-badge"
+            aria-label="Unread notifications"
+          >
             {{ notificationService.unreadCount() }}
           </span>
         }
@@ -152,7 +151,7 @@
 
   <main class="main-content">
     <div class="container content-container">
-      <router-outlet />
+      <router-outlet></router-outlet>
     </div>
   </main>
 

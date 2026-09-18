@@ -1,6 +1,5 @@
 :host {
   display: block;
-  min-height: 100vh;
 }
 
 .login-page {
@@ -51,53 +50,40 @@
   gap: 0.9rem;
 }
 
-.form-group {
-  display: grid;
-  gap: 0.35rem;
+.auth-card .form-group {
+  display: flex;
 }
 
-.form-group label {
+.auth-card label {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
   color: #374151;
   font-size: 0.78rem;
   font-weight: 700;
 }
 
-.form-group input {
+.auth-card input {
   width: 100%;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
   background: #fff;
   color: var(--text);
 }
 
-.form-group input:focus {
-  border-color: var(--primary);
-}
-
-.auth-card button[type="submit"] {
+.auth-card button[type='submit'] {
   width: 100%;
-  padding: 0.7rem 0.9rem;
-  border: 0;
-  border-radius: 8px;
-  background: var(--primary);
-  color: #fff;
-  font-weight: 700;
-}
-
-.auth-card button[type="submit"]:hover:not(:disabled) {
-  background: var(--primary-dark);
 }
 
 .auth-switch {
   padding: 0.2rem;
-  border: 0;
   background: transparent;
   color: var(--primary);
   font-size: 0.8rem;
 }
 
 .auth-switch:hover {
+  background: transparent;
   color: var(--primary-dark);
 }
 

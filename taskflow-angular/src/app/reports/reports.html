@@ -1,11 +1,39 @@
 <section class="route-view">
-  <div class="page-heading"><div><p class="eyebrow">Exports</p><h2>Reports</h2><p>Export your tasks or generate a background report.</p></div></div>
-  <section class="panel">
-    <div class="report-actions"><div><h3>Export tasks</h3><p>Download task data.</p></div>
-      <div class="button-row"><button type="button" class="button-secondary" [disabled]="busy()" (click)="export('json')">Export JSON</button>
-      <button type="button" class="button-secondary" [disabled]="busy()" (click)="export('csv')">Export CSV</button></div></div>
-    <div class="report-actions"><div><h3>Generate report</h3><p>Create a background report.</p></div>
-      <div class="button-row"><button type="button" [disabled]="busy()" (click)="generate()">Generate Report</button><span>{{status()}}</span></div></div>
-    @if(error()){<p class="error">{{error()}}</p>}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Exports</p>
+      <h2>Reports</h2>
+      <p>Export your tasks or generate a background report.</p>
+    </div>
+  </div>
+
+  <section class="panel report-panel">
+    <div class="report-actions">
+      <div>
+        <h3>Export tasks</h3>
+        <p>Download the current task data in a convenient format.</p>
+      </div>
+      <div class="button-row">
+        <button type="button" class="button-secondary" [disabled]="busy()" (click)="export('json')">Export JSON</button>
+        <button type="button" class="button-secondary" [disabled]="busy()" (click)="export('csv')">Export CSV</button>
+      </div>
+    </div>
+
+    <div class="report-actions">
+      <div>
+        <h3>Generate report</h3>
+        <p>Create a report using the background job system.</p>
+      </div>
+      <div class="button-row">
+        <button type="button" [disabled]="busy()" (click)="generate()">Generate Report</button>
+        @if (status()) {
+          <span class="report-status" aria-live="polite">{{ status() }}</span>
+        }
+      </div>
+    </div>
+
+    @if (error()) {
+      <p class="state-message error" aria-live="polite">{{ error() }}</p>
+    }
   </section>
 </section>

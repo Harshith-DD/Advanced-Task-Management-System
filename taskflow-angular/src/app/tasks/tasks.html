@@ -5,123 +5,235 @@
       <h2>Tasks</h2>
       <p>Filter, sort and manage everything from one place.</p>
     </div>
-    <button type="button" (click)="openCreate()">+ New Task</button>
+    <button id="open-task-form-button" type="button" (click)="openCreate()">+ New Task</button>
   </div>
 
   <section class="controls-section">
     <div class="controls-toolbar">
       <div class="search-control">
         <label for="search-input">Search</label>
-        <input id="search-input" type="search"
-          placeholder="Search by title or description"
-          [formControl]="searchControl" />
+        <input id="search-input" type="search" placeholder="Search by title or description" [formControl]="searchControl" />
       </div>
-      <div class="control-group"><label>Status</label>
-        <select [formControl]="statusControl">
-          <option value="">All</option><option value="completed">Completed</option>
-          <option value="in-progress">In Progress</option><option value="pending">Pending</option>
+
+      <div class="control-group">
+        <label for="status-filter">Status</label>
+        <select id="status-filter" [formControl]="statusControl">
+          <option value="">All</option>
+          <option value="completed">Completed</option>
+          <option value="in-progress">In Progress</option>
+          <option value="pending">Pending</option>
         </select>
       </div>
-      <div class="control-group"><label>Priority</label>
-        <select [formControl]="priorityControl">
-          <option value="">All</option><option value="high">High</option>
-          <option value="medium">Medium</option><option value="low">Low</option>
+
+      <div class="control-group">
+        <label for="priority-filter">Priority</label>
+        <select id="priority-filter" [formControl]="priorityControl">
+          <option value="">All</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
         </select>
       </div>
-      <div class="control-group"><label>Tag</label>
-        <input type="text" placeholder="e.g. backend" [formControl]="tagControl" />
+
+      <div class="control-group">
+        <label for="tag-filter">Tag</label>
+        <input id="tag-filter" type="text" placeholder="e.g. backend" autocomplete="off" [formControl]="tagControl" (change)="applyTagFilter()" />
       </div>
-      <div class="control-group"><label>From date</label>
-        <input type="date" [formControl]="fromDateControl" />
+
+      <div class="control-group">
+        <label for="from-date-filter">From date</label>
+        <input id="from-date-filter" type="date" [formControl]="fromDateControl" />
       </div>
-      <div class="control-group"><label>To date</label>
-        <input type="date" [formControl]="toDateControl" />
+
+      <div class="control-group">
+        <label for="to-date-filter">To date</label>
+        <input id="to-date-filter" type="date" [formControl]="toDateControl" />
       </div>
-      <div class="control-group"><label>Sort by</label>
-        <select [formControl]="sortByControl">
-          <option value="createdAt">Created Date</option><option value="updatedAt">Updated Date</option>
-          <option value="dueDate">Due Date</option><option value="priority">Priority</option>
+
+      <div class="control-group">
+        <label for="sort-by">Sort by</label>
+        <select id="sort-by" [formControl]="sortByControl">
+          <option value="createdAt">Created Date</option>
+          <option value="updatedAt">Updated Date</option>
+          <option value="dueDate">Due Date</option>
+          <option value="priority">Priority</option>
         </select>
       </div>
-      <div class="control-group"><label>Order</label>
-        <select [formControl]="sortOrderControl">
-          <option value="asc">Ascending</option><option value="desc">Descending</option>
+
+      <div class="control-group">
+        <label for="sort-order">Order</label>
+        <select id="sort-order" [formControl]="sortOrderControl">
+          <option value="asc">Ascending</option>
+          <option value="desc">Descending</option>
         </select>
       </div>
     </div>
   </section>
 
-  @if (taskState.isLoading()) {
-    <p class="state-message">Loading tasks...</p>
-  } @else if (taskState.hasError()) {
-    <p class="state-message error">{{ taskState.errorMessage() }}</p>
-  } @else {
-    <section class="task-list-section">
-      <div class="section-header">
-        <div><h3>Task workspace</h3><p>{{ taskState.pagination().totalTasks }} total tasks</p></div>
+  <section class="task-list-section" aria-labelledby="task-list-heading">
+    <div class="section-header">
+      <div>
+        <h3 id="task-list-heading">Task workspace</h3>
+        <p>Switch between a focused list and a status-based Kanban board.</p>
       </div>
 
-      @if (taskState.hasTasks()) {
-        <div class="task-list">
-          @for (task of taskState.tasks(); track task._id) {
-            <app-task-card
-              [task]="task"
-              [users]="users()"
-              (edit)="openEdit($event)"
-              (delete)="deleteTask($event)"
-              (statusChange)="changeStatus($event)"
-              (priorityChange)="changePriority($event)"
-              (assignmentChange)="changeAssignment($event)"
-            />
+      <div class="task-view-controls" role="group" aria-label="Task view">
+        <button type="button" class="view-toggle-button" [class.active]="taskView() === 'list'" [attr.aria-pressed]="taskView() === 'list'" (click)="setTaskView('list')">List</button>
+        <button type="button" class="view-toggle-button" [class.active]="taskView() === 'kanban'" [attr.aria-pressed]="taskView() === 'kanban'" (click)="setTaskView('kanban')">Kanban</button>
+        <span class="count-label">{{ taskState.tasks().length }} {{ taskState.tasks().length === 1 ? 'task' : 'tasks' }}</span>
+      </div>
+    </div>
+
+    @if (taskState.isLoading()) {
+      <p class="state-message">Loading tasks...</p>
+    } @else if (taskState.hasError()) {
+      <p class="state-message error">{{ taskState.errorMessage() }}</p>
+    } @else {
+      @if (taskView() === 'list') {
+        <div id="task-list-view" class="task-view">
+          @if (taskState.tasks().length) {
+            <div id="task-list" class="task-list" aria-live="polite">
+              @for (task of taskState.tasks(); track task._id) {
+                <app-task-card
+                  [task]="task"
+                  [users]="users()"
+                  (edit)="openEdit($event)"
+                  (delete)="deleteTask($event)"
+                  (statusChange)="changeStatus($event)"
+                  (priorityChange)="changePriority($event)"
+                  (assignmentChange)="changeAssignment($event)"
+                />
+              }
+            </div>
+          } @else {
+            <p class="empty-state">No tasks to display.</p>
           }
         </div>
       } @else {
-        <p class="empty-state">No tasks to display.</p>
-      }
-    </section>
+        <div id="kanban-board" class="kanban-board" [class.is-maximized]="isKanbanMaximized()" aria-live="polite">
+          <button
+            type="button"
+            class="kanban-window-button"
+            [attr.aria-expanded]="isKanbanMaximized()"
+            [attr.aria-label]="isKanbanMaximized() ? 'Minimize Kanban board' : 'Maximize Kanban board'"
+            (click)="toggleKanbanMaximized()"
+          >
+            {{ isKanbanMaximized() ? 'Minimize' : 'Maximize' }}
+          </button>
 
-    @if (taskState.pagination().totalPages > 0) {
-      <div class="pagination-container">
-        <button type="button" class="button-secondary"
-          [disabled]="taskState.pagination().page <= 1"
-          (click)="goToPage(taskState.pagination().page - 1)">Previous</button>
+          @for (column of kanbanColumns; track column.status) {
+            <section class="kanban-column">
+              <div class="kanban-column-header">
+                <div>
+                  <h3>{{ column.title }}</h3>
+                  <p>{{ column.description }}</p>
+                </div>
+                <span class="kanban-count">{{ tasksForStatus(column.status).length }}</span>
+              </div>
 
-        <div class="page-numbers">
-          @for (page of [].constructor(taskState.pagination().totalPages); track $index) {
-            <button type="button"
-              [disabled]="taskState.pagination().page === $index + 1"
-              (click)="goToPage($index + 1)">{{ $index + 1 }}</button>
+              <div
+                class="kanban-drop-zone"
+                [attr.data-status]="column.status"
+                (dragover)="onDragOver($event)"
+                (drop)="onDrop($event, column.status)"
+              >
+                @for (task of tasksForStatus(column.status); track task._id) {
+                  <div
+                    class="kanban-card"
+                    [class.is-draggable]="canDrag(task)"
+                    [draggable]="canDrag(task)"
+                    [attr.data-task-id]="task._id"
+                    (dragstart)="onDragStart($event, task)"
+                    (dragend)="onDragEnd()"
+                  >
+                    <app-task-card
+                      [task]="task"
+                      [users]="users()"
+                      (edit)="openEdit($event)"
+                      (delete)="deleteTask($event)"
+                      (statusChange)="changeStatus($event)"
+                      (priorityChange)="changePriority($event)"
+                      (assignmentChange)="changeAssignment($event)"
+                    />
+                  </div>
+                }
+
+                @if (!tasksForStatus(column.status).length) {
+                  <p class="kanban-empty">Drop tasks here</p>
+                }
+              </div>
+            </section>
           }
         </div>
+      }
 
-        <button type="button" class="button-secondary"
-          [disabled]="taskState.pagination().page >= taskState.pagination().totalPages"
-          (click)="goToPage(taskState.pagination().page + 1)">Next</button>
-
-        <label class="pagination-limit">Tasks per page
-          <select [value]="taskState.pagination().limit"
-            (change)="changeLimit(+$any($event.target).value)">
-            <option value="5">5</option><option value="10">10</option>
-            <option value="20">20</option><option value="50">50</option>
-          </select>
-        </label>
-      </div>
+      @if (!taskState.tasks().length) {
+        @if (taskView() === 'kanban') {
+          <p class="empty-state">No tasks to display.</p>
+        }
+      }
     }
+  </section>
+
+  @if (taskState.pagination().totalPages > 0) {
+    <div class="pagination-container">
+      <button
+        type="button"
+        class="button-secondary"
+        [disabled]="taskState.pagination().page <= 1"
+        (click)="goToPage(taskState.pagination().page - 1)"
+      >Previous</button>
+
+      <div class="page-numbers">
+        @for (page of pageNumbers(); track page) {
+          <button
+            type="button"
+            [disabled]="taskState.pagination().page === page"
+            (click)="goToPage(page)"
+          >{{ page }}</button>
+        }
+      </div>
+
+      <button
+        type="button"
+        class="button-secondary"
+        [disabled]="taskState.pagination().page >= taskState.pagination().totalPages"
+        (click)="goToPage(taskState.pagination().page + 1)"
+      >Next</button>
+
+      <div class="control-group pagination-limit">
+        <label for="page-limit">Tasks per page</label>
+        <select id="page-limit" [value]="taskState.pagination().limit" (change)="changeLimit(+$any($event.target).value)">
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
   }
 
   @if (isFormOpen()) {
     <div class="modal-backdrop" (click)="closeForm()">
-      <section class="task-form-modal" role="dialog" aria-modal="true"
-        aria-labelledby="task-form-heading" (click)="$event.stopPropagation()">
+      <section
+        class="task-form-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="task-form-heading"
+        (click)="$event.stopPropagation()"
+      >
         <div class="modal-header">
-          <div><p class="eyebrow">{{ editingTask() ? 'Edit task' : 'New task' }}</p>
-            <h2 id="task-form-heading">{{ editingTask() ? 'Edit task' : 'Create a task' }}</h2></div>
+          <div>
+            <p class="eyebrow">{{ editingTask() ? 'Edit task' : 'New task' }}</p>
+            <h2 id="task-form-heading">{{ editingTask() ? 'Edit task' : 'Create a task' }}</h2>
+          </div>
           <button type="button" class="icon-button" aria-label="Close" (click)="closeForm()">×</button>
         </div>
 
         <app-task-form
           [users]="users()"
           [task]="editingTask()"
+          [canAssign]="!editingTask() || authService.isAdmin() || authService.currentUser()?.id === editingTask()?.owner?._id"
           [isSaving]="isSaving()"
           (submitted)="saveTask($event)"
           (cancelled)="closeForm()"

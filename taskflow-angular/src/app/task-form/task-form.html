@@ -42,7 +42,7 @@
 
     <div class="form-group">
       <label for="task-assignee">Assign To</label>
-      <select id="task-assignee" formControlName="assignedTo">
+      <select id="task-assignee" formControlName="assignedTo" [disabled]="!canAssign">
         <option value="">Unassigned</option>
         @for (user of users; track user._id) {
           <option [value]="user._id">{{ user.name }}</option>

@@ -8,7 +8,7 @@ export class TaskStateService {
     page: 1,
     limit: 10,
     sortBy: 'createdAt',
-    sortOrder: 'desc'
+    sortOrder: 'asc'
   });
   readonly pagination = signal<TaskPagination>({
     page: 1, limit: 10, totalTasks: 0, totalPages: 0
@@ -32,7 +32,7 @@ export class TaskStateService {
   reset(): void {
     this.tasks.set([]);
     this.filters.set({
-      page: 1, limit: 10, sortBy: 'createdAt', sortOrder: 'desc'
+      page: 1, limit: 10, sortBy: 'createdAt', sortOrder: 'asc'
     });
     this.pagination.set({
       page: 1, limit: 10, totalTasks: 0, totalPages: 0

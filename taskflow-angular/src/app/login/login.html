@@ -15,22 +15,19 @@
       <section class="auth-card">
         <h2>Welcome back</h2>
 
-        <form #loginForm="ngForm" (ngSubmit)="login()" novalidate>
+        <form [formGroup]="loginForm" (ngSubmit)="login()" novalidate>
           <div class="form-group">
             <label for="login-email">Email</label>
-            <input id="login-email" name="loginEmail" type="email"
-              autocomplete="email" [(ngModel)]="loginEmail" required />
+            <input id="login-email" type="email" autocomplete="email" formControlName="email" />
           </div>
 
           <div class="form-group">
             <label for="login-password">Password</label>
-            <input id="login-password" name="loginPassword" type="password"
-              autocomplete="current-password" [(ngModel)]="loginPassword" required />
+            <input id="login-password" type="password" autocomplete="current-password" formControlName="password" />
           </div>
 
-          <button type="submit"
-            [disabled]="loginForm.invalid || isLoginLoading()">
-            @if (isLoginLoading()) { Logging in... } @else { Login }
+          <button type="submit" [disabled]="loginForm.invalid || isLoginLoading()">
+            {{ isLoginLoading() ? 'Logging in...' : 'Login' }}
           </button>
 
           <button type="button" class="auth-switch" (click)="showRegister()">
@@ -42,9 +39,7 @@
           }
 
           @if (registrationSuccess()) {
-            <p class="form-success" aria-live="polite">
-              {{ registrationSuccess() }}
-            </p>
+            <p class="form-success" aria-live="polite">{{ registrationSuccess() }}</p>
           }
         </form>
       </section>
@@ -52,29 +47,24 @@
       <section class="auth-card">
         <h2>Create your account</h2>
 
-        <form #registerForm="ngForm" (ngSubmit)="register()" novalidate>
+        <form [formGroup]="registerForm" (ngSubmit)="register()" novalidate>
           <div class="form-group">
             <label for="register-name">Name</label>
-            <input id="register-name" name="registerName" type="text"
-              autocomplete="name" maxlength="100"
-              [(ngModel)]="registerName" required />
+            <input id="register-name" type="text" autocomplete="name" maxlength="100" formControlName="name" />
           </div>
 
           <div class="form-group">
             <label for="register-email">Email</label>
-            <input id="register-email" name="registerEmail" type="email"
-              autocomplete="email" [(ngModel)]="registerEmail" required />
+            <input id="register-email" type="email" autocomplete="email" formControlName="email" />
           </div>
 
           <div class="form-group">
             <label for="register-password">Password</label>
-            <input id="register-password" name="registerPassword" type="password"
-              autocomplete="new-password" [(ngModel)]="registerPassword" required />
+            <input id="register-password" type="password" autocomplete="new-password" formControlName="password" />
           </div>
 
-          <button type="submit"
-            [disabled]="registerForm.invalid || isRegisterLoading()">
-            @if (isRegisterLoading()) { Registering... } @else { Register }
+          <button type="submit" [disabled]="registerForm.invalid || isRegisterLoading()">
+            {{ isRegisterLoading() ? 'Registering...' : 'Register' }}
           </button>
 
           <button type="button" class="auth-switch" (click)="showLogin()">
