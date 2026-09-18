@@ -1,7 +1,20 @@
-import { Component, EventEmitter, inject, input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  inject,
+  input,
+  Output
+} from '@angular/core';
+
 import { CommonModule } from '@angular/common';
+
 import { AuthService } from '../services/auth';
-import { Task, TaskPriority, TaskStatus, TaskUser } from '../task';
+import {
+  Task,
+  TaskPriority,
+  TaskStatus,
+  TaskUser
+} from '../task';
 
 @Component({
   selector: 'app-task-card',
@@ -17,12 +30,36 @@ export class TaskCard {
 
   @Output() edit = new EventEmitter<Task>();
   @Output() delete = new EventEmitter<Task>();
-  @Output() statusChange = new EventEmitter<{ task: Task; status: TaskStatus }>();
-  @Output() priorityChange = new EventEmitter<{ task: Task; priority: TaskPriority }>();
-  @Output() assignmentChange = new EventEmitter<{ task: Task; assignedTo: string | null }>();
 
-  readonly statuses: TaskStatus[] = ['pending', 'in-progress', 'completed'];
-  readonly priorities: TaskPriority[] = ['low', 'medium', 'high'];
+  @Output()
+  statusChange = new EventEmitter<{
+    task: Task;
+    status: TaskStatus;
+  }>();
+
+  @Output()
+  priorityChange = new EventEmitter<{
+    task: Task;
+    priority: TaskPriority;
+  }>();
+
+  @Output()
+  assignmentChange = new EventEmitter<{
+    task: Task;
+    assignedTo: string | null;
+  }>();
+
+  readonly statuses: TaskStatus[] = [
+    'pending',
+    'in-progress',
+    'completed'
+  ];
+
+  readonly priorities: TaskPriority[] = [
+    'low',
+    'medium',
+    'high'
+  ];
 
   get currentUserId(): string | null {
     return this.auth.currentUser()?.id ?? null;
@@ -37,11 +74,17 @@ export class TaskCard {
   }
 
   get isOwner(): boolean {
-    return !!this.currentUserId && this.task().owner?._id === this.currentUserId;
+    return (
+      !!this.currentUserId &&
+      this.task().owner?._id === this.currentUserId
+    );
   }
 
   get isAssignedUser(): boolean {
-    return !!this.currentUserId && this.task().assignedTo?._id === this.currentUserId;
+    return (
+      !!this.currentUserId &&
+      this.task().assignedTo?._id === this.currentUserId
+    );
   }
 
   get canEdit(): boolean {
@@ -57,34 +100,92 @@ export class TaskCard {
   }
 
   get permissionLabel(): string {
-    if (this.isAdmin) return 'Administrator';
-    if (this.isOwner) return 'You are the owner';
-    if (this.isAssignedUser) return 'Assigned to you';
+    if (this.isAdmin) {
+      return 'Administrator';
+    }
+
+    if (this.isOwner) {
+      return 'You are the owner';
+    }
+
+    if (this.isAssignedUser) {
+      return 'Assigned to you';
+    }
+
     return 'View access';
   }
 
   get permissionDetails(): string {
     const permissions: string[] = [];
-    if (this.canEdit) permissions.push('Can edit');
-    if (this.canAssign) permissions.push('Can assign');
-    if (this.canDelete) permissions.push('Can delete');
+
+    if (this.canEdit) {
+      permissions.push('Can edit');
+    }
+
+    if (this.canAssign) {
+      permissions.push('Can assign');
+    }
+
+    if (this.canDelete) {
+      permissions.push('Can delete');
+    }
+
     return permissions.join(' · ');
   }
 
   get ownerLabel(): string {
     const owner = this.task().owner;
-    if (!owner) return 'Unknown';
-    return owner._id === this.currentUserId ? `${owner.name} (You)` : owner.name;
+
+    if (!owner) {
+      return 'Unknown';
+    }
+
+    return owner._id === this.currentUserId
+      ? `${owner.name} (You)`
+      : owner.name;
   }
 
   get assignedLabel(): string {
     const assigned = this.task().assignedTo;
-    if (!assigned) return 'Unassigned';
-    return assigned._id === this.currentUserId ? `${assigned.name} (You)` : assigned.name;
+
+    if (!assigned) {
+      return 'Unassigned';
+    }
+
+    return assigned._id === this.currentUserId
+      ? `${assigned.name} (You)`
+      : assigned.name;
+  }
+
+  onStatusChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+
+    if (!this.statuses.includes(value as TaskStatus)) {
+      return;
+    }
+
+    this.statusChange.emit({
+      task: this.task(),
+      status: value as TaskStatus
+    });
+  }
+
+  onPriorityChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+
+    if (!this.priorities.includes(value as TaskPriority)) {
+      return;
+    }
+
+    this.priorityChange.emit({
+      task: this.task(),
+      priority: value as TaskPriority
+    });
   }
 
   onAssignmentChange(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
+
     this.assignmentChange.emit({
       task: this.task(),
       assignedTo: value || null
