@@ -1,9 +1,11 @@
 import {
-  Injectable
+  Injectable,
+  inject
 } from '@angular/core';
 
 import {
-  HttpClient
+  HttpClient,
+  HttpParams
 } from '@angular/common/http';
 
 import {
@@ -16,7 +18,8 @@ import {
 } from '../api-config';
 
 import {
-  Task
+  Task,
+  TaskFilters
 } from '../task';
 
 interface TasksResponse {
@@ -34,16 +37,91 @@ interface TasksResponse {
   providedIn: 'root'
 })
 export class TaskService {
+  private readonly http = inject(HttpClient);
+
   private readonly apiUrl =
     `${API_BASE_URL}/tasks`;
 
-  constructor(
-    private readonly http: HttpClient
-  ) {}
+  getTasks(
+    filters: TaskFilters = {}
+  ): Observable<Task[]> {
+    let params = new HttpParams();
 
-  getTasks(): Observable<Task[]> {
+    if (filters.status) {
+      params = params.set(
+        'status',
+        filters.status
+      );
+    }
+
+    if (filters.priority) {
+      params = params.set(
+        'priority',
+        filters.priority
+      );
+    }
+
+    if (filters.search) {
+      params = params.set(
+        'search',
+        filters.search
+      );
+    }
+
+    if (filters.tag) {
+      params = params.set(
+        'tag',
+        filters.tag
+      );
+    }
+
+    if (filters.fromDate) {
+      params = params.set(
+        'fromDate',
+        filters.fromDate
+      );
+    }
+
+    if (filters.toDate) {
+      params = params.set(
+        'toDate',
+        filters.toDate
+      );
+    }
+
+    if (filters.sortBy) {
+      params = params.set(
+        'sortBy',
+        filters.sortBy
+      );
+    }
+
+    if (filters.sortOrder) {
+      params = params.set(
+        'sortOrder',
+        filters.sortOrder
+      );
+    }
+
+    if (filters.page !== undefined) {
+      params = params.set(
+        'page',
+        filters.page
+      );
+    }
+
+    if (filters.limit !== undefined) {
+      params = params.set(
+        'limit',
+        filters.limit
+      );
+    }
+
     return this.http
-      .get<TasksResponse>(this.apiUrl)
+      .get<TasksResponse>(
+        this.apiUrl,
+        { params }
+      )
       .pipe(
         map(response => response.data)
       );

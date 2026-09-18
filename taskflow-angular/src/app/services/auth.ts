@@ -42,7 +42,8 @@ interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly apiUrl = `${API_BASE_URL}/auth`;
+  private readonly apiUrl =
+    `${API_BASE_URL}/auth`;
 
   private readonly currentUser =
     signal<User | null>(null);
@@ -87,10 +88,6 @@ export class AuthService {
       );
   }
 
-  restoreSession(): Observable<User> {
-    return this.getCurrentUser();
-  }
-
   logout(): Observable<void> {
     return this.http.post<void>(
       `${this.apiUrl}/logout`,
@@ -112,9 +109,5 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     return this.currentUser() !== null;
-  }
-
-  user(): User | null {
-    return this.currentUser();
   }
 }

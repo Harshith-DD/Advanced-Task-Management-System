@@ -34,5 +34,10 @@ export const routes: Routes = [
   {
     path: 'tasks',
     component: Tasks
+  },
+
+  {
+    path: '**',
+    redirectTo: 'dashboard'
   }
 ];

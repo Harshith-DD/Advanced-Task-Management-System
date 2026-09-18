@@ -29,3 +29,26 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
 }
+
+export type TaskSortBy =
+  | 'createdAt'
+  | 'updatedAt'
+  | 'dueDate'
+  | 'priority';
+
+export type SortOrder =
+  | 'asc'
+  | 'desc';
+
+export interface TaskFilters {
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  search?: string;
+  tag?: string;
+  fromDate?: string;
+  toDate?: string;
+  sortBy?: TaskSortBy;
+  sortOrder?: SortOrder;
+  page?: number;
+  limit?: number;
+}

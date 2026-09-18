@@ -2,26 +2,30 @@
   Tasks
 </h1>
 
-@if (isLoading) {
+@if (isLoading()) {
   <p>
     Loading tasks...
   </p>
 }
 
-@if (errorMessage) {
+@if (errorMessage()) {
   <p>
-    {{ errorMessage }}
+    {{ errorMessage() }}
   </p>
 }
 
-@if (!isLoading && !errorMessage && tasks.length === 0) {
+@if (
+  !isLoading() &&
+  !errorMessage() &&
+  tasks().length === 0
+) {
   <p>
     No tasks found.
   </p>
 }
 
-@if (!isLoading && !errorMessage) {
-  @for (task of tasks; track task._id) {
+@if (!isLoading() && !errorMessage()) {
+  @for (task of tasks(); track task._id) {
     <app-task-card [task]="task" />
   }
 }

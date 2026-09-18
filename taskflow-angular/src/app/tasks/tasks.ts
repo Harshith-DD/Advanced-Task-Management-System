@@ -1,6 +1,7 @@
 import {
   Component,
-  OnInit
+  OnInit,
+  signal
 } from '@angular/core';
 
 import {
@@ -24,10 +25,11 @@ import {
   styleUrl: './tasks.css'
 })
 export class Tasks implements OnInit {
-  tasks: Task[] = [];
+  tasks = signal<Task[]>([]);
 
-  isLoading = false;
-  errorMessage = '';
+  isLoading = signal(false);
+
+  errorMessage = signal('');
 
   constructor(
     private readonly taskService: TaskService
@@ -38,13 +40,13 @@ export class Tasks implements OnInit {
   }
 
   private loadTasks(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
     this.taskService.getTasks().subscribe({
       next: tasks => {
-        this.tasks = tasks;
-        this.isLoading = false;
+        this.tasks.set(tasks);
+        this.isLoading.set(false);
       },
 
       error: error => {
@@ -53,12 +55,13 @@ export class Tasks implements OnInit {
           error
         );
 
-        this.errorMessage =
+        this.errorMessage.set(
           error.status === 401
             ? 'Please log in to view your tasks.'
-            : 'Failed to load tasks.';
+            : 'Failed to load tasks.'
+        );
 
-        this.isLoading = false;
+        this.isLoading.set(false);
       }
     });
   }

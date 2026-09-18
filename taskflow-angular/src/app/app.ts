@@ -35,15 +35,14 @@ export class App implements OnInit {
   }
 
   private restoreSession(): void {
-    this.authService.restoreSession().subscribe({
-      next: user => {
-        this.authService.setUser(user);
-      },
-
-      error: () => {
-        this.authService.clearUser();
-      }
-    });
+this.authService.getCurrentUser().subscribe({
+  next: user => {
+    this.authService.setUser(user);
+  },
+  error: () => {
+    this.authService.clearUser();
+  }
+});
   }
 
   logout(): void {
