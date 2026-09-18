@@ -1,5 +1,6 @@
 import {
   Component,
+  OnDestroy,
   OnInit,
   inject
 } from '@angular/core';
@@ -10,6 +11,8 @@ import {
   RouterLinkActive,
   RouterOutlet
 } from '@angular/router';
+
+import { Subject, takeUntil } from 'rxjs';
 
 import { AuthService } from '../../services/auth';
 import { NotificationService } from '../../services/notifications';
@@ -24,27 +27,46 @@ import { NotificationService } from '../../services/notifications';
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.css'
 })
-export class AppShell implements OnInit {
+export class AppShell implements OnInit, OnDestroy {
   protected readonly authService = inject(AuthService);
   protected readonly notificationService = inject(NotificationService);
 
   private readonly router = inject(Router);
+  private readonly destroy$ = new Subject<void>();
 
   ngOnInit(): void {
-    this.notificationService.load();
+    this.notificationService
+      .load()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        error: error => {
+          console.error(
+            'Failed to load notifications:',
+            error
+          );
+        }
+      });
   }
 
   logout(): void {
-    this.authService.logout().subscribe({
-      next: () => this.finishLogout(),
-      error: () => this.finishLogout()
-    });
+    this.authService
+      .logout()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => this.finishLogout(),
+        error: () => this.finishLogout()
+      });
   }
 
   private finishLogout(): void {
     this.authService.clearUser();
-    this.notificationService.notifications.set([]);
+    this.notificationService.clear();
 
     this.router.navigate(['/login']);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

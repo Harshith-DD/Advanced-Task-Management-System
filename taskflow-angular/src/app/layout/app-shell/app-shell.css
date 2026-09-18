@@ -1,1 +1,43 @@
-/* Shell styling is shared through src/styles.css to preserve the vanilla UI exactly. */
+:host {
+  display: block;
+}
+
+.user-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.auth-status {
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.user-details {
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.user-container .button-secondary {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .user-container {
+    align-items: flex-end;
+  }
+
+  .user-info {
+    display: none;
+  }
+}
