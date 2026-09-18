@@ -57,7 +57,6 @@ export class Login {
       finalize(() => this.isLoginLoading.set(false))
     ).subscribe({
       next: user => {
-        this.authService.setUser(user);
         this.loginEmail.set('');
         this.loginPassword.set('');
         this.router.navigate(['/dashboard']);
