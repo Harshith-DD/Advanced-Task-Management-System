@@ -2,14 +2,29 @@ import jwt from "jsonwebtoken";
 
 import User from "../models/user_model.js";
 
-import { AuthenticationError } from "../errors/app_error.js";
+import {
+  AuthenticationError,
+  ValidationError,
+} from "../errors/app_error.js";
 
 export async function registerUser(userData) {
   const { name, email, password } = userData;
 
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existingUser = await User.findOne({
+    email: normalizedEmail,
+  });
+
+  if (existingUser) {
+    throw new ValidationError(
+      "An account with this email already exists",
+    );
+  }
+
   const user = new User({
     name,
-    email,
+    email: normalizedEmail,
     role: "user",
   });
 

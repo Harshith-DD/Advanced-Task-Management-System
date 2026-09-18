@@ -15,6 +15,10 @@ import {
   AuthService
 } from '../services/auth';
 
+type AuthMode =
+  | 'login'
+  | 'register';
+
 @Component({
   selector: 'app-login',
   imports: [
@@ -30,24 +34,57 @@ export class Login {
   private readonly router =
     inject(Router);
 
-  email = '';
-  password = '';
+  mode: AuthMode = 'login';
 
-  errorMessage = '';
+  loginEmail = '';
+  loginPassword = '';
+
+  registerName = '';
+  registerEmail = '';
+  registerPassword = '';
+
+  loginError = '';
+  registerError = '';
+
+  registrationSuccess = '';
+
   isLoading = false;
 
+  showRegister(): void {
+    this.mode = 'register';
+
+    this.loginError = '';
+    this.registerError = '';
+    this.registrationSuccess = '';
+  }
+
+  showLogin(): void {
+    this.mode = 'login';
+
+    this.loginError = '';
+    this.registerError = '';
+    this.registrationSuccess = '';
+  }
+
   login(): void {
-    this.errorMessage = '';
+    this.loginError = '';
     this.isLoading = true;
 
     this.authService.login({
-      email: this.email,
-      password: this.password
+      email: this.loginEmail.trim(),
+      password: this.loginPassword
     }).subscribe({
       next: user => {
         this.authService.setUser(user);
 
-        this.router.navigate(['/tasks']);
+        this.loginEmail = '';
+        this.loginPassword = '';
+
+        this.isLoading = false;
+
+        this.router.navigate([
+          '/dashboard'
+        ]);
       },
 
       error: error => {
@@ -56,9 +93,45 @@ export class Login {
           error
         );
 
-        this.errorMessage =
+        this.loginError =
           error.error?.message ??
           'Login failed. Please check your credentials.';
+
+        this.isLoading = false;
+      }
+    });
+  }
+
+  register(): void {
+    this.registerError = '';
+    this.registrationSuccess = '';
+    this.isLoading = true;
+
+    this.authService.register({
+      name: this.registerName.trim(),
+      email: this.registerEmail.trim(),
+      password: this.registerPassword
+    }).subscribe({
+      next: () => {
+        this.registerName = '';
+        this.registerEmail = '';
+        this.registerPassword = '';
+
+        this.registrationSuccess =
+          'Registration successful. Please log in.';
+
+        this.isLoading = false;
+      },
+
+      error: error => {
+        console.error(
+          'Registration failed:',
+          error
+        );
+
+        this.registerError =
+          error.error?.message ??
+          'Registration failed. Please try again.';
 
         this.isLoading = false;
       }

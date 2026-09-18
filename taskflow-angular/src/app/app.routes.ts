@@ -14,6 +14,27 @@ import {
   Tasks
 } from './tasks/tasks';
 
+import {
+  Activity
+} from './activity/activity';
+
+import {
+  Notifications
+} from './notifications/notifications';
+
+import {
+  Reports
+} from './reports/reports';
+
+import {
+  AppShell
+} from './layout/app-shell/app-shell';
+
+import {
+  authGuard,
+  guestGuard
+} from './guards/auth.guard';
+
 export const routes: Routes = [
   {
     path: '',
@@ -23,17 +44,44 @@ export const routes: Routes = [
 
   {
     path: 'login',
-    component: Login
+    component: Login,
+    canActivate: [
+      guestGuard
+    ]
   },
 
   {
-    path: 'dashboard',
-    component: Dashboard
-  },
+    path: '',
+    component: AppShell,
+    canActivateChild: [
+      authGuard
+    ],
+    children: [
+      {
+        path: 'dashboard',
+        component: Dashboard
+      },
 
-  {
-    path: 'tasks',
-    component: Tasks
+      {
+        path: 'tasks',
+        component: Tasks
+      },
+
+      {
+        path: 'activity',
+        component: Activity
+      },
+
+      {
+        path: 'notifications',
+        component: Notifications
+      },
+
+      {
+        path: 'reports',
+        component: Reports
+      }
+    ]
   },
 
   {

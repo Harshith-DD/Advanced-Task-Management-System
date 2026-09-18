@@ -1,0 +1,161 @@
+<header class="app-header">
+  <div class="container app-header-inner">
+
+    <div class="brand">
+      <div
+        class="brand-mark"
+        aria-hidden="true"
+      >
+        ✓
+      </div>
+
+      <div>
+        <h1>TaskFlow</h1>
+        <p>Task Management System</p>
+      </div>
+    </div>
+
+    <section
+      class="auth-section"
+      aria-labelledby="auth-heading"
+    >
+      <div class="user-container">
+        @if (authService.currentUser(); as user) {
+          <div class="user-info">
+            <span class="auth-status">
+              You are logged in.
+            </span>
+
+            <span class="user-details">
+              Logged in as {{ user.name }} ({{ user.email }}) — Role: {{ user.role }}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            class="button-secondary"
+            (click)="logout()"
+          >
+            Logout
+          </button>
+        } @else {
+          <span class="auth-loading">
+            Checking account...
+          </span>
+        }
+      </div>
+    </section>
+
+  </div>
+</header>
+
+<div class="app-layout">
+
+  <aside
+    class="sidebar"
+    aria-label="Primary navigation"
+  >
+    <div class="sidebar-heading">
+      Workspace
+    </div>
+
+    <nav class="main-nav">
+
+      <a
+        routerLink="/dashboard"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link"
+      >
+        <span
+          class="nav-icon"
+          aria-hidden="true"
+        >
+          ⌂
+        </span>
+
+        <span>Dashboard</span>
+      </a>
+
+      <a
+        routerLink="/tasks"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link"
+      >
+        <span
+          class="nav-icon"
+          aria-hidden="true"
+        >
+          ☷
+        </span>
+
+        <span>Tasks</span>
+      </a>
+
+      <a
+        routerLink="/activity"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link"
+      >
+        <span
+          class="nav-icon"
+          aria-hidden="true"
+        >
+          ◷
+        </span>
+
+        <span>Activity</span>
+      </a>
+
+      <a
+        routerLink="/notifications"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link"
+      >
+        <span
+          class="nav-icon"
+          aria-hidden="true"
+        >
+          ♢
+        </span>
+
+        <span>Notifications</span>
+
+        <span
+          class="nav-badge"
+          aria-hidden="true"
+          hidden
+        >
+          0
+        </span>
+      </a>
+
+      <a
+        routerLink="/reports"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link"
+      >
+        <span
+          class="nav-icon"
+          aria-hidden="true"
+        >
+          ▤
+        </span>
+
+        <span>Reports</span>
+      </a>
+
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="container content-container">
+      <router-outlet />
+    </div>
+  </main>
+
+</div>

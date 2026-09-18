@@ -1,5 +1,6 @@
 import {
   Injectable,
+  computed,
   signal
 } from '@angular/core';
 
@@ -9,7 +10,11 @@ import {
 
 import {
   Observable,
-  map
+  finalize,
+  map,
+  of,
+  shareReplay,
+  tap
 } from 'rxjs';
 
 import {
@@ -31,7 +36,19 @@ interface RegisterRequest {
   password: string;
 }
 
-interface AuthResponse {
+interface LoginResponse {
+  success: boolean;
+  data: {
+    user: User;
+  };
+}
+
+interface RegisterResponse {
+  success: boolean;
+  data: User;
+}
+
+interface CurrentUserResponse {
   success: boolean;
   data: {
     user: User;
@@ -45,8 +62,22 @@ export class AuthService {
   private readonly apiUrl =
     `${API_BASE_URL}/auth`;
 
-  private readonly currentUser =
+  readonly currentUser =
     signal<User | null>(null);
+
+  readonly isLoggedIn =
+    computed(() => this.currentUser() !== null);
+
+  readonly isAdmin =
+    computed(() =>
+      this.currentUser()?.role === 'admin'
+    );
+
+  readonly isRestoringSession =
+    signal(false);
+
+  private sessionRestore$:
+    Observable<User> | null = null;
 
   constructor(
     private readonly http: HttpClient
@@ -56,12 +87,16 @@ export class AuthService {
     credentials: LoginRequest
   ): Observable<User> {
     return this.http
-      .post<AuthResponse>(
+      .post<LoginResponse>(
         `${this.apiUrl}/login`,
         credentials
       )
       .pipe(
-        map(response => response.data.user)
+        map(response => response.data.user),
+
+        tap(user => {
+          this.setUser(user);
+        })
       );
   }
 
@@ -69,18 +104,18 @@ export class AuthService {
     data: RegisterRequest
   ): Observable<User> {
     return this.http
-      .post<AuthResponse>(
+      .post<RegisterResponse>(
         `${this.apiUrl}/register`,
         data
       )
       .pipe(
-        map(response => response.data.user)
+        map(response => response.data)
       );
   }
 
   getCurrentUser(): Observable<User> {
     return this.http
-      .get<AuthResponse>(
+      .get<CurrentUserResponse>(
         `${this.apiUrl}/me`
       )
       .pipe(
@@ -88,11 +123,55 @@ export class AuthService {
       );
   }
 
+  restoreSession(): Observable<User> {
+    const existingUser =
+      this.currentUser();
+
+    if (existingUser) {
+      return of(existingUser);
+    }
+
+    if (!this.sessionRestore$) {
+      this.isRestoringSession.set(true);
+
+      this.sessionRestore$ =
+        this.getCurrentUser().pipe(
+          tap({
+            next: user => {
+              this.setUser(user);
+            },
+
+            error: () => {
+              this.clearUser();
+            }
+          }),
+
+          finalize(() => {
+            this.isRestoringSession.set(false);
+            this.sessionRestore$ = null;
+          }),
+
+          shareReplay({
+            bufferSize: 1,
+            refCount: false
+          })
+        );
+    }
+
+    return this.sessionRestore$;
+  }
+
   logout(): Observable<void> {
-    return this.http.post<void>(
-      `${this.apiUrl}/logout`,
-      {}
-    );
+    return this.http
+      .post<void>(
+        `${this.apiUrl}/logout`,
+        {}
+      )
+      .pipe(
+        tap(() => {
+          this.clearUser();
+        })
+      );
   }
 
   setUser(user: User): void {
@@ -108,6 +187,6 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return this.currentUser() !== null;
+    return this.isLoggedIn();
   }
 }
