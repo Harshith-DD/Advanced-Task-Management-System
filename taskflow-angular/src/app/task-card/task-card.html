@@ -81,15 +81,18 @@
   @if (canEdit) {
     <div class="task-card-footer">
       <div class="task-controls">
+
         <label>
           <span>Status</span>
 
           <select
-            [value]="task().status"
             (change)="onStatusChange($event)"
           >
             @for (status of statuses; track status) {
-              <option [value]="status">
+              <option
+                [value]="status"
+                [selected]="status === task().status"
+              >
                 {{
                   status === 'in-progress'
                     ? 'In Progress'
@@ -104,31 +107,42 @@
           <span>Priority</span>
 
           <select
-            [value]="task().priority"
             (change)="onPriorityChange($event)"
           >
             @for (priority of priorities; track priority) {
-              <option [value]="priority">
+              <option
+                [value]="priority"
+                [selected]="priority === task().priority"
+              >
                 {{ priority | titlecase }}
               </option>
             }
           </select>
         </label>
+
       </div>
 
       <div class="task-actions">
+
         @if (canAssign) {
           <label class="assignment-control">
             <span>Assignment</span>
 
             <select
-              [value]="task().assignedTo?._id ?? ''"
               (change)="onAssignmentChange($event)"
             >
-              <option value="">Unassigned</option>
+              <option
+                value=""
+                [selected]="!task().assignedTo"
+              >
+                Unassigned
+              </option>
 
               @for (user of users(); track user._id) {
-                <option [value]="user._id">
+                <option
+                  [value]="user._id"
+                  [selected]="user._id === task().assignedTo?._id"
+                >
                   {{ user.name || user.email }}
                 </option>
               }
@@ -153,6 +167,7 @@
             Delete
           </button>
         }
+
       </div>
     </div>
   }

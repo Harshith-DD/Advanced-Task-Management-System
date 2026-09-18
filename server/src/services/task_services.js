@@ -46,6 +46,20 @@ function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function calculateIsOverdue(dueDate, status) {
+  if (!dueDate || status === "completed") {
+    return false;
+  }
+
+  const parsedDueDate = new Date(dueDate);
+
+  if (Number.isNaN(parsedDueDate.getTime())) {
+    return false;
+  }
+
+  return parsedDueDate < new Date();
+}
+
 // ========================================
 // TASK SERVICE
 // ========================================
@@ -55,16 +69,24 @@ class TaskService {
   // CREATE TASK
   // ====================================
 
-  async createTask(taskData, userId) {
-    const task = await Task.create(taskData);
+async createTask(taskData, userId) {
+  const status = taskData.status ?? "pending";
 
-    taskEvents.emit(TASK_EVENTS.CREATED, {
-      task,
-      userId,
-    });
+  const task = await Task.create({
+    ...taskData,
+    isOverdue: calculateIsOverdue(
+      taskData.dueDate,
+      status,
+    ),
+  });
 
-    return task;
-  }
+  taskEvents.emit(TASK_EVENTS.CREATED, {
+    task,
+    userId,
+  });
+
+  return task;
+}
 
   // ====================================
   // GET ALL TASKS
@@ -369,17 +391,34 @@ class TaskService {
       ? new Date(existingTask.dueDate).getTime()
       : null;
 
-    const newDueDate = taskData.dueDate
-      ? new Date(taskData.dueDate).getTime()
-      : null;
+    const newDueDate =
+      taskData.dueDate !== undefined &&
+      taskData.dueDate !== null &&
+      taskData.dueDate !== ""
+        ? new Date(taskData.dueDate).getTime()
+        : null;
 
     const dueDateChanged =
       taskData.dueDate !== undefined && existingDueDate !== newDueDate;
 
+    const effectiveStatus =
+      taskData.status ??
+      existingTask.status;
+
+    const effectiveDueDate =
+      taskData.dueDate !== undefined
+        ? taskData.dueDate
+        : existingTask.dueDate;
+
     if (dueDateChanged) {
       updateData.reminderSentAt = null;
-      updateData.isOverdue = false;
     }
+
+    updateData.isOverdue =
+      calculateIsOverdue(
+        effectiveDueDate,
+        effectiveStatus,
+      );
 
     // --------------------------------
     // UPDATE TASK

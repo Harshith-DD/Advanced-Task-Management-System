@@ -1,14 +1,147 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpResponse
+} from '@angular/common/http';
+
+import {
+  Observable,
+  Subject,
+  EMPTY,
+  catchError,
+  switchMap,
+  takeUntil,
+  takeWhile,
+  timer
+} from 'rxjs';
+
 import { API_BASE_URL } from '../api-config';
 
-export interface ReportJob { id:string; status:string; attempts:number; maxAttempts:number; error?:string|null; createdAt:string; }
+export type ReportJobStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed';
 
-@Injectable({providedIn:'root'})
+export interface ReportJob {
+  id: string;
+  status: ReportJobStatus;
+  attempts: number;
+  maxAttempts: number;
+  error?: string | null;
+  createdAt: string;
+}
+
+export interface CreateReportResponse {
+  success: boolean;
+  message: string;
+  jobId: string;
+}
+
+export interface ReportStatusResponse {
+  success: boolean;
+  job: ReportJob;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
 export class ReportService {
-  private readonly http=inject(HttpClient);
-  exportTasks(format:'json'|'csv'){return this.http.get(`${API_BASE_URL}/reports/tasks/${format}`,{responseType:'blob'});}
-  createReport(){return this.http.post<{success:boolean;jobId:string}>(`${API_BASE_URL}/reports/tasks/report`,{});}
-  getStatus(jobId:string){return this.http.get<{success:boolean;job:ReportJob}>(`${API_BASE_URL}/reports/jobs/${jobId}`);}
-  downloadReport(jobId:string){return this.http.get(`${API_BASE_URL}/reports/jobs/${jobId}/download`,{responseType:'blob'});}
+  private readonly http = inject(HttpClient);
+
+  private readonly apiUrl =
+    `${API_BASE_URL}/reports`;
+
+  private pollingStop$ =
+    new Subject<void>();
+
+  exportTasks(
+    format: 'json' | 'csv'
+  ): Observable<HttpResponse<Blob>> {
+    return this.http.get(
+      `${this.apiUrl}/tasks/${format}`,
+      {
+        observe: 'response',
+        responseType: 'blob'
+      }
+    );
+  }
+
+  createReport(): Observable<CreateReportResponse> {
+    return this.http.post<CreateReportResponse>(
+      `${this.apiUrl}/tasks/report`,
+      {}
+    );
+  }
+
+  getStatus(
+    jobId: string
+  ): Observable<ReportStatusResponse> {
+    return this.http.get<ReportStatusResponse>(
+      `${this.apiUrl}/jobs/${jobId}`
+    );
+  }
+
+  downloadReport(
+    jobId: string
+  ): Observable<HttpResponse<Blob>> {
+    return this.http.get(
+      `${this.apiUrl}/jobs/${jobId}/download`,
+      {
+        observe: 'response',
+        responseType: 'blob'
+      }
+    );
+  }
+
+  pollReport(
+    jobId: string
+  ): Observable<ReportJob> {
+    this.stopPolling();
+
+    const stop$ =
+      this.pollingStop$;
+
+    return timer(0, 1000).pipe(
+      takeUntil(stop$),
+
+      switchMap(() =>
+        this.getStatus(jobId)
+      ),
+
+      takeWhile(
+        response =>
+          response.job.status === 'pending' ||
+          response.job.status === 'processing',
+        true
+      ),
+
+      switchMap(response => {
+        return new Observable<ReportJob>(
+          subscriber => {
+            subscriber.next(
+              response.job
+            );
+            subscriber.complete();
+          }
+        );
+      }),
+
+      catchError(error => {
+        return new Observable<ReportJob>(
+          subscriber => {
+            subscriber.error(error);
+          }
+        );
+      })
+    );
+  }
+
+  stopPolling(): void {
+    this.pollingStop$.next();
+    this.pollingStop$.complete();
+
+    this.pollingStop$ =
+      new Subject<void>();
+  }
 }

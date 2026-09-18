@@ -9,6 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 
 import { AuthService } from '../services/auth';
+
 import {
   Task,
   TaskPriority,
@@ -28,26 +29,32 @@ export class TaskCard {
   readonly task = input.required<Task>();
   readonly users = input<TaskUser[]>([]);
 
-  @Output() edit = new EventEmitter<Task>();
-  @Output() delete = new EventEmitter<Task>();
+  @Output()
+  edit = new EventEmitter<Task>();
 
   @Output()
-  statusChange = new EventEmitter<{
-    task: Task;
-    status: TaskStatus;
-  }>();
+  delete = new EventEmitter<Task>();
 
   @Output()
-  priorityChange = new EventEmitter<{
-    task: Task;
-    priority: TaskPriority;
-  }>();
+  statusChange =
+    new EventEmitter<{
+      task: Task;
+      status: TaskStatus;
+    }>();
 
   @Output()
-  assignmentChange = new EventEmitter<{
-    task: Task;
-    assignedTo: string | null;
-  }>();
+  priorityChange =
+    new EventEmitter<{
+      task: Task;
+      priority: TaskPriority;
+    }>();
+
+  @Output()
+  assignmentChange =
+    new EventEmitter<{
+      task: Task;
+      assignedTo: string | null;
+    }>();
 
   readonly statuses: TaskStatus[] = [
     'pending',
@@ -88,7 +95,11 @@ export class TaskCard {
   }
 
   get canEdit(): boolean {
-    return this.isAdmin || this.isOwner || this.isAssignedUser;
+    return (
+      this.isAdmin ||
+      this.isOwner ||
+      this.isAssignedUser
+    );
   }
 
   get canDelete(): boolean {
@@ -158,37 +169,53 @@ export class TaskCard {
   }
 
   onStatusChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+    const target =
+      event.target as HTMLSelectElement;
 
-    if (!this.statuses.includes(value as TaskStatus)) {
+    const status = target.value;
+
+    if (
+      !this.statuses.includes(
+        status as TaskStatus
+      )
+    ) {
       return;
     }
 
     this.statusChange.emit({
       task: this.task(),
-      status: value as TaskStatus
+      status: status as TaskStatus
     });
   }
 
   onPriorityChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+    const target =
+      event.target as HTMLSelectElement;
 
-    if (!this.priorities.includes(value as TaskPriority)) {
+    const priority = target.value;
+
+    if (
+      !this.priorities.includes(
+        priority as TaskPriority
+      )
+    ) {
       return;
     }
 
     this.priorityChange.emit({
       task: this.task(),
-      priority: value as TaskPriority
+      priority: priority as TaskPriority
     });
   }
 
   onAssignmentChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+    const target =
+      event.target as HTMLSelectElement;
 
     this.assignmentChange.emit({
       task: this.task(),
-      assignedTo: value || null
+      assignedTo:
+        target.value || null
     });
   }
 }
