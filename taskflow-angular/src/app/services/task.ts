@@ -1,129 +1,60 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { API_BASE_URL } from '../api-config';
 import {
-  Injectable,
-  inject
-} from '@angular/core';
-
-import {
-  HttpClient,
-  HttpParams
-} from '@angular/common/http';
-
-import {
-  Observable,
-  map
-} from 'rxjs';
-
-import {
-  API_BASE_URL
-} from '../api-config';
-
-import {
+  CreateTaskRequest,
   Task,
-  TaskFilters
+  TaskFilters,
+  TaskListResponse,
+  UpdateTaskRequest,
+  UserListResponse
 } from '../task';
 
-interface TasksResponse {
-  success: boolean;
-  data: Task[];
-  pagination: {
-    page: number;
-    limit: number;
-    totalTasks: number;
-    totalPages: number;
-  };
-}
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class TaskService {
   private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${API_BASE_URL}/tasks`;
+  private readonly usersUrl = `${API_BASE_URL}/users`;
 
-  private readonly apiUrl =
-    `${API_BASE_URL}/tasks`;
-
-  getTasks(
-    filters: TaskFilters = {}
-  ): Observable<Task[]> {
+  getTasks(filters: TaskFilters = {}): Observable<TaskListResponse> {
     let params = new HttpParams();
+    const entries = Object.entries(filters);
 
-    if (filters.status) {
-      params = params.set(
-        'status',
-        filters.status
-      );
+    for (const [key, value] of entries) {
+      if (value !== undefined && value !== null && value !== '') {
+        params = params.set(key, String(value));
+      }
     }
 
-    if (filters.priority) {
-      params = params.set(
-        'priority',
-        filters.priority
-      );
-    }
+    return this.http.get<TaskListResponse>(this.apiUrl, { params });
+  }
 
-    if (filters.search) {
-      params = params.set(
-        'search',
-        filters.search
-      );
-    }
+  createTask(taskData: CreateTaskRequest) {
+    return this.http.post<{ success: boolean; data: Task }>(
+      this.apiUrl, taskData
+    );
+  }
 
-    if (filters.tag) {
-      params = params.set(
-        'tag',
-        filters.tag
-      );
-    }
+  updateTask(taskId: string, taskData: UpdateTaskRequest) {
+    return this.http.put<{ success: boolean; data: Task }>(
+      `${this.apiUrl}/${taskId}`, taskData
+    );
+  }
 
-    if (filters.fromDate) {
-      params = params.set(
-        'fromDate',
-        filters.fromDate
-      );
-    }
+  deleteTask(taskId: string) {
+    return this.http.delete<{ success: boolean; message: string }>(
+      `${this.apiUrl}/${taskId}`
+    );
+  }
 
-    if (filters.toDate) {
-      params = params.set(
-        'toDate',
-        filters.toDate
-      );
-    }
+  assignTask(taskId: string, assignedTo: string | null) {
+    return this.http.patch<{ success: boolean; data: Task }>(
+      `${this.apiUrl}/${taskId}/assign`, { assignedTo }
+    );
+  }
 
-    if (filters.sortBy) {
-      params = params.set(
-        'sortBy',
-        filters.sortBy
-      );
-    }
-
-    if (filters.sortOrder) {
-      params = params.set(
-        'sortOrder',
-        filters.sortOrder
-      );
-    }
-
-    if (filters.page !== undefined) {
-      params = params.set(
-        'page',
-        filters.page
-      );
-    }
-
-    if (filters.limit !== undefined) {
-      params = params.set(
-        'limit',
-        filters.limit
-      );
-    }
-
-    return this.http
-      .get<TasksResponse>(
-        this.apiUrl,
-        { params }
-      )
-      .pipe(
-        map(response => response.data)
-      );
+  getUsers(): Observable<UserListResponse> {
+    return this.http.get<UserListResponse>(this.usersUrl);
   }
 }

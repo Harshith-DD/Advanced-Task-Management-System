@@ -1,1 +1,38 @@
-<p>dashboard works!</p>
+<section class="route-view">
+  <div class="page-heading"><div><p class="eyebrow">Overview</p><h2>Dashboard</h2>
+    <p>See what needs your attention and how your work is progressing.</p></div>
+    <a routerLink="/tasks" class="button-link">View tasks</a></div>
+
+  @if (loading()) { <p class="state-message">Loading dashboard...</p> }
+  @else if (error()) { <p class="state-message error">{{ error() }}</p> }
+  @else if (dashboard(); as d) {
+    <div class="stats">
+      <article class="stat-card"><span>Total tasks</span><strong>{{ d.total }}</strong></article>
+      <article class="stat-card"><span>Completed</span><strong>{{ d.completed }}</strong></article>
+      <article class="stat-card"><span>Pending</span><strong>{{ d.pending }}</strong></article>
+      <article class="stat-card"><span>Overdue</span><strong>{{ d.overdue }}</strong></article>
+    </div>
+    <div class="dashboard-grid">
+      <section class="panel"><div class="panel-heading"><h3>Tasks by priority</h3><p>Current workload by priority.</p></div>
+        <div class="priority-grid">
+          <article class="priority-stat priority-low"><span>Low</span><strong>{{ d.byPriority.low }}</strong></article>
+          <article class="priority-stat priority-medium"><span>Medium</span><strong>{{ d.byPriority.medium }}</strong></article>
+          <article class="priority-stat priority-high"><span>High</span><strong>{{ d.byPriority.high }}</strong></article>
+        </div>
+      </section>
+      <section class="panel"><div class="panel-heading"><h3>Recent activity</h3><p>Latest task changes.</p></div>
+        @if (d.recentActivity.length) {
+          <div class="activity-list">
+            @for (item of d.recentActivity; track item._id) {
+              <article class="activity-item">
+                <strong>{{ item.task?.title ?? 'Task' }}</strong>
+                <span>{{ item.message ?? item.action ?? 'Task activity' }}</span>
+                <time>{{ item.createdAt | date:'medium' }}</time>
+              </article>
+            }
+          </div>
+        } @else { <p>No recent activity.</p> }
+      </section>
+    </div>
+  }
+</section>

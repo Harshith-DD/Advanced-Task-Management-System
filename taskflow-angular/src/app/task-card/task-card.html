@@ -1,30 +1,64 @@
-<div>
-  <h3>
-    {{ task().title }}
-  </h3>
+<article class="task-card">
+  <div class="task-card-header">
+    <div>
+      <span class="task-status-badge" [class]="'status-' + task().status">
+        {{ task().status === 'in-progress' ? 'In Progress' : (task().status | titlecase) }}
+      </span>
+      <h3>{{ task().title }}</h3>
+    </div>
+    <span class="priority-badge" [class]="'priority-' + task().priority">
+      {{ task().priority | titlecase }}
+    </span>
+  </div>
 
-  <p>
-    {{ task().description }}
-  </p>
+  <p class="task-description">{{ task().description }}</p>
 
-  <p>
-    Status: {{ task().status }}
-  </p>
-
-  <p>
-    Priority: {{ task().priority }}
-  </p>
-
-  @if (task().dueDate) {
-    <p>
-      Due: {{ task().dueDate }}
-    </p>
+  @if (task().tags.length) {
+    <div class="task-tags">
+      @for (tag of task().tags; track tag) {
+        <span class="task-tag">{{ tag }}</span>
+      }
+    </div>
   }
 
-  @if (task().tags.length > 0) {
-    <p>
-      Tags:
-      {{ task().tags.join(', ') }}
-    </p>
-  }
-</div>
+  <div class="task-meta">
+    @if (task().dueDate) {
+      <span [class.overdue]="task().isOverdue">
+        Due {{ task().dueDate | date:'mediumDate' }}
+        @if (task().isOverdue) { · Overdue }
+      </span>
+    }
+    @if (task().assignedTo) {
+      <span>Assigned to {{ task().assignedTo?.name }}</span>
+    } @else {
+      <span>Unassigned</span>
+    }
+  </div>
+
+  <div class="task-controls">
+    <label>
+      <span>Status</span>
+      <select [value]="task().status"
+        (change)="statusChange.emit({task: task(), status: $any($event.target).value})">
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ status === 'in-progress' ? 'In Progress' : (status | titlecase) }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Priority</span>
+      <select [value]="task().priority"
+        (change)="priorityChange.emit({task: task(), priority: $any($event.target).value})">
+        @for (priority of priorities; track priority) {
+          <option [value]="priority">{{ priority | titlecase }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="task-card-actions">
+    <button type="button" class="button-secondary" (click)="edit.emit(task())">Edit</button>
+    <button type="button" class="delete-button" (click)="delete.emit(task())">Delete</button>
+  </div>
+</article>

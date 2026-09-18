@@ -1,11 +1,19 @@
 <section class="route-view">
-  <div class="page-heading">
-    <div>
-      <p class="eyebrow">Workspace</p>
-      <h2>Notifications</h2>
-      <p>
-        Your TaskFlow notifications will appear here.
-      </p>
-    </div>
-  </div>
+  <div class="page-heading"><div><p class="eyebrow">Inbox</p><h2>Notifications</h2><p>Stay up to date with task assignments and changes.</p></div>
+    <button type="button" class="button-secondary" (click)="markAll()" [disabled]="!items().length">Mark all as read</button></div>
+  <section class="panel">
+    <div class="notification-summary"><strong>{{items().filter(n=>!n.read).length}} unread</strong></div>
+    @if(loading()){<p>Loading notifications...</p>}
+    @else if(error()){<p class="error">{{error()}}</p>}
+    @else if(items().length){
+      <div class="notification-list">
+        @for(item of items();track item._id){
+          <article class="notification-item" [class.unread]="!item.read">
+            <div><strong>{{item.message}}</strong><small>{{item.task?.title??'Task'}} · {{item.createdAt|date:'medium'}}</small></div>
+            @if(!item.read){<button type="button" (click)="markRead(item._id)">Mark read</button>}
+          </article>
+        }
+      </div>
+    } @else {<p>No notifications yet.</p>}
+  </section>
 </section>

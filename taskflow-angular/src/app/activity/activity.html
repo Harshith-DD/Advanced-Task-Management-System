@@ -1,11 +1,18 @@
 <section class="route-view">
-  <div class="page-heading">
-    <div>
-      <p class="eyebrow">Workspace</p>
-      <h2>Activity</h2>
-      <p>
-        Your recent task changes will appear here.
-      </p>
-    </div>
-  </div>
+  <div class="page-heading"><div><p class="eyebrow">History</p><h2>Activity</h2><p>Track changes made to your tasks.</p></div></div>
+  <section class="panel">
+    @if(loading()){<p>Loading activity...</p>}
+    @else if(error()){<p class="error">{{error()}}</p>}
+    @else if(items().length){
+      <div class="activity-list">
+        @for(item of items();track item._id){
+          <article class="activity-item">
+            <div><strong>{{item.task?.title??'Task'}}</strong>
+              <span>{{item.message??item.action??'Task activity'}}</span></div>
+            <small>{{item.user?.name??'User'}} · {{item.createdAt|date:'medium'}}</small>
+          </article>
+        }
+      </div>
+    } @else {<p>No activity yet.</p>}
+  </section>
 </section>

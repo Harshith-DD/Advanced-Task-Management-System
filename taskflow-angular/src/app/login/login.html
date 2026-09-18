@@ -1,10 +1,9 @@
 <main class="login-page">
   <div class="login-container">
-
     <div class="login-auth-header">
       <h1>Account</h1>
       <p>
-        @if (mode === 'login') {
+        @if (mode() === 'login') {
           You are not logged in.
         } @else {
           Create your TaskFlow account.
@@ -12,170 +11,81 @@
       </p>
     </div>
 
-    @if (mode === 'login') {
-
+    @if (mode() === 'login') {
       <section class="auth-card">
         <h2>Welcome back</h2>
 
-        <form
-          #loginForm="ngForm"
-          (ngSubmit)="login()"
-          novalidate
-        >
+        <form #loginForm="ngForm" (ngSubmit)="login()" novalidate>
           <div class="form-group">
-            <label for="login-email">
-              Email
-            </label>
-
-            <input
-              id="login-email"
-              name="loginEmail"
-              type="email"
-              autocomplete="email"
-              [(ngModel)]="loginEmail"
-              required
-            />
+            <label for="login-email">Email</label>
+            <input id="login-email" name="loginEmail" type="email"
+              autocomplete="email" [(ngModel)]="loginEmail" required />
           </div>
 
           <div class="form-group">
-            <label for="login-password">
-              Password
-            </label>
-
-            <input
-              id="login-password"
-              name="loginPassword"
-              type="password"
-              autocomplete="current-password"
-              [(ngModel)]="loginPassword"
-              required
-            />
+            <label for="login-password">Password</label>
+            <input id="login-password" name="loginPassword" type="password"
+              autocomplete="current-password" [(ngModel)]="loginPassword" required />
           </div>
 
-          <button
-            type="submit"
-            [disabled]="loginForm.invalid || isLoading"
-          >
-            @if (isLoading) {
-              Logging in...
-            } @else {
-              Login
-            }
+          <button type="submit"
+            [disabled]="loginForm.invalid || isLoginLoading()">
+            @if (isLoginLoading()) { Logging in... } @else { Login }
           </button>
 
-          <button
-            type="button"
-            class="auth-switch"
-            (click)="showRegister()"
-          >
+          <button type="button" class="auth-switch" (click)="showRegister()">
             Create an account
           </button>
 
-          <p
-            class="form-error"
-            aria-live="polite"
-          >
-            {{ loginError }}
-          </p>
+          @if (loginError()) {
+            <p class="form-error" aria-live="polite">{{ loginError() }}</p>
+          }
+
+          @if (registrationSuccess()) {
+            <p class="form-success" aria-live="polite">
+              {{ registrationSuccess() }}
+            </p>
+          }
         </form>
       </section>
-
     } @else {
-
       <section class="auth-card">
         <h2>Create your account</h2>
 
-        <form
-          #registerForm="ngForm"
-          (ngSubmit)="register()"
-          novalidate
-        >
+        <form #registerForm="ngForm" (ngSubmit)="register()" novalidate>
           <div class="form-group">
-            <label for="register-name">
-              Name
-            </label>
-
-            <input
-              id="register-name"
-              name="registerName"
-              type="text"
-              autocomplete="name"
-              maxlength="100"
-              [(ngModel)]="registerName"
-              required
-            />
+            <label for="register-name">Name</label>
+            <input id="register-name" name="registerName" type="text"
+              autocomplete="name" maxlength="100"
+              [(ngModel)]="registerName" required />
           </div>
 
           <div class="form-group">
-            <label for="register-email">
-              Email
-            </label>
-
-            <input
-              id="register-email"
-              name="registerEmail"
-              type="email"
-              autocomplete="email"
-              [(ngModel)]="registerEmail"
-              required
-            />
+            <label for="register-email">Email</label>
+            <input id="register-email" name="registerEmail" type="email"
+              autocomplete="email" [(ngModel)]="registerEmail" required />
           </div>
 
           <div class="form-group">
-            <label for="register-password">
-              Password
-            </label>
-
-            <input
-              id="register-password"
-              name="registerPassword"
-              type="password"
-              autocomplete="new-password"
-              [(ngModel)]="registerPassword"
-              required
-            />
+            <label for="register-password">Password</label>
+            <input id="register-password" name="registerPassword" type="password"
+              autocomplete="new-password" [(ngModel)]="registerPassword" required />
           </div>
 
-          <button
-            type="submit"
-            [disabled]="registerForm.invalid || isLoading"
-          >
-            @if (isLoading) {
-              Registering...
-            } @else {
-              Register
-            }
+          <button type="submit"
+            [disabled]="registerForm.invalid || isRegisterLoading()">
+            @if (isRegisterLoading()) { Registering... } @else { Register }
           </button>
 
-          <button
-            type="button"
-            class="auth-switch"
-            (click)="showLogin()"
-          >
+          <button type="button" class="auth-switch" (click)="showLogin()">
             Already have an account? Login
           </button>
 
-          @if (registerError) {
-            <p
-              class="form-error"
-              aria-live="polite"
-            >
-              {{ registerError }}
-            </p>
-          }
-
-          @if (registrationSuccess) {
-            <p
-              class="form-success"
-              aria-live="polite"
-            >
-              {{ registrationSuccess }}
-            </p>
+          @if (registerError()) {
+            <p class="form-error" aria-live="polite">{{ registerError() }}</p>
           }
         </form>
       </section>
-
     }
-
   </div>
 </main>

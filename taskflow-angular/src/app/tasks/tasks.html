@@ -1,39 +1,130 @@
-<h1>
-  Tasks
-</h1>
+<section class="route-view">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Workspace</p>
+      <h2>Tasks</h2>
+      <p>Filter, sort and manage everything from one place.</p>
+    </div>
+    <button type="button" (click)="openCreate()">+ New Task</button>
+  </div>
 
-@if (taskState.isLoading()) {
-  <p>
-    Loading tasks...
-  </p>
-}
+  <section class="controls-section">
+    <div class="controls-toolbar">
+      <div class="search-control">
+        <label for="search-input">Search</label>
+        <input id="search-input" type="search"
+          placeholder="Search by title or description"
+          [formControl]="searchControl" />
+      </div>
+      <div class="control-group"><label>Status</label>
+        <select [formControl]="statusControl">
+          <option value="">All</option><option value="completed">Completed</option>
+          <option value="in-progress">In Progress</option><option value="pending">Pending</option>
+        </select>
+      </div>
+      <div class="control-group"><label>Priority</label>
+        <select [formControl]="priorityControl">
+          <option value="">All</option><option value="high">High</option>
+          <option value="medium">Medium</option><option value="low">Low</option>
+        </select>
+      </div>
+      <div class="control-group"><label>Tag</label>
+        <input type="text" placeholder="e.g. backend" [formControl]="tagControl" />
+      </div>
+      <div class="control-group"><label>From date</label>
+        <input type="date" [formControl]="fromDateControl" />
+      </div>
+      <div class="control-group"><label>To date</label>
+        <input type="date" [formControl]="toDateControl" />
+      </div>
+      <div class="control-group"><label>Sort by</label>
+        <select [formControl]="sortByControl">
+          <option value="createdAt">Created Date</option><option value="updatedAt">Updated Date</option>
+          <option value="dueDate">Due Date</option><option value="priority">Priority</option>
+        </select>
+      </div>
+      <div class="control-group"><label>Order</label>
+        <select [formControl]="sortOrderControl">
+          <option value="asc">Ascending</option><option value="desc">Descending</option>
+        </select>
+      </div>
+    </div>
+  </section>
 
-@if (taskState.hasError()) {
-  <p>
-    {{ taskState.errorMessage() }}
-  </p>
-}
+  @if (taskState.isLoading()) {
+    <p class="state-message">Loading tasks...</p>
+  } @else if (taskState.hasError()) {
+    <p class="state-message error">{{ taskState.errorMessage() }}</p>
+  } @else {
+    <section class="task-list-section">
+      <div class="section-header">
+        <div><h3>Task workspace</h3><p>{{ taskState.pagination().totalTasks }} total tasks</p></div>
+      </div>
 
-@if (
-  !taskState.isLoading() &&
-  !taskState.hasError() &&
-  !taskState.hasTasks()
-) {
-  <p>
-    No tasks found.
-  </p>
-}
+      @if (taskState.hasTasks()) {
+        <div class="task-list">
+          @for (task of taskState.tasks(); track task._id) {
+            <app-task-card
+              [task]="task"
+              (edit)="openEdit($event)"
+              (delete)="deleteTask($event)"
+              (statusChange)="changeStatus($event)"
+              (priorityChange)="changePriority($event)"
+            />
+          }
+        </div>
+      } @else {
+        <p class="empty-state">No tasks to display.</p>
+      }
+    </section>
 
-@if (
-  !taskState.isLoading() &&
-  !taskState.hasError()
-) {
-  @for (
-    task of taskState.tasks();
-    track task._id
-  ) {
-    <app-task-card
-      [task]="task"
-    />
+    @if (taskState.pagination().totalPages > 0) {
+      <div class="pagination-container">
+        <button type="button" class="button-secondary"
+          [disabled]="taskState.pagination().page <= 1"
+          (click)="goToPage(taskState.pagination().page - 1)">Previous</button>
+
+        <div class="page-numbers">
+          @for (page of [].constructor(taskState.pagination().totalPages); track $index) {
+            <button type="button"
+              [disabled]="taskState.pagination().page === $index + 1"
+              (click)="goToPage($index + 1)">{{ $index + 1 }}</button>
+          }
+        </div>
+
+        <button type="button" class="button-secondary"
+          [disabled]="taskState.pagination().page >= taskState.pagination().totalPages"
+          (click)="goToPage(taskState.pagination().page + 1)">Next</button>
+
+        <label class="pagination-limit">Tasks per page
+          <select [value]="taskState.pagination().limit"
+            (change)="changeLimit(+$any($event.target).value)">
+            <option value="5">5</option><option value="10">10</option>
+            <option value="20">20</option><option value="50">50</option>
+          </select>
+        </label>
+      </div>
+    }
   }
-}
+
+  @if (isFormOpen()) {
+    <div class="modal-backdrop" (click)="closeForm()">
+      <section class="task-form-modal" role="dialog" aria-modal="true"
+        aria-labelledby="task-form-heading" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div><p class="eyebrow">{{ editingTask() ? 'Edit task' : 'New task' }}</p>
+            <h2 id="task-form-heading">{{ editingTask() ? 'Edit task' : 'Create a task' }}</h2></div>
+          <button type="button" class="icon-button" aria-label="Close" (click)="closeForm()">×</button>
+        </div>
+
+        <app-task-form
+          [users]="users()"
+          [task]="editingTask()"
+          [isSaving]="isSaving()"
+          (submitted)="saveTask($event)"
+          (cancelled)="closeForm()"
+        />
+      </section>
+    </div>
+  }
+</section>

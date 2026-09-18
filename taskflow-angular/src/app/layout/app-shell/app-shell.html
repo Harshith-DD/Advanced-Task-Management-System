@@ -124,13 +124,11 @@
 
         <span>Notifications</span>
 
-        <span
-          class="nav-badge"
-          aria-hidden="true"
-          hidden
-        >
-          0
-        </span>
+        @if (notificationService.unreadCount() > 0) {
+          <span class="nav-badge" aria-label="Unread notifications">
+            {{ notificationService.unreadCount() }}
+          </span>
+        }
       </a>
 
       <a
