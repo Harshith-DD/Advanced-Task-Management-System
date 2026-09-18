@@ -52,18 +52,21 @@
           },
           "defaultConfiguration": "production"
         },
-        "serve": {
-          "builder": "@angular/build:dev-server",
-          "configurations": {
-            "production": {
-              "buildTarget": "taskflow-angular:build:production"
-            },
-            "development": {
-              "buildTarget": "taskflow-angular:build:development"
-            }
-          },
-          "defaultConfiguration": "development"
-        },
+"serve": {
+  "builder": "@angular/build:dev-server",
+  "configurations": {
+    "production": {
+      "buildTarget": "taskflow-angular:build:production"
+    },
+    "development": {
+      "buildTarget": "taskflow-angular:build:development"
+    }
+  },
+  "defaultConfiguration": "development",
+  "options": {
+    "proxyConfig": "proxy.conf.json"
+  }
+},
         "test": {
           "builder": "@angular/build:unit-test"
         }

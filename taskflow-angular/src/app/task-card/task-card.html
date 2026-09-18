@@ -1,4 +1,30 @@
 <div>
-  <h3>{{ task().title }}</h3>
-  <p>Status: {{ task().status }}</p>
+  <h3>
+    {{ task().title }}
+  </h3>
+
+  <p>
+    {{ task().description }}
+  </p>
+
+  <p>
+    Status: {{ task().status }}
+  </p>
+
+  <p>
+    Priority: {{ task().priority }}
+  </p>
+
+  @if (task().dueDate) {
+    <p>
+      Due: {{ task().dueDate }}
+    </p>
+  }
+
+  @if (task().tags.length > 0) {
+    <p>
+      Tags:
+      {{ task().tags.join(', ') }}
+    </p>
+  }
 </div>

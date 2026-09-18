@@ -20,18 +20,8 @@
   </p>
 }
 
-@for (task of tasks; track task._id) {
-  <div>
-    <h3>
-      {{ task.title }}
-    </h3>
-
-    <p>
-      Status: {{ task.status }}
-    </p>
-
-    <p>
-      Priority: {{ task.priority }}
-    </p>
-  </div>
+@if (!isLoading && !errorMessage) {
+  @for (task of tasks; track task._id) {
+    <app-task-card [task]="task" />
+  }
 }

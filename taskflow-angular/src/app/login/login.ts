@@ -24,8 +24,11 @@ import {
   styleUrl: './login.css'
 })
 export class Login {
-  private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
+  private readonly authService =
+    inject(AuthService);
+
+  private readonly router =
+    inject(Router);
 
   email = '';
   password = '';
@@ -41,14 +44,17 @@ export class Login {
       email: this.email,
       password: this.password
     }).subscribe({
-      next: response => {
-        this.authService.setUser(response.user);
+      next: user => {
+        this.authService.setUser(user);
 
         this.router.navigate(['/tasks']);
       },
 
       error: error => {
-        console.error('Login failed:', error);
+        console.error(
+          'Login failed:',
+          error
+        );
 
         this.errorMessage =
           error.error?.message ??

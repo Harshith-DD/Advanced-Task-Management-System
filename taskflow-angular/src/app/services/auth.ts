@@ -8,7 +8,8 @@ import {
 } from '@angular/common/http';
 
 import {
-  Observable
+  Observable,
+  map
 } from 'rxjs';
 
 import {
@@ -31,7 +32,10 @@ interface RegisterRequest {
 }
 
 interface AuthResponse {
-  user: User;
+  success: boolean;
+  data: {
+    user: User;
+  };
 }
 
 @Injectable({
@@ -40,7 +44,8 @@ interface AuthResponse {
 export class AuthService {
   private readonly apiUrl = `${API_BASE_URL}/auth`;
 
-  private readonly currentUser = signal<User | null>(null);
+  private readonly currentUser =
+    signal<User | null>(null);
 
   constructor(
     private readonly http: HttpClient
@@ -48,26 +53,38 @@ export class AuthService {
 
   login(
     credentials: LoginRequest
-  ): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(
-      `${this.apiUrl}/login`,
-      credentials
-    );
+  ): Observable<User> {
+    return this.http
+      .post<AuthResponse>(
+        `${this.apiUrl}/login`,
+        credentials
+      )
+      .pipe(
+        map(response => response.data.user)
+      );
   }
 
   register(
     data: RegisterRequest
-  ): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(
-      `${this.apiUrl}/register`,
-      data
-    );
+  ): Observable<User> {
+    return this.http
+      .post<AuthResponse>(
+        `${this.apiUrl}/register`,
+        data
+      )
+      .pipe(
+        map(response => response.data.user)
+      );
   }
 
   getCurrentUser(): Observable<User> {
-    return this.http.get<User>(
-      `${this.apiUrl}/me`
-    );
+    return this.http
+      .get<AuthResponse>(
+        `${this.apiUrl}/me`
+      )
+      .pipe(
+        map(response => response.data.user)
+      );
   }
 
   restoreSession(): Observable<User> {
