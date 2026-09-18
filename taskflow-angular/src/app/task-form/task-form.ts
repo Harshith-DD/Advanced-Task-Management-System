@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   Task, TaskPriority, TaskStatus, TaskUser
@@ -20,7 +20,7 @@ export interface TaskFormSubmit {
   templateUrl: './task-form.html',
   styleUrl: './task-form.css'
 })
-export class TaskForm implements OnChanges {
+export class TaskForm {
   private readonly fb = inject(FormBuilder);
 
   @Input() users: TaskUser[] = [];
@@ -44,7 +44,7 @@ export class TaskForm implements OnChanges {
   get description() { return this.taskForm.controls.description; }
   get isEditing() { return !!this.task; }
 
-  ngOnChanges(_changes: SimpleChanges): void {
+  ngOnChanges(): void {
     if (this.task) {
       this.taskForm.patchValue({
         title: this.task.title,

@@ -1,4 +1,4 @@
-<article class="task-card">
+<article class="task-card" [class.overdue-card]="task().isOverdue">
   <div class="task-card-header">
     <div>
       <span class="task-status-badge" [class]="'status-' + task().status">
@@ -13,6 +13,20 @@
 
   <p class="task-description">{{ task().description }}</p>
 
+  <div class="task-ownership">
+    <span>Owner: {{ ownerLabel }}</span>
+    <span>Assigned to: {{ assignedLabel }}</span>
+  </div>
+
+  <div class="task-metadata">
+    <span [class.overdue-date]="task().isOverdue">
+      Due: {{ task().dueDate ? (task().dueDate | date:'medium') : 'No due date' }}
+      @if (task().isOverdue) { — Overdue }
+    </span>
+    <span>Created: {{ task().createdAt | date:'medium' }}</span>
+    <span>Updated: {{ task().updatedAt | date:'medium' }}</span>
+  </div>
+
   @if (task().tags.length) {
     <div class="task-tags">
       @for (tag of task().tags; track tag) {
@@ -21,44 +35,51 @@
     </div>
   }
 
-  <div class="task-meta">
-    @if (task().dueDate) {
-      <span [class.overdue]="task().isOverdue">
-        Due {{ task().dueDate | date:'mediumDate' }}
-        @if (task().isOverdue) { · Overdue }
-      </span>
-    }
-    @if (task().assignedTo) {
-      <span>Assigned to {{ task().assignedTo?.name }}</span>
-    } @else {
-      <span>Unassigned</span>
-    }
-  </div>
+  @if (canEdit) {
+    <div class="task-controls">
+      <label>
+        <span>Status</span>
+        <select [value]="task().status"
+          (change)="statusChange.emit({task: task(), status: $any($event.target).value})">
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ status === 'in-progress' ? 'In Progress' : (status | titlecase) }}</option>
+          }
+        </select>
+      </label>
 
-  <div class="task-controls">
-    <label>
-      <span>Status</span>
-      <select [value]="task().status"
-        (change)="statusChange.emit({task: task(), status: $any($event.target).value})">
-        @for (status of statuses; track status) {
-          <option [value]="status">{{ status === 'in-progress' ? 'In Progress' : (status | titlecase) }}</option>
-        }
-      </select>
-    </label>
+      <label>
+        <span>Priority</span>
+        <select [value]="task().priority"
+          (change)="priorityChange.emit({task: task(), priority: $any($event.target).value})">
+          @for (priority of priorities; track priority) {
+            <option [value]="priority">{{ priority | titlecase }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  }
 
-    <label>
-      <span>Priority</span>
-      <select [value]="task().priority"
-        (change)="priorityChange.emit({task: task(), priority: $any($event.target).value})">
-        @for (priority of priorities; track priority) {
-          <option [value]="priority">{{ priority | titlecase }}</option>
-        }
-      </select>
-    </label>
-  </div>
+  @if (canAssign || canDelete || canEdit) {
+    <div class="task-card-actions">
+      @if (canAssign) {
+        <label class="assignment-control">
+          <span>Assignment</span>
+          <select [value]="task().assignedTo?._id ?? ''" (change)="onAssignmentChange($event)">
+            <option value="">Unassigned</option>
+            @for (user of users(); track user._id) {
+              <option [value]="user._id">{{ user.name }}</option>
+            }
+          </select>
+        </label>
+      }
 
-  <div class="task-card-actions">
-    <button type="button" class="button-secondary" (click)="edit.emit(task())">Edit</button>
-    <button type="button" class="delete-button" (click)="delete.emit(task())">Delete</button>
-  </div>
+      @if (canEdit) {
+        <button type="button" class="button-secondary" (click)="edit.emit(task())">Edit</button>
+      }
+
+      @if (canDelete) {
+        <button type="button" class="delete-button" (click)="delete.emit(task())">Delete</button>
+      }
+    </div>
+  }
 </article>

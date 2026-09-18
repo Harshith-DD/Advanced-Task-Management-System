@@ -66,10 +66,12 @@
           @for (task of taskState.tasks(); track task._id) {
             <app-task-card
               [task]="task"
+              [users]="users()"
               (edit)="openEdit($event)"
               (delete)="deleteTask($event)"
               (statusChange)="changeStatus($event)"
               (priorityChange)="changePriority($event)"
+              (assignmentChange)="changeAssignment($event)"
             />
           }
         </div>
