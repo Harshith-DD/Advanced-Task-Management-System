@@ -4,9 +4,11 @@ import {
 } from '@angular/cdk/drag-drop';
 import {
   Component,
+  ElementRef,
   HostListener,
   OnDestroy,
   OnInit,
+  ViewChild,
   computed,
   inject,
   signal
@@ -94,6 +96,15 @@ export class Tasks implements OnInit, OnDestroy {
 
   readonly isKanbanMaximized =
     signal(false);
+  
+  @ViewChild('openTaskFormButton')
+  private openTaskFormButton?: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('taskFormModal')
+  private taskFormModal?: ElementRef<HTMLElement>;
+
+  readonly pendingMutations =
+    signal<Set<string>>(new Set());
 
   readonly pageNumbers = computed(() =>
     Array.from(
@@ -404,21 +415,65 @@ export class Tasks implements OnInit, OnDestroy {
     });
   }
 
+  isTaskMutating(taskId: string): boolean {
+    return this.pendingMutations().has(taskId);
+  }
+
+  private setTaskMutation(
+    taskId: string,
+    pending: boolean
+  ): void {
+    this.pendingMutations.update(
+      current => {
+        const next = new Set(current);
+
+        if (pending) {
+          next.add(taskId);
+        } else {
+          next.delete(taskId);
+        }
+
+        return next;
+      }
+    );
+  }
+
+  private focusTaskModal(): void {
+    setTimeout(() => {
+      this.taskFormModal
+        ?.nativeElement
+        .focus();
+    });
+  }
+
+  private restoreTaskFormFocus(): void {
+    setTimeout(() => {
+      this.openTaskFormButton
+        ?.nativeElement
+        .focus();
+    });
+  }
+
   openCreate(): void {
     this.editingTask.set(null);
     this.isFormOpen.set(true);
+    this.focusTaskModal();
   }
 
   openEdit(task: Task): void {
     this.editingTask.set(task);
     this.isFormOpen.set(true);
+    this.focusTaskModal();
   }
 
   closeForm(): void {
-    if (!this.isSaving()) {
-      this.isFormOpen.set(false);
-      this.editingTask.set(null);
+    if (this.isSaving()) {
+      return;
     }
+
+    this.isFormOpen.set(false);
+    this.editingTask.set(null);
+    this.restoreTaskFormFocus();
   }
 
   saveTask(
@@ -543,30 +598,57 @@ export class Tasks implements OnInit, OnDestroy {
       });
   }
 
-  changeStatus(event: {
-    task: Task;
-    status: TaskStatus;
-  }): void {
-    this.updateAndRefresh(
-      event.task._id,
-      {
-        status: event.status
-      },
-      'Failed to update status.',
-      true
-    );
+changeStatus(event: {
+  task: Task;
+  status: TaskStatus;
+}): void {
+  const taskId = event.task._id;
+
+  if (this.isTaskMutating(taskId)) {
+    return;
   }
+
+  this.setTaskMutation(taskId, true);
+
+  this.updateAndRefresh(
+    taskId,
+    {
+      status: event.status
+    },
+    'Failed to update status.',
+    true
+  );
+}
 
   changeAssignment(event: {
     task: Task;
     assignedTo: string | null;
   }): void {
+    const taskId = event.task._id;
+
+    if (this.isTaskMutating(taskId)) {
+      return;
+    }
+
+    this.setTaskMutation(
+      taskId,
+      true
+    );
+
     this.taskService
       .assignTask(
-        event.task._id,
+        taskId,
         event.assignedTo
       )
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.setTaskMutation(
+            taskId,
+            false
+          );
+        })
+      )
       .subscribe({
         next: response => {
           this.replaceTaskInState(
@@ -591,8 +673,19 @@ export class Tasks implements OnInit, OnDestroy {
     task: Task;
     priority: TaskPriority;
   }): void {
+    const taskId = event.task._id;
+
+    if (this.isTaskMutating(taskId)) {
+      return;
+    }
+
+    this.setTaskMutation(
+      taskId,
+      true
+    );
+
     this.updateAndRefresh(
-      event.task._id,
+      taskId,
       {
         priority: event.priority
       },
@@ -602,7 +695,10 @@ export class Tasks implements OnInit, OnDestroy {
   }
 
   deleteTask(task: Task): void {
+    const taskId = task._id;
+
     if (
+      this.isTaskMutating(taskId) ||
       !window.confirm(
         'Are you sure you want to delete this task?'
       )
@@ -610,9 +706,22 @@ export class Tasks implements OnInit, OnDestroy {
       return;
     }
 
+    this.setTaskMutation(
+      taskId,
+      true
+    );
+
     this.taskService
-      .deleteTask(task._id)
-      .pipe(takeUntil(this.destroy$))
+      .deleteTask(taskId)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.setTaskMutation(
+            taskId,
+            false
+          );
+        })
+      )
       .subscribe({
         next: () => {
           this.taskState.setTasks(
@@ -620,7 +729,7 @@ export class Tasks implements OnInit, OnDestroy {
               .tasks()
               .filter(
                 item =>
-                  item._id !== task._id
+                  item._id !== taskId
               )
           );
 
@@ -636,39 +745,47 @@ export class Tasks implements OnInit, OnDestroy {
       });
   }
 
-  private updateAndRefresh(
-    taskId: string,
-    data: Partial<
-      Pick<Task, 'status' | 'priority'>
-    >,
-    fallback: string,
-    refreshNotifications = false
-  ): void {
-    this.taskService
-      .updateTask(
-        taskId,
-        data
-      )
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: response => {
-          this.replaceTaskInState(
-            response.data
-          );
+private updateAndRefresh(
+  taskId: string,
+  data: Partial<
+    Pick<Task, 'status' | 'priority'>
+  >,
+  fallback: string,
+  refreshNotifications = false
+): void {
+  this.taskService
+    .updateTask(
+      taskId,
+      data
+    )
+    .pipe(
+      takeUntil(this.destroy$),
+      finalize(() => {
+        this.setTaskMutation(
+          taskId,
+          false
+        );
+      })
+    )
+    .subscribe({
+      next: response => {
+        this.replaceTaskInState(
+          response.data
+        );
 
-          this.refreshAfterMutation(
-            refreshNotifications
-          );
-        },
+        this.refreshAfterMutation(
+          refreshNotifications
+        );
+      },
 
-        error: error => {
-          this.taskState.setError(
-            error?.error?.error?.message ??
-            fallback
-          );
-        }
-      });
-  }
+      error: error => {
+        this.taskState.setError(
+          error?.error?.error?.message ??
+          fallback
+        );
+      }
+    });
+}
 
   private replaceTaskInState(
     updatedTask: Task
@@ -785,7 +902,8 @@ export class Tasks implements OnInit, OnDestroy {
     if (
       !task ||
       !this.canDrag(task) ||
-      task.status === nextStatus
+      task.status === nextStatus ||
+      this.isTaskMutating(task._id)
     ) {
       return;
     }
@@ -793,10 +911,11 @@ export class Tasks implements OnInit, OnDestroy {
     const previousStatus =
       task.status;
 
-    /*
-     * Optimistically move the task
-     * in the Angular state.
-     */
+    this.setTaskMutation(
+      task._id,
+      true
+    );
+
     this.taskState.setTasks(
       this.taskState
         .tasks()
@@ -817,12 +936,18 @@ export class Tasks implements OnInit, OnDestroy {
           status: nextStatus
         }
       )
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.setTaskMutation(
+            task._id,
+            false
+          );
+        })
+      )
       .subscribe({
         next: response => {
-          /*
-           * The backend response is authoritative.
-           */
+
           this.replaceTaskInState(
             response.data
           );
@@ -878,6 +1003,8 @@ export class Tasks implements OnInit, OnDestroy {
     this.isFormOpen.set(false);
     this.editingTask.set(null);
     this.isSaving.set(false);
+
+    this.restoreTaskFormFocus();
 
     this.refreshAfterMutation(
       refreshNotifications
