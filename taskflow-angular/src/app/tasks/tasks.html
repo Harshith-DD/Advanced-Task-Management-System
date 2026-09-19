@@ -110,61 +110,82 @@
           }
         </div>
       } @else {
-        <div id="kanban-board" class="kanban-board" [class.is-maximized]="isKanbanMaximized()" aria-live="polite">
-          <button
-            type="button"
-            class="kanban-window-button"
-            [attr.aria-expanded]="isKanbanMaximized()"
-            [attr.aria-label]="isKanbanMaximized() ? 'Minimize Kanban board' : 'Maximize Kanban board'"
-            (click)="toggleKanbanMaximized()"
-          >
-            {{ isKanbanMaximized() ? 'Minimize' : 'Maximize' }}
-          </button>
+<div
+  id="kanban-board"
+  class="kanban-board"
+  [class.is-maximized]="isKanbanMaximized()"
+  aria-live="polite"
+>
+  <button
+    type="button"
+    class="kanban-window-button"
+    [attr.aria-expanded]="isKanbanMaximized()"
+    [attr.aria-label]="
+      isKanbanMaximized()
+        ? 'Minimize Kanban board'
+        : 'Maximize Kanban board'
+    "
+    (click)="toggleKanbanMaximized()"
+  >
+    {{ isKanbanMaximized() ? 'Minimize' : 'Maximize' }}
+  </button>
 
-          @for (column of kanbanColumns; track column.status) {
-            <section class="kanban-column">
-              <div class="kanban-column-header">
-                <div>
-                  <h3>{{ column.title }}</h3>
-                  <p>{{ column.description }}</p>
-                </div>
-                <span class="kanban-count">{{ tasksForStatus(column.status).length }}</span>
-              </div>
-
-              <div
-                class="kanban-drop-zone"
-                [attr.data-status]="column.status"
-                (dragover)="onDragOver($event)"
-                (drop)="onDrop($event, column.status)"
-              >
-                @for (task of tasksForStatus(column.status); track task._id) {
-                  <div
-                    class="kanban-card"
-                    [class.is-draggable]="canDrag(task)"
-                    [draggable]="canDrag(task)"
-                    [attr.data-task-id]="task._id"
-                    (dragstart)="onDragStart($event, task)"
-                    (dragend)="onDragEnd()"
-                  >
-                    <app-task-card
-                      [task]="task"
-                      [users]="users()"
-                      (edit)="openEdit($event)"
-                      (delete)="deleteTask($event)"
-                      (statusChange)="changeStatus($event)"
-                      (priorityChange)="changePriority($event)"
-                      (assignmentChange)="changeAssignment($event)"
-                    />
-                  </div>
-                }
-
-                @if (!tasksForStatus(column.status).length) {
-                  <p class="kanban-empty">Drop tasks here</p>
-                }
-              </div>
-            </section>
-          }
+  @for (column of kanbanColumns; track column.status) {
+    <section class="kanban-column">
+      <div class="kanban-column-header">
+        <div>
+          <h3>{{ column.title }}</h3>
+          <p>{{ column.description }}</p>
         </div>
+
+        <span class="kanban-count">
+          {{ tasksForStatus(column.status).length }}
+        </span>
+      </div>
+
+<div
+  [id]="'kanban-' + column.status"
+  class="kanban-drop-zone"
+  cdkDropList
+  [cdkDropListData]="tasksForStatus(column.status)"
+  [cdkDropListConnectedTo]="kanbanDropListIds"
+  [attr.data-status]="column.status"
+  (cdkDropListDropped)="
+    onKanbanDrop($event, column.status)
+  "
+>
+        @for (
+          task of tasksForStatus(column.status);
+          track task._id
+        ) {
+          <div
+            class="kanban-card"
+            [class.is-draggable]="canDrag(task)"
+            cdkDrag
+            [cdkDragData]="task"
+            [cdkDragDisabled]="!canDrag(task)"
+          >
+            <app-task-card
+              [task]="task"
+              [users]="users()"
+              (edit)="openEdit($event)"
+              (delete)="deleteTask($event)"
+              (statusChange)="changeStatus($event)"
+              (priorityChange)="changePriority($event)"
+              (assignmentChange)="changeAssignment($event)"
+            />
+          </div>
+        }
+
+        @if (!tasksForStatus(column.status).length) {
+          <p class="kanban-empty">
+            Drop tasks here
+          </p>
+        }
+      </div>
+    </section>
+  }
+</div>
       }
 
       @if (!taskState.tasks().length) {
