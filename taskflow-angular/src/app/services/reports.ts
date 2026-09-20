@@ -1,4 +1,8 @@
-import { Injectable, inject } from '@angular/core';
+import {
+  Injectable,
+  inject
+} from '@angular/core';
+
 import {
   HttpClient,
   HttpResponse
@@ -7,8 +11,7 @@ import {
 import {
   Observable,
   Subject,
-  EMPTY,
-  catchError,
+  map,
   switchMap,
   takeUntil,
   takeWhile,
@@ -47,7 +50,8 @@ export interface ReportStatusResponse {
   providedIn: 'root'
 })
 export class ReportService {
-  private readonly http = inject(HttpClient);
+  private readonly http =
+    inject(HttpClient);
 
   private readonly apiUrl =
     `${API_BASE_URL}/reports`;
@@ -116,24 +120,7 @@ export class ReportService {
         true
       ),
 
-      switchMap(response => {
-        return new Observable<ReportJob>(
-          subscriber => {
-            subscriber.next(
-              response.job
-            );
-            subscriber.complete();
-          }
-        );
-      }),
-
-      catchError(error => {
-        return new Observable<ReportJob>(
-          subscriber => {
-            subscriber.error(error);
-          }
-        );
-      })
+      map(response => response.job)
     );
   }
 

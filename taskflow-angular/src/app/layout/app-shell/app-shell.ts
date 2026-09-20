@@ -18,9 +18,11 @@ import {
 } from 'rxjs';
 
 import { AuthService } from '../../services/auth';
+
 import {
   NotificationService
 } from '../../services/notifications';
+
 import {
   TaskStateService
 } from '../../services/task-state';
@@ -54,10 +56,11 @@ export class AppShell
     new Subject<void>();
 
   ngOnInit(): void {
-
     this.notificationService
       .loadIfNeeded()
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$)
+      )
       .subscribe({
         error: error => {
           console.error(
@@ -71,11 +74,13 @@ export class AppShell
   logout(): void {
     this.authService
       .logout()
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$)
+      )
       .subscribe({
         next: () => this.finishLogout(),
-        error: error => {
 
+        error: error => {
           console.error(
             'Logout request failed:',
             error
@@ -87,8 +92,6 @@ export class AppShell
   }
 
   private finishLogout(): void {
-
-    this.authService.clearUser();
     this.notificationService.clear();
     this.taskState.reset();
 
