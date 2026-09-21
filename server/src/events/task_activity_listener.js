@@ -6,6 +6,14 @@ import { addActivityJob } from "../queue/queues.js";
 // CREATE ACTIVITY FOR TASK EVENT
 // ========================================
 
+function getTaskLabel(task) {
+  if (task.taskKey) {
+    return `${task.taskKey} "${task.title}"`;
+  }
+
+  return `"${task.title}"`;
+}
+
 async function handleTaskActivity(eventData, eventType) {
   try {
     const { task, userId } = eventData;
@@ -20,35 +28,35 @@ async function handleTaskActivity(eventData, eventType) {
 
     switch (eventType) {
       case TASK_EVENTS.CREATED:
-        message = `Task "${task.title}" was created`;
+        message = `Task ${getTaskLabel(task)} was created`;
         break;
 
       case TASK_EVENTS.UPDATED: {
         const changes = eventData.changes ?? [];
 
         message = changes.length
-          ? `Task "${task.title}" was updated: ${changes.join(", ")}`
-          : `Task "${task.title}" was updated`;
+          ? `Task ${getTaskLabel(task)} was updated: ${changes.join(", ")}`
+          : `Task ${getTaskLabel(task)} was updated`;
 
         break;
       }
 
       case TASK_EVENTS.ASSIGNED:
-        message = `Task "${task.title}" was assigned`;
+        message = `Task ${getTaskLabel(task)} was assigned`;
         break;
 
       case TASK_EVENTS.UNASSIGNED:
-        message = `Task "${task.title}" was unassigned`;
+        message = `Task ${getTaskLabel(task)} was unassigned`;
         break;
 
       case TASK_EVENTS.PRIORITY_CHANGED:
         message =
-          `Task "${task.title}" priority changed from ` +
+          `Task ${getTaskLabel(task)} priority changed from ` +
           `${eventData.previousPriority} to ${eventData.newPriority}`;
         break;
 
       case TASK_EVENTS.COMPLETED:
-        message = `Task "${task.title}" was completed`;
+        message = `Task ${getTaskLabel(task)} was completed`;
         break;
 
       default:

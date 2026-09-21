@@ -944,10 +944,9 @@ private updateAndRefresh(
 
     return (
       currentUser.role === 'admin' ||
-      task.owner?._id ===
-        currentUser.id ||
-      task.assignedTo?._id ===
-        currentUser.id
+      task.owner?._id === currentUser.id ||
+      task.project?.owner?._id === currentUser.id ||
+      task.assignedTo?._id === currentUser.id
     );
   }
 

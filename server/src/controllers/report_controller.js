@@ -78,7 +78,7 @@ export async function getReportStatusController(req, res) {
   }
 
   const canAccessJob =
-    req.user.role === "admin" || job.data.user.userId === req.user.userId;
+    req.user.role === "admin" || (job.data.userId ?? job.data.user?.userId) === req.user.userId;
 
   if (!canAccessJob) {
     throw new AuthorizationError("You are not allowed to access this report");
@@ -128,7 +128,7 @@ export async function downloadReportController(req, res) {
   }
 
   const canAccessJob =
-    req.user.role === "admin" || job.data.user.userId === req.user.userId;
+    req.user.role === "admin" || (job.data.userId ?? job.data.user?.userId) === req.user.userId;
 
   if (!canAccessJob) {
     throw new AuthorizationError("You are not allowed to access this report");

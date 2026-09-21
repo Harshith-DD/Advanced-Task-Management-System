@@ -78,7 +78,9 @@ export async function processTaskReminders() {
 
         task: task._id,
 
-        message: `Task "${task.title}" is due soon`,
+        message: task.taskKey
+          ? `Task ${task.taskKey} "${task.title}" is due soon`
+          : `Task "${task.title}" is due soon`,
       });
 
       task.reminderSentAt = new Date();

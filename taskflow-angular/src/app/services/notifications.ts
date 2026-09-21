@@ -6,14 +6,22 @@ import { API_BASE_URL } from '../api-config';
 
 export type NotificationType =
   | 'taskAssigned'
+  | 'taskUnassigned'
   | 'taskCompleted'
   | 'taskPriorityChanged'
   | 'taskReminder';
 
+export interface NotificationProject {
+  name: string;
+  key: string;
+}
+
 export interface NotificationTask {
   title: string;
+  taskKey: string;
   status: string;
   priority: string;
+  project?: NotificationProject;
 }
 
 export interface NotificationItem {

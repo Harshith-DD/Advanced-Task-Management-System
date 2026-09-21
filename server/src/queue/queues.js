@@ -102,7 +102,7 @@ export async function addReportJob(user) {
   return getReportQueue().add(
     "generate-task-report",
     {
-      user,
+      userId: user.userId,
     },
     {
       jobId: crypto.randomUUID(),

@@ -21,7 +21,14 @@ class NotificationService {
     return await Notification.find({
       user: userId,
     })
-      .populate("task", "title status priority")
+      .populate({
+        path: "task",
+        select: "title taskKey status priority project",
+        populate: {
+          path: "project",
+          select: "name key",
+        },
+      })
       .sort({
         createdAt: -1,
       })

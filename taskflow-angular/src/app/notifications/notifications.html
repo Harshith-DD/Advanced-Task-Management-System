@@ -32,7 +32,15 @@
             <div class="notification-content">
               <p class="notification-message">{{ notification.message }}</p>
               <div class="notification-meta">
-                <span>Task: {{ notification.task?.title ?? 'Unknown task' }}</span>
+                <span>
+                  Task:
+                  {{ notification.task?.taskKey ?? 'Unknown task' }}
+                  ·
+                  {{ notification.task?.title ?? 'Unknown task' }}
+                </span>
+                @if (notification.task?.project) {
+                  <span>Project: {{ notification.task.project.key }}</span>
+                }
                 <span>{{ notification.createdAt | date:'medium' }}</span>
               </div>
             </div>

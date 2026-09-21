@@ -429,10 +429,20 @@ admin
 
 Administrators have broader access.
 
-Normal users can interact with tasks according to their relationship to the task, such as:
+Normal users can interact with tasks according to their relationship to the task and its project:
 
-* Owning the task
-* Being assigned to the task
+* Viewing a task they own
+* Viewing a task assigned to them
+* Viewing tasks inside a project they own
+* Editing tasks they own
+* Editing tasks assigned to them
+* Editing tasks inside a project they own
+* Assigning or unassigning tasks they own
+* Assigning or unassigning tasks inside a project they own
+* Deleting tasks they own
+* Deleting tasks inside a project they own
+
+Administrators have access to all projects and tasks and can perform all task operations.
 
 The backend remains the authoritative source for authorization.
 

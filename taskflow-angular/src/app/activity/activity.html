@@ -20,6 +20,12 @@
               <p class="activity-message">{{ item.message ?? item.action ?? 'Task activity' }}</p>
               <div class="activity-meta">
                 <span>{{ item.user?.name ?? 'Unknown user' }}</span>
+                @if (item.task) {
+                  <span>
+                    {{ item.task.taskKey }} ·
+                    {{ item.task.project?.key ?? 'No project' }}
+                  </span>
+                }
                 <span>{{ item.createdAt | date:'medium' }}</span>
               </div>
             </div>

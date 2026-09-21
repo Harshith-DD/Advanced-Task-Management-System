@@ -71,6 +71,14 @@
             @for (item of d.recentActivity; track item._id) {
               <div class="dashboard-activity-item">
                 <p>{{ item.message ?? item.action ?? 'Task activity' }}</p>
+                @if (item.task) {
+                  <small>
+                    {{ item.task.taskKey }}
+                    @if (item.task.project) {
+                      · {{ item.task.project.key }}
+                    }
+                  </small>
+                }
                 <small>{{ item.createdAt | date:'medium' }}</small>
               </div>
             }

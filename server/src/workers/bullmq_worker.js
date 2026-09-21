@@ -8,7 +8,7 @@ import {
   NOTIFICATION_QUEUE_NAME,
 } from "../queue/queues.js";
 
-import { generateTaskReport } from "../reports/report_service.js";
+import { generateTaskReportForUser } from "../reports/report_service.js";
 
 import { createActivity } from "../services/activity_services.js";
 
@@ -35,7 +35,13 @@ function startReportWorker() {
     async (job) => {
       console.log(`Processing report job ${job.id}`);
 
-      const result = await generateTaskReport(job.data.user);
+      const userId = job.data.userId ?? job.data.user?.userId;
+
+      if (!userId) {
+        throw new Error("Report job is missing the user ID");
+      }
+
+      const result = await generateTaskReportForUser(userId);
 
       console.log(`Report job ${job.id} completed`);
 

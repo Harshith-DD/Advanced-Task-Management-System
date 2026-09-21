@@ -94,20 +94,36 @@ export class TaskCard {
     );
   }
 
+  get isProjectOwner(): boolean {
+    return (
+      !!this.currentUserId &&
+      this.task().project?.owner?._id === this.currentUserId
+    );
+  }
+
   get canEdit(): boolean {
     return (
       this.isAdmin ||
       this.isOwner ||
+      this.isProjectOwner ||
       this.isAssignedUser
     );
   }
 
   get canDelete(): boolean {
-    return this.isAdmin || this.isOwner;
+    return (
+      this.isAdmin ||
+      this.isOwner ||
+      this.isProjectOwner
+    );
   }
 
   get canAssign(): boolean {
-    return this.isAdmin || this.isOwner;
+    return (
+      this.isAdmin ||
+      this.isOwner ||
+      this.isProjectOwner
+    );
   }
 
   get permissionLabel(): string {
@@ -116,7 +132,11 @@ export class TaskCard {
     }
 
     if (this.isOwner) {
-      return 'You are the owner';
+      return 'You are the task owner';
+    }
+
+    if (this.isProjectOwner) {
+      return 'You own this project';
     }
 
     if (this.isAssignedUser) {

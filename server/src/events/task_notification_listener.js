@@ -3,30 +3,29 @@ import taskEvents, { TASK_EVENTS } from "./task_events.js";
 import { addNotificationJob } from "../queue/queues.js";
 
 // ========================================
-// FIND RELEVANT USERS
+// REFERENCE HELPERS
+// ========================================
+
+function getReferenceId(reference) {
+  return reference?._id?.toString() ?? reference?.toString();
+}
+
+// ========================================
+// FIND RELEVANT TASK STAKEHOLDERS
 // ========================================
 
 function getRelevantUsers(task, actorId) {
-  const userIds = [];
+  const userIds = [
+    getReferenceId(task.owner),
+    getReferenceId(task.assignedTo),
+    getReferenceId(task.project?.owner),
+  ].filter(Boolean);
 
-  if (task.owner) {
-    userIds.push(
-      task.owner._id?.toString() ?? task.owner.toString(),
-    );
-  }
-
-  if (task.assignedTo) {
-    userIds.push(
-      task.assignedTo._id?.toString() ??
-        task.assignedTo.toString(),
-    );
-  }
+  const actor = actorId.toString();
 
   return [
     ...new Set(
-      userIds.filter(
-        (userId) => userId !== actorId.toString(),
-      ),
+      userIds.filter((userId) => userId !== actor),
     ),
   ];
 }
@@ -34,6 +33,14 @@ function getRelevantUsers(task, actorId) {
 // ========================================
 // CREATE NOTIFICATION
 // ========================================
+
+function getTaskLabel(task) {
+  if (task.taskKey) {
+    return `${task.taskKey} "${task.title}"`;
+  }
+
+  return `"${task.title}"`;
+}
 
 async function handleTaskNotification(eventData, eventType) {
   try {
@@ -47,29 +54,43 @@ async function handleTaskNotification(eventData, eventType) {
       return;
     }
 
-    let recipients;
+    let recipients = [];
 
     let message;
 
     switch (eventType) {
-      case TASK_EVENTS.ASSIGNED:
-        if (!task.assignedTo) {
+      case TASK_EVENTS.ASSIGNED: {
+        const assignedUserId = getReferenceId(task.assignedTo);
+
+        if (!assignedUserId) {
           return;
         }
 
-        recipients = [
-          task.assignedTo._id?.toString() ??
-            task.assignedTo.toString(),
-        ];
+        recipients = [assignedUserId];
 
-        message = `Task "${task.title}" has been assigned to you`;
+        message = `Task ${getTaskLabel(task)} has been assigned to you`;
 
         break;
+      }
+
+      case TASK_EVENTS.UNASSIGNED: {
+        const previousAssigneeId = eventData.previousAssigneeId?.toString();
+
+        if (!previousAssigneeId) {
+          return;
+        }
+
+        recipients = [previousAssigneeId];
+
+        message = `Task ${getTaskLabel(task)} has been unassigned from you`;
+
+        break;
+      }
 
       case TASK_EVENTS.COMPLETED:
         recipients = getRelevantUsers(task, userId);
 
-        message = `Task "${task.title}" has been completed`;
+        message = `Task ${getTaskLabel(task)} has been completed`;
 
         break;
 
@@ -77,7 +98,7 @@ async function handleTaskNotification(eventData, eventType) {
         recipients = getRelevantUsers(task, userId);
 
         message =
-          `Priority of task "${task.title}" was changed ` +
+          `Priority of task ${getTaskLabel(task)} was changed ` +
           `from ${eventData.previousPriority} ` +
           `to ${eventData.newPriority}`;
 
@@ -86,6 +107,15 @@ async function handleTaskNotification(eventData, eventType) {
       default:
         return;
     }
+
+    recipients = [
+      ...new Set(
+        recipients.filter(
+          (recipientId) =>
+            recipientId !== userId.toString(),
+        ),
+      ),
+    ];
 
     if (recipients.length === 0) {
       return;
@@ -114,41 +144,18 @@ async function handleTaskNotification(eventData, eventType) {
 // EVENT LISTENERS
 // ========================================
 
-taskEvents.on(TASK_EVENTS.ASSIGNED, (eventData) => {
-  handleTaskNotification(
-    eventData,
-    TASK_EVENTS.ASSIGNED,
-  ).catch((error) => {
-    console.error(
-      "Unexpected notification listener error:",
-      error,
-    );
-  });
-});
-
-taskEvents.on(TASK_EVENTS.COMPLETED, (eventData) => {
-  handleTaskNotification(
-    eventData,
-    TASK_EVENTS.COMPLETED,
-  ).catch((error) => {
-    console.error(
-      "Unexpected notification listener error:",
-      error,
-    );
-  });
-});
-
-taskEvents.on(
+for (const eventType of [
+  TASK_EVENTS.ASSIGNED,
+  TASK_EVENTS.UNASSIGNED,
+  TASK_EVENTS.COMPLETED,
   TASK_EVENTS.PRIORITY_CHANGED,
-  (eventData) => {
-    handleTaskNotification(
-      eventData,
-      TASK_EVENTS.PRIORITY_CHANGED,
-    ).catch((error) => {
+]) {
+  taskEvents.on(eventType, (eventData) => {
+    handleTaskNotification(eventData, eventType).catch((error) => {
       console.error(
         "Unexpected notification listener error:",
         error,
       );
     });
-  },
-);
+  });
+}

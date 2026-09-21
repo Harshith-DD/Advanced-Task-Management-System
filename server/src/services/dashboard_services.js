@@ -1,6 +1,7 @@
 import Task from "../models/task_model.js";
 import Activity from "../models/activity_model.js";
 import { buildTaskAccessQuery } from "./task_services.js";
+import { getAccessibleTaskIds } from "./activity_services.js";
 
 // ========================================
 // GET DASHBOARD
@@ -122,12 +123,25 @@ async function getRecentActivity(user) {
     user.role === "admin"
       ? {}
       : {
-          user: user.userId,
+          task: {
+            $in: await getAccessibleTaskIds(user),
+          },
         };
+
+  if (query.task?.$in && query.task.$in.length === 0) {
+    return [];
+  }
 
   return await Activity.find(query)
     .populate("user", "name email")
-    .populate("task", "title status priority")
+    .populate({
+      path: "task",
+      select: "title taskKey status priority project",
+      populate: {
+        path: "project",
+        select: "name key",
+      },
+    })
     .sort({
       createdAt: -1,
     })

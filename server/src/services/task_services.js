@@ -77,7 +77,11 @@ function canModifyTask(task, user) {
     task.assignedTo?._id?.toString?.() ??
     task.assignedTo?.toString?.();
 
-  return ownerId === userId || assignedId === userId;
+  return (
+    ownerId === userId ||
+    assignedId === userId ||
+    isProjectOwner(task.project, user)
+  );
 }
 
 function canDeleteTask(task, user) {
@@ -89,7 +93,10 @@ function canDeleteTask(task, user) {
     task.owner?._id?.toString?.() ??
     task.owner?.toString?.();
 
-  return ownerId === user.userId.toString();
+  return (
+    ownerId === user.userId.toString() ||
+    isProjectOwner(task.project, user)
+  );
 }
 
 function canAssignTask(task, user) {
@@ -101,7 +108,10 @@ function canAssignTask(task, user) {
     task.owner?._id?.toString?.() ??
     task.owner?.toString?.();
 
-  return ownerId === user.userId.toString();
+  return (
+    ownerId === user.userId.toString() ||
+    isProjectOwner(task.project, user)
+  );
 }
 
 function parseDateFilter(
@@ -150,6 +160,18 @@ function calculateIsOverdue(
   return parsedDueDate < new Date();
 }
 
+function arraysEqual(first, second) {
+  if (!Array.isArray(first) || !Array.isArray(second)) {
+    return false;
+  }
+
+  if (first.length !== second.length) {
+    return false;
+  }
+
+  return first.every((value, index) => value === second[index]);
+}
+
 // ========================================
 // TASK SERVICE
 // ========================================
@@ -192,10 +214,14 @@ class TaskService {
 
     const populatedTask =
       await Task.findById(task._id)
-        .populate(
-          "project",
-          "name key description owner",
-        )
+        .populate({
+        path: "project",
+        select: "name key description owner taskSequence",
+        populate: {
+          path: "owner",
+          select: "name email role",
+        },
+      })
         .populate(
           "owner",
           "name email role",
@@ -212,6 +238,16 @@ class TaskService {
         userId: user.userId,
       },
     );
+
+    if (status === "completed") {
+      taskEvents.emit(
+        TASK_EVENTS.COMPLETED,
+        {
+          task: populatedTask,
+          userId: user.userId,
+        },
+      );
+    }
 
     return populatedTask;
   }
@@ -523,6 +559,33 @@ class TaskService {
             {
               $lookup: {
                 from: "users",
+                localField: "project.owner",
+                foreignField: "_id",
+                as: "projectOwner",
+              },
+            },
+
+            {
+              $unwind: {
+                path: "$projectOwner",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+
+            {
+              $set: {
+                "project.owner": {
+                  _id: "$projectOwner._id",
+                  name: "$projectOwner.name",
+                  email: "$projectOwner.email",
+                  role: "$projectOwner.role",
+                },
+              },
+            },
+
+            {
+              $lookup: {
+                from: "users",
                 localField: "owner",
                 foreignField: "_id",
                 as: "owner",
@@ -554,24 +617,62 @@ class TaskService {
 
             {
               $project: {
-                priorityOrder: 0,
-                "owner.password": 0,
-                "assignedTo.password": 0,
+                _id: 1,
+                title: 1,
+                description: 1,
+                status: 1,
+                priority: 1,
+                dueDate: 1,
+                tags: 1,
+                reminderSentAt: 1,
+                isOverdue: 1,
+                project: {
+                  _id: 1,
+                  name: 1,
+                  key: 1,
+                  description: 1,
+                  taskSequence: 1,
+                  owner: {
+                    _id: 1,
+                    name: 1,
+                    email: 1,
+                    role: 1,
+                  },
+                },
+                taskKey: 1,
+                owner: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  role: 1,
+                },
+                assignedTo: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  role: 1,
+                },
+                createdAt: 1,
+                updatedAt: 1,
               },
             },
           ])
         : Task.find(query)
-            .populate(
-              "project",
-              "name key description owner",
-            )
+            .populate({
+              path: "project",
+              select: "name key description owner taskSequence",
+              populate: {
+                path: "owner",
+                select: "name email role",
+              },
+            })
             .populate(
               "owner",
-              "name email",
+              "name email role",
             )
             .populate(
               "assignedTo",
-              "name email",
+              "name email role",
             )
             .sort({
               [safeSortBy]:
@@ -607,10 +708,14 @@ class TaskService {
 
   async getTaskById(taskId, user) {
     const task = await Task.findById(taskId)
-      .populate(
-        "project",
-        "name key description owner",
-      )
+      .populate({
+        path: "project",
+        select: "name key description owner taskSequence",
+        populate: {
+          path: "owner",
+          select: "name email role",
+        },
+      })
       .populate(
         "owner",
         "name email role",
@@ -644,10 +749,14 @@ class TaskService {
   ) {
     const existingTask =
       await Task.findById(taskId)
-        .populate(
-          "project",
-          "name key description owner",
-        )
+        .populate({
+        path: "project",
+        select: "name key description owner taskSequence",
+        populate: {
+          path: "owner",
+          select: "name email role",
+        },
+      })
         .populate(
           "owner",
           "name email role",
@@ -722,17 +831,21 @@ class TaskService {
           runValidators: true,
         },
       )
-        .populate(
-          "project",
-          "name key description owner",
-        )
+        .populate({
+        path: "project",
+        select: "name key description owner taskSequence",
+        populate: {
+          path: "owner",
+          select: "name email role",
+        },
+      })
         .populate(
           "owner",
-          "name email",
+          "name email role",
         )
         .populate(
           "assignedTo",
-          "name email",
+          "name email role",
         );
 
     const changes = [];
@@ -773,18 +886,23 @@ class TaskService {
       changes.push("due date changed");
     }
 
-    if (taskData.tags !== undefined) {
+    if (
+      taskData.tags !== undefined &&
+      !arraysEqual(existingTask.tags, updatedTask.tags)
+    ) {
       changes.push("tags changed");
     }
 
-    taskEvents.emit(
-      TASK_EVENTS.UPDATED,
-      {
-        task: updatedTask,
-        userId,
-        changes,
-      },
-    );
+    if (changes.length > 0) {
+      taskEvents.emit(
+        TASK_EVENTS.UPDATED,
+        {
+          task: updatedTask,
+          userId,
+          changes,
+        },
+      );
+    }
 
     const priorityChanged =
       existingTask.priority !==
@@ -834,10 +952,14 @@ class TaskService {
 
   async deleteTask(taskId, user) {
     const task = await Task.findById(taskId)
-      .populate(
-        "project",
-        "name key description owner",
-      )
+      .populate({
+        path: "project",
+        select: "name key description owner taskSequence",
+        populate: {
+          path: "owner",
+          select: "name email role",
+        },
+      })
       .populate(
         "owner",
         "name email role",
@@ -873,10 +995,14 @@ class TaskService {
   ) {
     const task =
       await Task.findById(taskId)
-        .populate(
-          "project",
-          "name key description owner",
-        )
+        .populate({
+          path: "project",
+          select: "name key description owner taskSequence",
+          populate: {
+            path: "owner",
+            select: "name email role",
+          },
+        })
         .populate(
           "owner",
           "name email role",
@@ -898,74 +1024,59 @@ class TaskService {
 
     const userId = user.userId;
 
-    // --------------------------------
-    // REMOVE ASSIGNMENT
-    // --------------------------------
+    const previousAssigneeId =
+      task.assignedTo?._id?.toString?.() ??
+      task.assignedTo?.toString?.() ??
+      null;
 
-    if (!assignedTo) {
-      task.assignedTo = null;
+    const nextAssigneeId = assignedTo
+      ? assignedTo.toString()
+      : null;
 
-      await task.save();
-
-      const updatedTask =
-        await Task.findById(taskId)
-          .populate(
-            "project",
-            "name key description owner",
-          )
-          .populate(
-            "owner",
-            "name email role",
-          )
-          .populate(
-            "assignedTo",
-            "name email role",
-          );
-
-      taskEvents.emit(
-        TASK_EVENTS.UNASSIGNED,
-        {
-          task: updatedTask,
-          userId,
-        },
-      );
-
-      return updatedTask;
+    // Avoid generating duplicate events for a no-op assignment request.
+    if (previousAssigneeId === nextAssigneeId) {
+      return task;
     }
 
     // --------------------------------
-    // VERIFY ASSIGNED USER
+    // VERIFY NEW ASSIGNEE
     // --------------------------------
 
-    const assignedUser =
-      await User.findById(
-        assignedTo,
-      );
+    if (nextAssigneeId) {
+      if (!mongoose.Types.ObjectId.isValid(nextAssigneeId)) {
+        throw new ValidationError(
+          "assignedTo must be a valid user ID",
+        );
+      }
 
-    if (!assignedUser) {
-      throw new NotFoundError(
-        "Assigned user not found",
-      );
+      const assignedUser =
+        await User.findById(nextAssigneeId);
+
+      if (!assignedUser) {
+        throw new NotFoundError(
+          "Assigned user not found",
+        );
+      }
     }
 
     // --------------------------------
-    // ASSIGN TASK
+    // SAVE NEW ASSIGNMENT
     // --------------------------------
 
-    task.assignedTo = assignedTo;
+    task.assignedTo = nextAssigneeId;
 
     await task.save();
 
-    // --------------------------------
-    // GET POPULATED TASK
-    // --------------------------------
-
     const updatedTask =
       await Task.findById(taskId)
-        .populate(
-          "project",
-          "name key description owner",
-        )
+        .populate({
+          path: "project",
+          select: "name key description owner taskSequence",
+          populate: {
+            path: "owner",
+            select: "name email role",
+          },
+        })
         .populate(
           "owner",
           "name email role",
@@ -975,17 +1086,29 @@ class TaskService {
           "name email role",
         );
 
-    // --------------------------------
-    // TASK ASSIGNED EVENT
-    // --------------------------------
+    // Reassigning is two domain events: the previous assignee lost the task
+    // and the new assignee received it. Direct unassignment emits only the
+    // unassignment event.
+    if (previousAssigneeId) {
+      taskEvents.emit(
+        TASK_EVENTS.UNASSIGNED,
+        {
+          task: updatedTask,
+          userId,
+          previousAssigneeId,
+        },
+      );
+    }
 
-    taskEvents.emit(
-      TASK_EVENTS.ASSIGNED,
-      {
-        task: updatedTask,
-        userId,
-      },
-    );
+    if (nextAssigneeId) {
+      taskEvents.emit(
+        TASK_EVENTS.ASSIGNED,
+        {
+          task: updatedTask,
+          userId,
+        },
+      );
+    }
 
     return updatedTask;
   }

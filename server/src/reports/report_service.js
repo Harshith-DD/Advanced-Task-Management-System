@@ -9,10 +9,14 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import Task from "../models/task_model.js";
+import User from "../models/user_model.js";
 
 import { buildTaskAccessQuery } from "../services/task_services.js";
 
-import { ValidationError } from "../errors/app_error.js";
+import {
+  NotFoundError,
+  ValidationError,
+} from "../errors/app_error.js";
 
 const __filename = fileURLToPath(import.meta.url);
 
@@ -357,3 +361,20 @@ export async function generateTaskReport(user) {
     throw error;
   }
 }
+// ========================================
+// GENERATE REPORT FOR CURRENT USER STATE
+// ========================================
+
+export async function generateTaskReportForUser(userId) {
+  const user = await User.findById(userId).select("_id role");
+
+  if (!user) {
+    throw new NotFoundError("User not found");
+  }
+
+  return generateTaskReport({
+    userId: user._id.toString(),
+    role: user.role,
+  });
+}
+
