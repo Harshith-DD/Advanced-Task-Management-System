@@ -1,7 +1,6 @@
 import Task from "../models/task_model.js";
 
-import { addJob } from "../queue/job_queue.js";
-import { JOB_TYPES } from "../queue/job_types.js";
+import { addNotificationJob } from "../queue/queues.js";
 
 // ========================================
 // REMINDER CONFIGURATION
@@ -16,7 +15,9 @@ const REMINDER_WINDOW_MS = 60 * 60 * 1000;
 export async function processTaskReminders() {
   const now = new Date();
 
-  const reminderLimit = new Date(now.getTime() + REMINDER_WINDOW_MS);
+  const reminderLimit = new Date(
+    now.getTime() + REMINDER_WINDOW_MS,
+  );
 
   const tasks = await Task.find({
     dueDate: {
@@ -37,6 +38,7 @@ export async function processTaskReminders() {
     if (task.status === "completed") {
       if (task.isOverdue) {
         task.isOverdue = false;
+
         await task.save();
       }
 
@@ -50,6 +52,7 @@ export async function processTaskReminders() {
     if (dueDate < now) {
       if (!task.isOverdue) {
         task.isOverdue = true;
+
         await task.save();
       }
 
@@ -61,20 +64,21 @@ export async function processTaskReminders() {
     // ====================================
 
     if (!task.reminderSentAt) {
-      const recipient = task.assignedTo?._id || task.owner?._id;
+      const recipient =
+        task.assignedTo?._id || task.owner?._id;
 
       if (!recipient) {
         continue;
       }
 
-      await addJob({
-        type: JOB_TYPES.NOTIFICATION,
-        data: {
-          user: recipient,
-          type: "taskReminder",
-          task: task._id,
-          message: `Task "${task.title}" is due soon`,
-        },
+      await addNotificationJob({
+        user: recipient,
+
+        type: "taskReminder",
+
+        task: task._id,
+
+        message: `Task "${task.title}" is due soon`,
       });
 
       task.reminderSentAt = new Date();

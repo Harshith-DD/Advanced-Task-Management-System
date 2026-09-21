@@ -2,9 +2,10 @@ import { createReadStream } from "fs";
 
 import { exportTasks } from "../reports/report_service.js";
 
-import { addJob, getJobById } from "../queue/job_queue.js";
-
-import { JOB_TYPES } from "../queue/job_types.js";
+import {
+  addReportJob,
+  getReportJob,
+} from "../queue/queues.js";
 
 import {
   NotFoundError,
@@ -54,13 +55,7 @@ export async function exportTasksController(req, res) {
 // ========================================
 
 export async function createTaskReportController(req, res) {
-  const job = await addJob({
-    type: JOB_TYPES.REPORT,
-
-    data: {
-      user: req.user,
-    },
-  });
+  const job = await addReportJob(req.user);
 
   res.status(202).json({
     success: true,
@@ -76,9 +71,9 @@ export async function createTaskReportController(req, res) {
 // ========================================
 
 export async function getReportStatusController(req, res) {
-  const job = await getJobById(req.params.jobId);
+  const job = await getReportJob(req.params.jobId);
 
-  if (!job || job.type !== JOB_TYPES.REPORT) {
+  if (!job || job.name !== "generate-task-report") {
     throw new NotFoundError("Report job not found");
   }
 
@@ -89,16 +84,34 @@ export async function getReportStatusController(req, res) {
     throw new AuthorizationError("You are not allowed to access this report");
   }
 
+  const state = await job.getState();
+
+  const statusMap = {
+    waiting: "pending",
+    delayed: "pending",
+    prioritized: "pending",
+    "waiting-children": "pending",
+    active: "processing",
+    completed: "completed",
+    failed: "failed",
+  };
+
+  const status = statusMap[state];
+
+  if (!status) {
+    throw new ConflictError(`Unknown report job state: ${state}`);
+  }
+
   res.status(200).json({
     success: true,
 
     job: {
       id: job.id,
-      status: job.status,
-      attempts: job.attempts,
-      maxAttempts: job.maxAttempts,
-      error: job.error,
-      createdAt: job.createdAt,
+      status,
+      attempts: job.attemptsMade,
+      maxAttempts: job.opts.attempts ?? 3,
+      error: status === "failed" ? job.failedReason : null,
+      createdAt: new Date(job.timestamp).toISOString(),
     },
   });
 }
@@ -108,9 +121,9 @@ export async function getReportStatusController(req, res) {
 // ========================================
 
 export async function downloadReportController(req, res) {
-  const job = await getJobById(req.params.jobId);
+  const job = await getReportJob(req.params.jobId);
 
-  if (!job || job.type !== JOB_TYPES.REPORT) {
+  if (!job || job.name !== "generate-task-report") {
     throw new NotFoundError("Report job not found");
   }
 
@@ -121,22 +134,24 @@ export async function downloadReportController(req, res) {
     throw new AuthorizationError("You are not allowed to access this report");
   }
 
-  if (job.status !== "completed") {
+  const state = await job.getState();
+
+  if (state !== "completed") {
     throw new ConflictError("Report is not ready yet");
   }
 
-  if (!job.result?.filePath) {
+  if (!job.returnvalue?.filePath) {
     throw new NotFoundError("Report file not found");
   }
 
-  res.setHeader("Content-Type", job.result.contentType);
+  res.setHeader("Content-Type", job.returnvalue.contentType);
 
   res.setHeader(
     "Content-Disposition",
-    `attachment; filename="${job.result.fileName}"`,
+    `attachment; filename="${job.returnvalue.fileName}"`,
   );
 
-  const fileStream = createReadStream(job.result.filePath);
+  const fileStream = createReadStream(job.returnvalue.filePath);
 
   // Stream errors stay local for the
   // same reason as the export endpoint.

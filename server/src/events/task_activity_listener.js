@@ -1,8 +1,6 @@
 import taskEvents, { TASK_EVENTS } from "./task_events.js";
 
-import { addJob } from "../queue/job_queue.js";
-
-import { JOB_TYPES } from "../queue/job_types.js";
+import { addActivityJob } from "../queue/queues.js";
 
 // ========================================
 // CREATE ACTIVITY FOR TASK EVENT
@@ -45,17 +43,20 @@ async function handleTaskActivity(eventData, eventType) {
         return;
     }
 
-    await addJob({
-      type: JOB_TYPES.ACTIVITY,
-      data: {
-        type: eventType,
-        task: task._id,
-        user: userId,
-        message,
-      },
+    await addActivityJob({
+      type: eventType,
+
+      task: task._id,
+
+      user: userId,
+
+      message,
     });
   } catch (error) {
-    console.error(`Failed to create activity for ${eventType}:`, error);
+    console.error(
+      `Failed to queue activity for ${eventType}:`,
+      error,
+    );
   }
 }
 

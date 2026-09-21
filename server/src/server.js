@@ -9,7 +9,7 @@ import { startReminderScheduler } from "./services/reminder_scheduler.js";
 
 import { connectDatabase } from "./config/database.js";
 
-import queueWorker from "./workers/queue_worker.js";
+import { startBullMQWorker } from "./workers/bullmq_worker.js";
 
 const PORT = process.env.PORT;
 
@@ -29,7 +29,7 @@ async function startServer() {
 
     startReminderScheduler();
 
-    queueWorker.start();
+    startBullMQWorker();
 
     https.createServer(httpsOptions, app).listen(PORT, () => {
       console.log(`HTTPS server is running on https://127.0.0.1:${PORT}`);

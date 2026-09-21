@@ -1,4 +1,11 @@
-const requiredVariables = ["PORT", "MONGODB_URI", "CORS_ORIGIN", "JWT_SECRET"];
+const requiredVariables = [
+  "PORT",
+  "MONGODB_URI",
+  "CORS_ORIGIN",
+  "JWT_SECRET",
+  "REDIS_HOST",
+  "REDIS_PORT",
+];
 
 export function validateEnvironment() {
   const missingVariables = requiredVariables.filter(
@@ -15,6 +22,14 @@ export function validateEnvironment() {
 
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error("PORT must be a valid number between 1 and 65535");
+  }
+
+  const redisPort = Number(process.env.REDIS_PORT);
+
+  if (!Number.isInteger(redisPort) || redisPort < 1 || redisPort > 65535) {
+    throw new Error(
+      "REDIS_PORT must be a valid number between 1 and 65535",
+    );
   }
 
   if (
