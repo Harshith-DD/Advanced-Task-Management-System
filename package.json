@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --ignore server/reports --ignore server/reports/** server/src/server.js",
-    "start": "node server/src/server.js"
+    "start": "node server/src/server.js",
+    "migrate:tasks-to-projects": "node server/scripts/migrate_tasks_to_projects.js"
   },
   "keywords": [],
   "author": "",

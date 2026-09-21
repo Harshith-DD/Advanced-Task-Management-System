@@ -1,9 +1,19 @@
 import Task from "../models/task_model.js";
 import User from "../models/user_model.js";
 
-import taskEvents, { TASK_EVENTS } from "../events/task_events.js";
+import {
+  resolveTaskProject,
+  reserveNextTaskKey,
+} from "./project_services.js";
 
-import { NotFoundError, ValidationError } from "../errors/app_error.js";
+import taskEvents, {
+  TASK_EVENTS,
+} from "../events/task_events.js";
+
+import {
+  NotFoundError,
+  ValidationError,
+} from "../errors/app_error.js";
 
 // ========================================
 // BUILD TASK ACCESS QUERY
@@ -26,11 +36,17 @@ export function buildTaskAccessQuery(user) {
   };
 }
 
-function parseDateFilter(value, fieldName, endOfDay = false) {
+function parseDateFilter(
+  value,
+  fieldName,
+  endOfDay = false,
+) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    throw new ValidationError(`${fieldName} must be a valid date`);
+    throw new ValidationError(
+      `${fieldName} must be a valid date`,
+    );
   }
 
   if (endOfDay) {
@@ -43,10 +59,16 @@ function parseDateFilter(value, fieldName, endOfDay = false) {
 }
 
 function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&",
+  );
 }
 
-function calculateIsOverdue(dueDate, status) {
+function calculateIsOverdue(
+  dueDate,
+  status,
+) {
   if (!dueDate || status === "completed") {
     return false;
   }
@@ -69,30 +91,71 @@ class TaskService {
   // CREATE TASK
   // ====================================
 
-async createTask(taskData, userId) {
-  const status = taskData.status ?? "pending";
+  async createTask(taskData, user) {
+    const status =
+      taskData.status ?? "pending";
 
-  const task = await Task.create({
-    ...taskData,
-    isOverdue: calculateIsOverdue(
-      taskData.dueDate,
+    const project =
+      await resolveTaskProject(
+        taskData.projectId,
+        user,
+      );
+
+    const taskKey =
+      await reserveNextTaskKey(
+        project._id,
+      );
+
+    const task = await Task.create({
+      title: taskData.title,
+      description: taskData.description,
       status,
-    ),
-  });
+      priority: taskData.priority,
+      dueDate: taskData.dueDate,
+      tags: taskData.tags,
+      project: project._id,
+      taskKey,
+      owner: user.userId,
+      isOverdue: calculateIsOverdue(
+        taskData.dueDate,
+        status,
+      ),
+    });
 
-  taskEvents.emit(TASK_EVENTS.CREATED, {
-    task,
-    userId,
-  });
+    const populatedTask =
+      await Task.findById(task._id)
+        .populate(
+          "project",
+          "name key description owner",
+        )
+        .populate(
+          "owner",
+          "name email role",
+        )
+        .populate(
+          "assignedTo",
+          "name email role",
+        );
 
-  return task;
-}
+    taskEvents.emit(
+      TASK_EVENTS.CREATED,
+      {
+        task: populatedTask,
+        userId: user.userId,
+      },
+    );
+
+    return populatedTask;
+  }
 
   // ====================================
   // GET ALL TASKS
   // ====================================
 
-  async getAllTasks(filters = {}, user) {
+  async getAllTasks(
+    filters = {},
+    user,
+  ) {
     const {
       status,
       priority,
@@ -116,9 +179,12 @@ async createTask(taskData, userId) {
     // AUTHORIZATION FILTER
     // --------------------------------
 
-    const accessQuery = buildTaskAccessQuery(user);
+    const accessQuery =
+      buildTaskAccessQuery(user);
 
-    if (Object.keys(accessQuery).length > 0) {
+    if (
+      Object.keys(accessQuery).length > 0
+    ) {
       conditions.push(accessQuery);
     }
 
@@ -145,7 +211,10 @@ async createTask(taskData, userId) {
     // --------------------------------
     // SEARCH FILTER
     // --------------------------------
-    const escapedSearch = search ? escapeRegex(search) : null;
+
+    const escapedSearch = search
+      ? escapeRegex(search)
+      : null;
 
     if (escapedSearch) {
       conditions.push({
@@ -185,28 +254,42 @@ async createTask(taskData, userId) {
     if (fromDate || toDate) {
       const dueDateQuery = {};
 
-      const normalizedFromDate = fromDate
-        ? parseDateFilter(fromDate, "fromDate")
-        : null;
+      const normalizedFromDate =
+        fromDate
+          ? parseDateFilter(
+              fromDate,
+              "fromDate",
+            )
+          : null;
 
-      const normalizedToDate = toDate
-        ? parseDateFilter(toDate, "toDate", true)
-        : null;
+      const normalizedToDate =
+        toDate
+          ? parseDateFilter(
+              toDate,
+              "toDate",
+              true,
+            )
+          : null;
 
       if (
         normalizedFromDate &&
         normalizedToDate &&
-        normalizedFromDate > normalizedToDate
+        normalizedFromDate >
+          normalizedToDate
       ) {
-        throw new ValidationError("fromDate cannot be later than toDate");
+        throw new ValidationError(
+          "fromDate cannot be later than toDate",
+        );
       }
 
       if (normalizedFromDate) {
-        dueDateQuery.$gte = normalizedFromDate;
+        dueDateQuery.$gte =
+          normalizedFromDate;
       }
 
       if (normalizedToDate) {
-        dueDateQuery.$lte = normalizedToDate;
+        dueDateQuery.$lte =
+          normalizedToDate;
       }
 
       conditions.push({
@@ -218,40 +301,65 @@ async createTask(taskData, userId) {
     // FINAL QUERY
     // --------------------------------
 
-    const query = conditions.length > 0 ? { $and: conditions } : {};
+    const query =
+      conditions.length > 0
+        ? { $and: conditions }
+        : {};
 
     // --------------------------------
     // SORTING
     // --------------------------------
 
-    const allowedSortFields = ["dueDate", "priority", "createdAt", "updatedAt"];
+    const allowedSortFields = [
+      "dueDate",
+      "priority",
+      "createdAt",
+      "updatedAt",
+    ];
 
-    const safeSortBy = allowedSortFields.includes(sortBy)
-      ? sortBy
-      : "createdAt";
+    const safeSortBy =
+      allowedSortFields.includes(sortBy)
+        ? sortBy
+        : "createdAt";
 
-    const safeSortOrder = sortOrder === "desc" ? -1 : 1;
+    const safeSortOrder =
+      sortOrder === "desc" ? -1 : 1;
 
     // --------------------------------
     // PAGINATION
     // --------------------------------
 
-    const pageNumber = Math.max(Number(page) || 1, 1);
+    const pageNumber = Math.max(
+      Number(page) || 1,
+      1,
+    );
 
-    const pageLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+    const pageLimit = Math.min(
+      Math.max(
+        Number(limit) || 10,
+        1,
+      ),
+      100,
+    );
 
-    const skip = (pageNumber - 1) * pageLimit;
+    const skip =
+      (pageNumber - 1) * pageLimit;
 
     // --------------------------------
     // DATABASE QUERIES
     // --------------------------------
 
-    const [totalTasks, tasks] = await Promise.all([
+    const [
+      totalTasks,
+      tasks,
+    ] = await Promise.all([
       Task.countDocuments(query),
 
       safeSortBy === "priority"
         ? Task.aggregate([
-            { $match: query },
+            {
+              $match: query,
+            },
 
             {
               $addFields: {
@@ -259,15 +367,30 @@ async createTask(taskData, userId) {
                   $switch: {
                     branches: [
                       {
-                        case: { $eq: ["$priority", "low"] },
+                        case: {
+                          $eq: [
+                            "$priority",
+                            "low",
+                          ],
+                        },
                         then: 1,
                       },
                       {
-                        case: { $eq: ["$priority", "medium"] },
+                        case: {
+                          $eq: [
+                            "$priority",
+                            "medium",
+                          ],
+                        },
                         then: 2,
                       },
                       {
-                        case: { $eq: ["$priority", "high"] },
+                        case: {
+                          $eq: [
+                            "$priority",
+                            "high",
+                          ],
+                        },
                         then: 3,
                       },
                     ],
@@ -279,12 +402,34 @@ async createTask(taskData, userId) {
 
             {
               $sort: {
-                priorityOrder: safeSortOrder,
+                priorityOrder:
+                  safeSortOrder,
               },
             },
 
-            { $skip: skip },
-            { $limit: pageLimit },
+            {
+              $skip: skip,
+            },
+
+            {
+              $limit: pageLimit,
+            },
+
+            {
+              $lookup: {
+                from: "projects",
+                localField: "project",
+                foreignField: "_id",
+                as: "project",
+              },
+            },
+
+            {
+              $unwind: {
+                path: "$project",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
 
             {
               $lookup: {
@@ -327,10 +472,21 @@ async createTask(taskData, userId) {
             },
           ])
         : Task.find(query)
-            .populate("owner", "name email")
-            .populate("assignedTo", "name email")
+            .populate(
+              "project",
+              "name key description owner",
+            )
+            .populate(
+              "owner",
+              "name email",
+            )
+            .populate(
+              "assignedTo",
+              "name email",
+            )
             .sort({
-              [safeSortBy]: safeSortOrder,
+              [safeSortBy]:
+                safeSortOrder,
             })
             .skip(skip)
             .limit(pageLimit),
@@ -340,7 +496,9 @@ async createTask(taskData, userId) {
     // PAGINATION METADATA
     // --------------------------------
 
-    const totalPages = Math.ceil(totalTasks / pageLimit);
+    const totalPages = Math.ceil(
+      totalTasks / pageLimit,
+    );
 
     return {
       tasks,
@@ -360,46 +518,59 @@ async createTask(taskData, userId) {
 
   async getTaskById(taskId) {
     return await Task.findById(taskId)
-      .populate("owner", "name email")
-      .populate("assignedTo", "name email");
+      .populate(
+        "project",
+        "name key description owner",
+      )
+      .populate(
+        "owner",
+        "name email",
+      )
+      .populate(
+        "assignedTo",
+        "name email",
+      );
   }
 
   // ====================================
   // UPDATE TASK
   // ====================================
 
-  async updateTask(taskId, taskData, userId) {
-    // --------------------------------
-    // GET CURRENT TASK
-    // --------------------------------
-
-    const existingTask = await Task.findById(taskId);
+  async updateTask(
+    taskId,
+    taskData,
+    userId,
+  ) {
+    const existingTask =
+      await Task.findById(taskId);
 
     if (!existingTask) {
       return null;
     }
 
-    // --------------------------------
-    // PREPARE UPDATE DATA
-    // --------------------------------
-
     const updateData = {
       ...taskData,
     };
 
-    const existingDueDate = existingTask.dueDate
-      ? new Date(existingTask.dueDate).getTime()
-      : null;
+    const existingDueDate =
+      existingTask.dueDate
+        ? new Date(
+            existingTask.dueDate,
+          ).getTime()
+        : null;
 
     const newDueDate =
       taskData.dueDate !== undefined &&
       taskData.dueDate !== null &&
       taskData.dueDate !== ""
-        ? new Date(taskData.dueDate).getTime()
+        ? new Date(
+            taskData.dueDate,
+          ).getTime()
         : null;
 
     const dueDateChanged =
-      taskData.dueDate !== undefined && existingDueDate !== newDueDate;
+      taskData.dueDate !== undefined &&
+      existingDueDate !== newDueDate;
 
     const effectiveStatus =
       taskData.status ??
@@ -411,7 +582,8 @@ async createTask(taskData, userId) {
         : existingTask.dueDate;
 
     if (dueDateChanged) {
-      updateData.reminderSentAt = null;
+      updateData.reminderSentAt =
+        null;
     }
 
     updateData.isOverdue =
@@ -420,54 +592,73 @@ async createTask(taskData, userId) {
         effectiveStatus,
       );
 
-    // --------------------------------
-    // UPDATE TASK
-    // --------------------------------
+    const updatedTask =
+      await Task.findByIdAndUpdate(
+        taskId,
+        updateData,
+        {
+          returnDocument: "after",
+          runValidators: true,
+        },
+      )
+        .populate(
+          "project",
+          "name key description owner",
+        )
+        .populate(
+          "owner",
+          "name email",
+        )
+        .populate(
+          "assignedTo",
+          "name email",
+        );
 
-    const updatedTask = await Task.findByIdAndUpdate(taskId, updateData, {
-      returnDocument: "after",
-      runValidators: true,
-    })
-      .populate("owner", "name email")
-      .populate("assignedTo", "name email");
+    taskEvents.emit(
+      TASK_EVENTS.UPDATED,
+      {
+        task: updatedTask,
+        userId,
+      },
+    );
 
-    // --------------------------------
-    // TASK UPDATED EVENT
-    // --------------------------------
-
-    taskEvents.emit(TASK_EVENTS.UPDATED, {
-      task: updatedTask,
-      userId,
-    });
-
-    // --------------------------------
-    // PRIORITY CHANGED EVENT
-    // --------------------------------
-
-    const priorityChanged = existingTask.priority !== updatedTask.priority;
+    const priorityChanged =
+      existingTask.priority !==
+      updatedTask.priority;
 
     if (priorityChanged) {
-      taskEvents.emit(TASK_EVENTS.PRIORITY_CHANGED, {
-        task: updatedTask,
-        userId,
-        previousPriority: existingTask.priority,
-        newPriority: updatedTask.priority,
-      });
+      taskEvents.emit(
+        TASK_EVENTS.PRIORITY_CHANGED,
+        {
+          task: updatedTask,
+          userId,
+          previousPriority:
+            existingTask.priority,
+          newPriority:
+            updatedTask.priority,
+        },
+      );
     }
 
-    // --------------------------------
-    // TASK COMPLETED EVENT
-    // --------------------------------
+    const wasCompleted =
+      existingTask.status ===
+      "completed";
 
-    const wasCompleted = existingTask.status === "completed";
+    const isCompleted =
+      updatedTask.status ===
+      "completed";
 
-    const isCompleted = updatedTask.status === "completed";
-
-    if (!wasCompleted && isCompleted) {
-      taskEvents.emit(TASK_EVENTS.COMPLETED, {
-        task: updatedTask,
-        userId,
-      });
+    if (
+      !wasCompleted &&
+      isCompleted
+    ) {
+      taskEvents.emit(
+        TASK_EVENTS.COMPLETED,
+        {
+          task: updatedTask,
+          userId,
+        },
+      );
     }
 
     return updatedTask;
@@ -478,15 +669,22 @@ async createTask(taskData, userId) {
   // ====================================
 
   async deleteTask(taskId) {
-    return await Task.findByIdAndDelete(taskId);
+    return await Task.findByIdAndDelete(
+      taskId,
+    );
   }
 
   // ====================================
   // ASSIGN TASK
   // ====================================
 
-  async assignTask(taskId, assignedTo, userId) {
-    const task = await Task.findById(taskId);
+  async assignTask(
+    taskId,
+    assignedTo,
+    userId,
+  ) {
+    const task =
+      await Task.findById(taskId);
 
     if (!task) {
       return null;
@@ -501,14 +699,28 @@ async createTask(taskData, userId) {
 
       await task.save();
 
-      const updatedTask = await Task.findById(taskId)
-        .populate("owner", "name email role")
-        .populate("assignedTo", "name email role");
+      const updatedTask =
+        await Task.findById(taskId)
+          .populate(
+            "project",
+            "name key description owner",
+          )
+          .populate(
+            "owner",
+            "name email role",
+          )
+          .populate(
+            "assignedTo",
+            "name email role",
+          );
 
-      taskEvents.emit(TASK_EVENTS.UNASSIGNED, {
-        task: updatedTask,
-        userId,
-      });
+      taskEvents.emit(
+        TASK_EVENTS.UNASSIGNED,
+        {
+          task: updatedTask,
+          userId,
+        },
+      );
 
       return updatedTask;
     }
@@ -517,10 +729,15 @@ async createTask(taskData, userId) {
     // VERIFY ASSIGNED USER
     // --------------------------------
 
-    const user = await User.findById(assignedTo);
+    const user =
+      await User.findById(
+        assignedTo,
+      );
 
     if (!user) {
-      throw new NotFoundError("Assigned user not found");
+      throw new NotFoundError(
+        "Assigned user not found",
+      );
     }
 
     // --------------------------------
@@ -535,18 +752,32 @@ async createTask(taskData, userId) {
     // GET POPULATED TASK
     // --------------------------------
 
-    const updatedTask = await Task.findById(taskId)
-      .populate("owner", "name email role")
-      .populate("assignedTo", "name email role");
+    const updatedTask =
+      await Task.findById(taskId)
+        .populate(
+          "project",
+          "name key description owner",
+        )
+        .populate(
+          "owner",
+          "name email role",
+        )
+        .populate(
+          "assignedTo",
+          "name email role",
+        );
 
     // --------------------------------
     // TASK ASSIGNED EVENT
     // --------------------------------
 
-    taskEvents.emit(TASK_EVENTS.ASSIGNED, {
-      task: updatedTask,
-      userId,
-    });
+    taskEvents.emit(
+      TASK_EVENTS.ASSIGNED,
+      {
+        task: updatedTask,
+        userId,
+      },
+    );
 
     return updatedTask;
   }
@@ -556,6 +787,7 @@ async createTask(taskData, userId) {
 // SERVICE INSTANCE
 // ========================================
 
-const taskService = new TaskService();
+const taskService =
+  new TaskService();
 
 export default taskService;
