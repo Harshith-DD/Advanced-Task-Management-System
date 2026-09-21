@@ -172,8 +172,8 @@
             </div>
 
             <span class="project-sequence">
-              {{ project.taskSequence }}
-              tasks
+                {{ project.taskCount }}
+                {{ project.taskCount === 1 ? 'task' : 'tasks' }}
             </span>
 
           </div>
@@ -192,10 +192,8 @@
             </span>
 
             <span>
-              Next key:
-              {{ project.key }}-{{
-                project.taskSequence + 1
-              }}
+            Next key:
+            {{ project.key }}-{{ project.taskSequence + 1 }}
             </span>
           </div>
 
@@ -214,9 +212,9 @@
             <button
               type="button"
               class="delete-button"
-              [disabled]="project.taskSequence > 0"
+              [disabled]="project.taskCount > 0"
               [title]="
-                project.taskSequence > 0
+                project.taskCount > 0
                   ? 'Projects containing tasks cannot be deleted.'
                   : 'Delete project'
               "

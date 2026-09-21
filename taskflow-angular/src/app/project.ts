@@ -12,6 +12,7 @@ export interface Project {
   description: string;
   owner: ProjectOwner;
   taskSequence: number;
+  taskCount: number;
   createdAt: string;
   updatedAt: string;
 }

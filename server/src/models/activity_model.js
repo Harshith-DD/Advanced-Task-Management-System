@@ -4,7 +4,14 @@ const activitySchema = new mongoose.Schema(
   {
     type: {
       type: String,
-      enum: ["taskCreated", "taskUpdated", "taskAssigned", "taskCompleted"],
+      enum: [
+        "taskCreated",
+        "taskUpdated",
+        "taskAssigned",
+        "taskUnassigned",
+        "taskCompleted",
+        "taskPriorityChanged",
+      ],
       required: true,
     },
 

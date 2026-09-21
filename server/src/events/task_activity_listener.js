@@ -23,9 +23,15 @@ async function handleTaskActivity(eventData, eventType) {
         message = `Task "${task.title}" was created`;
         break;
 
-      case TASK_EVENTS.UPDATED:
-        message = `Task "${task.title}" was updated`;
+      case TASK_EVENTS.UPDATED: {
+        const changes = eventData.changes ?? [];
+
+        message = changes.length
+          ? `Task "${task.title}" was updated: ${changes.join(", ")}`
+          : `Task "${task.title}" was updated`;
+
         break;
+      }
 
       case TASK_EVENTS.ASSIGNED:
         message = `Task "${task.title}" was assigned`;
@@ -33,6 +39,12 @@ async function handleTaskActivity(eventData, eventType) {
 
       case TASK_EVENTS.UNASSIGNED:
         message = `Task "${task.title}" was unassigned`;
+        break;
+
+      case TASK_EVENTS.PRIORITY_CHANGED:
+        message =
+          `Task "${task.title}" priority changed from ` +
+          `${eventData.previousPriority} to ${eventData.newPriority}`;
         break;
 
       case TASK_EVENTS.COMPLETED:
@@ -82,4 +94,11 @@ taskEvents.on(TASK_EVENTS.UNASSIGNED, (eventData) => {
 
 taskEvents.on(TASK_EVENTS.COMPLETED, (eventData) => {
   handleTaskActivity(eventData, TASK_EVENTS.COMPLETED);
+});
+
+taskEvents.on(TASK_EVENTS.PRIORITY_CHANGED, (eventData) => {
+  handleTaskActivity(
+    eventData,
+    TASK_EVENTS.PRIORITY_CHANGED,
+  );
 });

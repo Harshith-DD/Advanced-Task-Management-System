@@ -636,11 +636,54 @@ class TaskService {
           "name email",
         );
 
+    const changes = [];
+
+    if (
+      taskData.title !== undefined &&
+      existingTask.title !== updatedTask.title
+    ) {
+      changes.push("title changed");
+    }
+
+    if (
+      taskData.description !== undefined &&
+      existingTask.description !== updatedTask.description
+    ) {
+      changes.push("description changed");
+    }
+
+    if (
+      taskData.status !== undefined &&
+      existingTask.status !== updatedTask.status
+    ) {
+      changes.push(
+        `status changed from ${existingTask.status} to ${updatedTask.status}`,
+      );
+    }
+
+    if (
+      taskData.priority !== undefined &&
+      existingTask.priority !== updatedTask.priority
+    ) {
+      changes.push(
+        `priority changed from ${existingTask.priority} to ${updatedTask.priority}`,
+      );
+    }
+
+    if (dueDateChanged) {
+      changes.push("due date changed");
+    }
+
+    if (taskData.tags !== undefined) {
+      changes.push("tags changed");
+    }
+
     taskEvents.emit(
       TASK_EVENTS.UPDATED,
       {
         task: updatedTask,
         userId,
+        changes,
       },
     );
 

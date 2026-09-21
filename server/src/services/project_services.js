@@ -96,7 +96,8 @@ export async function getProjects(user) {
           owner: user.userId,
         };
 
-  return Project.find(query)
+  const projects =
+    await Project.find(query)
     .populate(
       "owner",
       "name email role",
@@ -104,6 +105,17 @@ export async function getProjects(user) {
     .sort({
       createdAt: 1,
     });
+
+    return Promise.all(
+    projects.map(async project => ({
+        ...project.toObject(),
+
+        taskCount:
+        await Task.countDocuments({
+            project: project._id,
+        }),
+    })),
+    );
 }
 
 // ========================================
