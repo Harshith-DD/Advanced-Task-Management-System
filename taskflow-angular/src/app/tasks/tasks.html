@@ -285,7 +285,7 @@
           [users]="users()"
           [projects]="projects()"
           [task]="editingTask()"
-          [canAssign]="!editingTask() || authService.isAdmin() || authService.currentUser()?.id === editingTask()?.owner?._id"
+          [canAssign]="canAssignEditingTask"
           [isSaving]="isSaving()"
           (submitted)="saveTask($event)"
           (cancelled)="closeForm()"

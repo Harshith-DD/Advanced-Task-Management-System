@@ -127,6 +127,24 @@ export class Tasks implements OnInit, OnDestroy {
 
   readonly pendingMutations =
     signal<Set<string>>(new Set());
+  
+  get canAssignEditingTask(): boolean {
+    const task = this.editingTask();
+    const currentUser = this.authService.currentUser();
+
+    if (!task || !currentUser) {
+      return true;
+    }
+
+    if (currentUser.role === 'admin') {
+      return true;
+    }
+
+    return (
+      task.owner?._id === currentUser.id ||
+      task.project?.owner?._id === currentUser.id
+    );
+  }
 
   readonly pageNumbers = computed(() =>
     Array.from(

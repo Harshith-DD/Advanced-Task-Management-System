@@ -1,4 +1,16 @@
-import { Project } from './project';
+export interface TaskProject {
+  _id: string;
+  name: string;
+  key: string;
+  description: string;
+  owner: {
+    _id: string;
+    name: string;
+    email: string;
+    role?: 'user' | 'admin';
+  };
+  taskSequence: number;
+}
 
 export type TaskStatus =
   'pending' |
@@ -26,7 +38,7 @@ export interface Task {
   dueDate?: string | null;
   tags: string[];
 
-  project: Project;
+  project: TaskProject;
 
   taskKey: string;
 
