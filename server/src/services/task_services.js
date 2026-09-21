@@ -1,8 +1,11 @@
 import Task from "../models/task_model.js";
 import User from "../models/user_model.js";
+import Project from "../models/project_model.js";
 import mongoose from "mongoose";
 
 import {
+  isAdmin,
+  isProjectOwner,
   resolveTaskProject,
   reserveNextTaskKey,
 } from "./project_services.js";
@@ -12,6 +15,7 @@ import taskEvents, {
 } from "../events/task_events.js";
 
 import {
+  AuthorizationError,
   NotFoundError,
   ValidationError,
 } from "../errors/app_error.js";
@@ -20,21 +24,84 @@ import {
 // BUILD TASK ACCESS QUERY
 // ========================================
 
-export function buildTaskAccessQuery(user) {
-  if (user.role === "admin") {
+export async function buildTaskAccessQuery(user) {
+  if (isAdmin(user)) {
     return {};
   }
 
+  // A normal user can access tasks they own, tasks assigned to them,
+  // and every task inside a project they own. The project-owner rule is
+  // important because an admin may create a task inside another user's
+  // project; the project owner must still be able to see/manage that task.
+  const ownedProjectIds = await Project.distinct("_id", {
+    owner: user.userId,
+  });
+
   return {
     $or: [
-      {
-        owner: user.userId,
-      },
-      {
-        assignedTo: user.userId,
-      },
+      { owner: user.userId },
+      { assignedTo: user.userId },
+      { project: { $in: ownedProjectIds } },
     ],
   };
+}
+
+function canAccessTask(task, user) {
+  if (isAdmin(user)) {
+    return true;
+  }
+
+  const userId = user.userId.toString();
+  const ownerId = task.owner?._id?.toString?.() ?? task.owner?.toString?.();
+  const assignedId =
+    task.assignedTo?._id?.toString?.() ??
+    task.assignedTo?.toString?.();
+
+  return (
+    ownerId === userId ||
+    assignedId === userId ||
+    isProjectOwner(task.project, user)
+  );
+}
+
+function canModifyTask(task, user) {
+  if (isAdmin(user)) {
+    return true;
+  }
+
+  const userId = user.userId.toString();
+  const ownerId =
+    task.owner?._id?.toString?.() ??
+    task.owner?.toString?.();
+  const assignedId =
+    task.assignedTo?._id?.toString?.() ??
+    task.assignedTo?.toString?.();
+
+  return ownerId === userId || assignedId === userId;
+}
+
+function canDeleteTask(task, user) {
+  if (isAdmin(user)) {
+    return true;
+  }
+
+  const ownerId =
+    task.owner?._id?.toString?.() ??
+    task.owner?.toString?.();
+
+  return ownerId === user.userId.toString();
+}
+
+function canAssignTask(task, user) {
+  if (isAdmin(user)) {
+    return true;
+  }
+
+  const ownerId =
+    task.owner?._id?.toString?.() ??
+    task.owner?.toString?.();
+
+  return ownerId === user.userId.toString();
 }
 
 function parseDateFilter(
@@ -182,7 +249,7 @@ class TaskService {
     // --------------------------------
 
     const accessQuery =
-      buildTaskAccessQuery(user);
+      await buildTaskAccessQuery(user);
 
     if (
       Object.keys(accessQuery).length > 0
@@ -538,20 +605,32 @@ class TaskService {
   // GET ONE TASK
   // ====================================
 
-  async getTaskById(taskId) {
-    return await Task.findById(taskId)
+  async getTaskById(taskId, user) {
+    const task = await Task.findById(taskId)
       .populate(
         "project",
         "name key description owner",
       )
       .populate(
         "owner",
-        "name email",
+        "name email role",
       )
       .populate(
         "assignedTo",
-        "name email",
+        "name email role",
       );
+
+    if (!task) {
+      return null;
+    }
+
+    if (user && !canAccessTask(task, user)) {
+      throw new AuthorizationError(
+        "You are not authorized to access this task",
+      );
+    }
+
+    return task;
   }
 
   // ====================================
@@ -561,14 +640,34 @@ class TaskService {
   async updateTask(
     taskId,
     taskData,
-    userId,
+    user,
   ) {
     const existingTask =
-      await Task.findById(taskId);
+      await Task.findById(taskId)
+        .populate(
+          "project",
+          "name key description owner",
+        )
+        .populate(
+          "owner",
+          "name email role",
+        )
+        .populate(
+          "assignedTo",
+          "name email role",
+        );
 
     if (!existingTask) {
       return null;
     }
+
+    if (!canModifyTask(existingTask, user)) {
+      throw new AuthorizationError(
+        "You are not authorized to update this task",
+      );
+    }
+
+    const userId = user.userId;
 
     const updateData = {
       ...taskData,
@@ -733,10 +832,34 @@ class TaskService {
   // DELETE TASK
   // ====================================
 
-  async deleteTask(taskId) {
-    return await Task.findByIdAndDelete(
-      taskId,
-    );
+  async deleteTask(taskId, user) {
+    const task = await Task.findById(taskId)
+      .populate(
+        "project",
+        "name key description owner",
+      )
+      .populate(
+        "owner",
+        "name email role",
+      )
+      .populate(
+        "assignedTo",
+        "name email role",
+      );
+
+    if (!task) {
+      return null;
+    }
+
+    if (!canDeleteTask(task, user)) {
+      throw new AuthorizationError(
+        "You are not authorized to delete this task",
+      );
+    }
+
+    await Task.deleteOne({ _id: taskId });
+
+    return task;
   }
 
   // ====================================
@@ -746,14 +869,34 @@ class TaskService {
   async assignTask(
     taskId,
     assignedTo,
-    userId,
+    user,
   ) {
     const task =
-      await Task.findById(taskId);
+      await Task.findById(taskId)
+        .populate(
+          "project",
+          "name key description owner",
+        )
+        .populate(
+          "owner",
+          "name email role",
+        )
+        .populate(
+          "assignedTo",
+          "name email role",
+        );
 
     if (!task) {
       return null;
     }
+
+    if (!canAssignTask(task, user)) {
+      throw new AuthorizationError(
+        "You are not authorized to assign this task",
+      );
+    }
+
+    const userId = user.userId;
 
     // --------------------------------
     // REMOVE ASSIGNMENT
@@ -794,12 +937,12 @@ class TaskService {
     // VERIFY ASSIGNED USER
     // --------------------------------
 
-    const user =
+    const assignedUser =
       await User.findById(
         assignedTo,
       );
 
-    if (!user) {
+    if (!assignedUser) {
       throw new NotFoundError(
         "Assigned user not found",
       );

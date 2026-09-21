@@ -25,9 +25,11 @@ const EXPORT_DIRECTORY = path.resolve(__dirname, "../../reports/exports");
 // ========================================
 
 async function getExportTasks(user) {
-  const query = buildTaskAccessQuery(user);
+  const query = await buildTaskAccessQuery(user);
 
   return Task.find(query)
+
+    .populate("project", "name key")
 
     .populate("owner", "name email")
 
@@ -42,10 +44,12 @@ async function getExportTasks(user) {
 // GET ACCESSIBLE TASK CURSOR
 // ========================================
 
-function getExportTaskCursor(user) {
-  const query = buildTaskAccessQuery(user);
+async function getExportTaskCursor(user) {
+  const query = await buildTaskAccessQuery(user);
 
   return Task.find(query)
+
+    .populate("project", "name key")
 
     .populate("owner", "name email")
 
@@ -115,7 +119,7 @@ async function createJsonExport(user) {
 
     let isFirstTask = true;
 
-    for await (const task of getExportTaskCursor(user)) {
+    for await (const task of await getExportTaskCursor(user)) {
       if (!isFirstTask) {
         await writeChunk(stream, ",\n");
       }
@@ -169,6 +173,9 @@ async function createCsvExport(user) {
 
   const headers = [
     "id",
+    "taskKey",
+    "projectKey",
+    "projectName",
     "title",
     "description",
     "status",
@@ -185,9 +192,12 @@ async function createCsvExport(user) {
   try {
     await writeChunk(stream, headers.map(escapeCsvValue).join(",") + "\n");
 
-    for await (const task of getExportTaskCursor(user)) {
+    for await (const task of await getExportTaskCursor(user)) {
       const row = [
         task._id,
+        task.taskKey,
+        task.project?.key || "",
+        task.project?.name || "",
         task.title,
         task.description,
         task.status,
@@ -283,6 +293,15 @@ export async function generateTaskReport(user) {
 
     tasks: tasks.map((task) => ({
       id: task._id,
+
+      taskKey: task.taskKey,
+
+      project: task.project
+        ? {
+            name: task.project.name,
+            key: task.project.key,
+          }
+        : null,
 
       title: task.title,
 

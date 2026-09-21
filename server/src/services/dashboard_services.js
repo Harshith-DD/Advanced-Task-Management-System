@@ -1,7 +1,6 @@
-import mongoose from "mongoose";
-
 import Task from "../models/task_model.js";
 import Activity from "../models/activity_model.js";
+import { buildTaskAccessQuery } from "./task_services.js";
 
 // ========================================
 // GET DASHBOARD
@@ -12,25 +11,14 @@ export async function getDashboard(user) {
   // CONVERT USER ID TO MONGODB OBJECTID
   // ----------------------------------------
 
-  const userId = new mongoose.Types.ObjectId(user.userId);
-
   // ----------------------------------------
   // BUILD TASK ACCESS QUERY
   // ----------------------------------------
 
-  const taskQuery =
-    user.role === "admin"
-      ? {}
-      : {
-          $or: [
-            {
-              owner: userId,
-            },
-            {
-              assignedTo: userId,
-            },
-          ],
-        };
+  // Keep dashboard visibility aligned with the same authorization rule used
+  // by the task API: admins see everything; normal users see owned, assigned,
+  // and project-owned tasks.
+  const taskQuery = await buildTaskAccessQuery(user);
 
   // ----------------------------------------
   // DATE FOR OVERDUE TASKS

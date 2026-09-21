@@ -2,7 +2,6 @@ import taskService from "../services/task_services.js";
 
 import {
   NotFoundError,
-  AuthorizationError,
   ValidationError,
 } from "../errors/app_error.js";
 
@@ -10,10 +9,7 @@ import {
 // CREATE TASK
 // ========================================
 
-export async function createTaskController(
-  req,
-  res,
-) {
+export async function createTaskController(req, res) {
   const taskData = {
     title: req.body.title,
     description: req.body.description,
@@ -24,11 +20,10 @@ export async function createTaskController(
     projectId: req.body.projectId,
   };
 
-  const task =
-    await taskService.createTask(
-      taskData,
-      req.user,
-    );
+  const task = await taskService.createTask(
+    taskData,
+    req.user,
+  );
 
   res.status(201).json({
     success: true,
@@ -40,15 +35,11 @@ export async function createTaskController(
 // GET ALL TASKS
 // ========================================
 
-export async function getAllTasksController(
-  req,
-  res,
-) {
-  const result =
-    await taskService.getAllTasks(
-      req.query,
-      req.user,
-    );
+export async function getAllTasksController(req, res) {
+  const result = await taskService.getAllTasks(
+    req.query,
+    req.user,
+  );
 
   res.status(200).json({
     success: true,
@@ -61,42 +52,14 @@ export async function getAllTasksController(
 // GET ONE TASK
 // ========================================
 
-export async function getTaskByIdController(
-  req,
-  res,
-) {
-  const task =
-    await taskService.getTaskById(
-      req.params.id,
-    );
+export async function getTaskByIdController(req, res) {
+  const task = await taskService.getTaskById(
+    req.params.id,
+    req.user,
+  );
 
   if (!task) {
-    throw new NotFoundError(
-      "Task not found",
-    );
-  }
-
-  const isAdmin =
-    req.user.role === "admin";
-
-  const isOwner =
-    task.owner &&
-    task.owner._id.toString() ===
-      req.user.userId;
-
-  const isAssignedUser =
-    task.assignedTo &&
-    task.assignedTo._id.toString() ===
-      req.user.userId.toString();
-
-  if (
-    !isAdmin &&
-    !isOwner &&
-    !isAssignedUser
-  ) {
-    throw new AuthorizationError(
-      "You are not authorized to access this task",
-    );
+    throw new NotFoundError("Task not found");
   }
 
   res.status(200).json({
@@ -109,44 +72,7 @@ export async function getTaskByIdController(
 // UPDATE TASK
 // ========================================
 
-export async function updateTaskController(
-  req,
-  res,
-) {
-  const task =
-    await taskService.getTaskById(
-      req.params.id,
-    );
-
-  if (!task) {
-    throw new NotFoundError(
-      "Task not found",
-    );
-  }
-
-  const isAdmin =
-    req.user.role === "admin";
-
-  const isOwner =
-    task.owner &&
-    task.owner._id.toString() ===
-      req.user.userId;
-
-  const isAssignedUser =
-    task.assignedTo &&
-    task.assignedTo._id.toString() ===
-      req.user.userId;
-
-  if (
-    !isAdmin &&
-    !isOwner &&
-    !isAssignedUser
-  ) {
-    throw new AuthorizationError(
-      "You are not authorized to update this task",
-    );
-  }
-
+export async function updateTaskController(req, res) {
   const allowedFields = [
     "title",
     "description",
@@ -159,28 +85,26 @@ export async function updateTaskController(
   const taskData = {};
 
   for (const field of allowedFields) {
-    if (
-      req.body[field] !== undefined
-    ) {
-      taskData[field] =
-        req.body[field];
+    if (req.body[field] !== undefined) {
+      taskData[field] = req.body[field];
     }
   }
 
-  if (
-    Object.keys(taskData).length === 0
-  ) {
+  if (Object.keys(taskData).length === 0) {
     throw new ValidationError(
       "No valid fields provided for update",
     );
   }
 
-  const updatedTask =
-    await taskService.updateTask(
-      req.params.id,
-      taskData,
-      req.user.userId,
-    );
+  const updatedTask = await taskService.updateTask(
+    req.params.id,
+    taskData,
+    req.user,
+  );
+
+  if (!updatedTask) {
+    throw new NotFoundError("Task not found");
+  }
 
   res.status(200).json({
     success: true,
@@ -192,38 +116,15 @@ export async function updateTaskController(
 // DELETE TASK
 // ========================================
 
-export async function deleteTaskController(
-  req,
-  res,
-) {
-  const task =
-    await taskService.getTaskById(
-      req.params.id,
-    );
-
-  if (!task) {
-    throw new NotFoundError(
-      "Task not found",
-    );
-  }
-
-  const isAdmin =
-    req.user.role === "admin";
-
-  const isOwner =
-    task.owner &&
-    task.owner._id.toString() ===
-      req.user.userId.toString();
-
-  if (!isAdmin && !isOwner) {
-    throw new AuthorizationError(
-      "You are not authorized to delete this task",
-    );
-  }
-
-  await taskService.deleteTask(
+export async function deleteTaskController(req, res) {
+  const deletedTask = await taskService.deleteTask(
     req.params.id,
+    req.user,
   );
+
+  if (!deletedTask) {
+    throw new NotFoundError("Task not found");
+  }
 
   res.status(200).json({
     success: true,
@@ -235,44 +136,18 @@ export async function deleteTaskController(
 // ASSIGN TASK
 // ========================================
 
-export async function assignTaskController(
-  req,
-  res,
-) {
-  const task =
-    await taskService.getTaskById(
-      req.params.id,
-    );
+export async function assignTaskController(req, res) {
+  const { assignedTo } = req.body;
 
-  if (!task) {
-    throw new NotFoundError(
-      "Task not found",
-    );
+  const updatedTask = await taskService.assignTask(
+    req.params.id,
+    assignedTo,
+    req.user,
+  );
+
+  if (!updatedTask) {
+    throw new NotFoundError("Task not found");
   }
-
-  const isOwner =
-    task.owner &&
-    task.owner._id.toString() ===
-      req.user.userId.toString();
-
-  const isAdmin =
-    req.user.role === "admin";
-
-  if (!isOwner && !isAdmin) {
-    throw new AuthorizationError(
-      "You are not authorized to assign this task",
-    );
-  }
-
-  const { assignedTo } =
-    req.body;
-
-  const updatedTask =
-    await taskService.assignTask(
-      req.params.id,
-      assignedTo,
-      req.user.userId,
-    );
 
   res.status(200).json({
     success: true,
