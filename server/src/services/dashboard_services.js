@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Task from "../models/task_model.js";
 import Project from "../models/project_model.js";
 import Activity from "../models/activity_model.js";
@@ -97,7 +98,9 @@ async function getProjectStats(user) {
     user.role === "admin"
       ? {}
       : {
-          owner: user.userId,
+          // Aggregation pipelines do not get Mongoose's automatic ObjectId
+          // casting, so convert the authenticated user's string id explicitly.
+          owner: new mongoose.Types.ObjectId(user.userId),
         };
 
   const [stats] = await Project.aggregate([
