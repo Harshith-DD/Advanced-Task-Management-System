@@ -1,4 +1,5 @@
 import Task from "../models/task_model.js";
+import Project from "../models/project_model.js";
 import Activity from "../models/activity_model.js";
 import { buildTaskAccessQuery } from "./task_services.js";
 import { getAccessibleTaskIds } from "./activity_services.js";
@@ -8,85 +9,61 @@ import { getAccessibleTaskIds } from "./activity_services.js";
 // ========================================
 
 export async function getDashboard(user) {
-  // ----------------------------------------
-  // CONVERT USER ID TO MONGODB OBJECTID
-  // ----------------------------------------
-
-  // ----------------------------------------
-  // BUILD TASK ACCESS QUERY
-  // ----------------------------------------
-
-  // Keep dashboard visibility aligned with the same authorization rule used
-  // by the task API: admins see everything; normal users see owned, assigned,
-  // and project-owned tasks.
   const taskQuery = await buildTaskAccessQuery(user);
-
-  // ----------------------------------------
-  // DATE FOR OVERDUE TASKS
-  // ----------------------------------------
-
   const now = new Date();
 
-  // ----------------------------------------
-  // RUN INDEPENDENT OPERATIONS CONCURRENTLY
-  // ----------------------------------------
+  const [
+    total,
+    completed,
+    pending,
+    overdue,
+    byPriority,
+    projectStats,
+    recentActivity,
+  ] = await Promise.all([
+    Task.countDocuments(taskQuery),
 
-  const [total, completed, pending, overdue, byPriority, recentActivity] =
-    await Promise.all([
-      // Total tasks
-      Task.countDocuments(taskQuery),
+    Task.countDocuments({
+      ...taskQuery,
+      status: "completed",
+    }),
 
-      // Completed tasks
-      Task.countDocuments({
-        ...taskQuery,
-        status: "completed",
-      }),
+    // This metric represents all tasks that are not completed.
+    Task.countDocuments({
+      ...taskQuery,
+      status: {
+        $ne: "completed",
+      },
+    }),
 
-      // Pending / unfinished tasks
-      Task.countDocuments({
-        ...taskQuery,
-        status: {
-          $ne: "completed",
-        },
-      }),
+    Task.countDocuments({
+      ...taskQuery,
+      dueDate: {
+        $lt: now,
+        $ne: null,
+      },
+      status: {
+        $ne: "completed",
+      },
+    }),
 
-      // Overdue tasks
-      Task.countDocuments({
-        ...taskQuery,
-
-        dueDate: {
-          $lt: now,
-          $ne: null,
-        },
-
-        status: {
-          $ne: "completed",
-        },
-      }),
-
-      // Tasks grouped by priority
-      Task.aggregate([
-        {
-          $match: taskQuery,
-        },
-
-        {
-          $group: {
-            _id: "$priority",
-            count: {
-              $sum: 1,
-            },
+    Task.aggregate([
+      {
+        $match: taskQuery,
+      },
+      {
+        $group: {
+          _id: "$priority",
+          count: {
+            $sum: 1,
           },
         },
-      ]),
+      },
+    ]),
 
-      // Recent activity
-      getRecentActivity(user),
-    ]);
-
-  // ----------------------------------------
-  // FORMAT PRIORITY RESULTS
-  // ----------------------------------------
+    getProjectStats(user),
+    getRecentActivity(user),
+  ]);
 
   const priorityStats = {
     low: 0,
@@ -98,19 +75,103 @@ export async function getDashboard(user) {
     priorityStats[item._id] = item.count;
   }
 
-  // ----------------------------------------
-  // RETURN DASHBOARD DATA
-  // ----------------------------------------
-
   return {
     total,
     completed,
     pending,
     overdue,
-
     byPriority: priorityStats,
-
+    projects: projectStats,
     recentActivity,
+  };
+}
+
+// ========================================
+// PROJECT STATISTICS
+// ========================================
+
+async function getProjectStats(user) {
+  // Match the Projects workspace authorization exactly: admins see all
+  // projects, while normal users see projects they own.
+  const projectQuery =
+    user.role === "admin"
+      ? {}
+      : {
+          owner: user.userId,
+        };
+
+  const [stats] = await Project.aggregate([
+    {
+      $match: projectQuery,
+    },
+    {
+      $lookup: {
+        from: "tasks",
+        let: {
+          projectId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: [
+                  "$project",
+                  "$$projectId",
+                ],
+              },
+            },
+          },
+          {
+            $limit: 1,
+          },
+        ],
+        as: "tasks",
+      },
+    },
+    {
+      $project: {
+        hasTasks: {
+          $gt: [
+            {
+              $size: "$tasks",
+            },
+            0,
+          ],
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalProjects: {
+          $sum: 1,
+        },
+        activeProjects: {
+          $sum: {
+            $cond: [
+              "$hasTasks",
+              1,
+              0,
+            ],
+          },
+        },
+        emptyProjects: {
+          $sum: {
+            $cond: [
+              "$hasTasks",
+              0,
+              1,
+            ],
+          },
+        },
+      },
+    },
+  ]);
+
+  return {
+    total: stats?.totalProjects ?? 0,
+    active: stats?.activeProjects ?? 0,
+    empty: stats?.emptyProjects ?? 0,
   };
 }
 
@@ -132,7 +193,7 @@ async function getRecentActivity(user) {
     return [];
   }
 
-  return await Activity.find(query)
+  return Activity.find(query)
     .populate("user", "name email")
     .populate({
       path: "task",

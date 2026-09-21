@@ -5,7 +5,7 @@
       <h2>Tasks</h2>
       <p>Filter, sort and manage everything from one place.</p>
     </div>
-    <button id="open-task-form-button" type="button" (click)="openCreate()">+ New Task</button>
+    <button #openTaskFormButton id="open-task-form-button" type="button" (click)="openCreate()">+ New Task</button>
   </div>
 
   <section class="controls-section">
@@ -267,10 +267,12 @@
   @if (isFormOpen()) {
     <div class="modal-backdrop" (click)="closeForm()">
       <section
+        #taskFormModal
         class="task-form-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="task-form-heading"
+        tabindex="-1"
         (click)="$event.stopPropagation()"
       >
         <div class="modal-header">
@@ -285,6 +287,7 @@
           [users]="users()"
           [projects]="projects()"
           [task]="editingTask()"
+          [initialProjectId]="createProjectId()"
           [canAssign]="canAssignEditingTask"
           [isSaving]="isSaving()"
           (submitted)="saveTask($event)"

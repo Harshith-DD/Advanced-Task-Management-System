@@ -57,6 +57,9 @@ export class TaskForm {
   task: Task | null = null;
 
   @Input()
+  initialProjectId: string | null = null;
+
+  @Input()
   canAssign = true;
 
   @Output()
@@ -195,6 +198,7 @@ export class TaskForm {
 
   reset(): void {
     const defaultProject =
+      this.initialProjectId ??
       this.projects[0]?._id ?? '';
 
     this.taskForm.reset({

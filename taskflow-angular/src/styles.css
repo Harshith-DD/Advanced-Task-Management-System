@@ -201,8 +201,8 @@ button, .button-link {
     transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 button:hover, .button-link:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 6px 14px rgba(16,179,176,0.18); }
-.button-secondary { background: #fff; color: #374151; border: 1px solid var(--border); }
-.button-secondary:hover { background: #f8fafc; color: var(--text); }
+.button-secondary { display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1rem; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: #374151; font-weight: 650; text-decoration: none; transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease; }
+.button-secondary:hover { background: #f8fafc; color: var(--text); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06); }
 .button-link { display: inline-flex; align-items: center; }
 #open-task-form-button { background: var(--accent-coral); }
 #open-task-form-button:hover { background: #e96842; }

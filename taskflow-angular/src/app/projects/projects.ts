@@ -27,8 +27,8 @@ import {
 } from '../project';
 
 import {
-  ProjectService
-} from '../services/project';
+  ProjectStateService
+} from '../services/project-state';
 
 @Component({
   selector: 'app-projects',
@@ -45,26 +45,29 @@ export class Projects
   private readonly fb =
     inject(FormBuilder);
 
-  private readonly projectService =
-    inject(ProjectService);
+  protected readonly projectState =
+    inject(ProjectStateService);
 
   private readonly destroy$ =
     new Subject<void>();
 
   readonly projects =
-    signal<Project[]>([]);
+    this.projectState.projects;
 
   readonly isLoading =
-    signal(false);
+    this.projectState.isLoading;
+
+  readonly errorMessage =
+    this.projectState.errorMessage;
 
   readonly isSaving =
     signal(false);
 
-  readonly errorMessage =
-    signal('');
-
-  readonly showCreateForm =
+  readonly showProjectForm =
     signal(false);
+
+  readonly editingProject =
+    signal<Project | null>(null);
 
   readonly projectForm =
     this.fb.nonNullable.group({
@@ -101,61 +104,68 @@ export class Projects
     return this.projectForm.controls.key;
   }
 
+  get isEditing(): boolean {
+    return !!this.editingProject();
+  }
+
   ngOnInit(): void {
     this.loadProjects();
   }
 
   loadProjects(): void {
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-
-    this.projectService
-      .getProjects()
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() =>
-          this.isLoading.set(false)
-        )
-      )
+    this.projectState
+      .load()
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: response => {
-          this.projects.set(
-            response.data
-          );
-        },
-
         error: error => {
           console.error(
             'Failed to load projects:',
             error
-          );
-
-          this.errorMessage.set(
-            error?.error?.error?.message ??
-            error?.error?.message ??
-            'Failed to load projects.'
           );
         }
       });
   }
 
   openCreate(): void {
+    this.editingProject.set(null);
+
+    this.projectForm.enable();
     this.projectForm.reset({
       name: '',
       key: '',
       description: ''
     });
 
-    this.errorMessage.set('');
-    this.showCreateForm.set(true);
+    this.projectState.clearError();
+    this.showProjectForm.set(true);
   }
 
-  closeCreate(): void {
+  openEdit(project: Project): void {
+    this.editingProject.set(project);
+
+    this.projectForm.enable();
+    this.projectForm.reset({
+      name: project.name,
+      key: project.key,
+      description: project.description
+    });
+
+    // Project keys are part of generated task keys, so they are intentionally
+    // immutable after project creation.
+    this.projectForm.controls.key.disable();
+
+    this.projectState.clearError();
+    this.showProjectForm.set(true);
+  }
+
+  closeForm(): void {
     if (this.isSaving()) {
       return;
     }
 
-    this.showCreateForm.set(false);
+    this.showProjectForm.set(false);
+    this.editingProject.set(null);
+    this.projectForm.enable();
   }
 
   submit(): void {
@@ -171,17 +181,30 @@ export class Projects
       this.projectForm.getRawValue();
 
     this.isSaving.set(true);
-    this.errorMessage.set('');
+    this.projectState.clearError();
 
-    this.projectService
-      .createProject({
-        name: value.name.trim(),
-        key: value.key
-          .trim()
-          .toUpperCase(),
-        description:
-          value.description.trim()
-      })
+    const editing =
+      this.editingProject();
+
+    const request = editing
+      ? this.projectState.update(
+          editing._id,
+          {
+            name: value.name.trim(),
+            description:
+              value.description.trim()
+          }
+        )
+      : this.projectState.create({
+          name: value.name.trim(),
+          key: value.key
+            .trim()
+            .toUpperCase(),
+          description:
+            value.description.trim()
+        });
+
+    request
       .pipe(
         takeUntil(this.destroy$),
         finalize(() =>
@@ -189,27 +212,15 @@ export class Projects
         )
       )
       .subscribe({
-        next: response => {
-          this.projects.update(
-            current => [
-              ...current,
-              response.data
-            ]
-          );
-
-          this.showCreateForm.set(false);
+        next: () => {
+          this.closeForm();
         },
-
         error: error => {
           console.error(
-            'Failed to create project:',
+            editing
+              ? 'Failed to update project:'
+              : 'Failed to create project:',
             error
-          );
-
-          this.errorMessage.set(
-            error?.error?.error?.message ??
-            error?.error?.message ??
-            'Failed to create project.'
           );
         }
       });
@@ -219,6 +230,7 @@ export class Projects
     project: Project
   ): void {
     if (
+      project.taskCount > 0 ||
       !window.confirm(
         `Delete project "${project.name}"?`
       )
@@ -226,33 +238,14 @@ export class Projects
       return;
     }
 
-    this.projectService
-      .deleteProject(project._id)
-      .pipe(
-        takeUntil(this.destroy$)
-      )
+    this.projectState
+      .remove(project._id)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          this.projects.update(
-            current =>
-              current.filter(
-                item =>
-                  item._id !==
-                  project._id
-              )
-          );
-        },
-
         error: error => {
           console.error(
             'Failed to delete project:',
             error
-          );
-
-          this.errorMessage.set(
-            error?.error?.error?.message ??
-            error?.error?.message ??
-            'Failed to delete project.'
           );
         }
       });

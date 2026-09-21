@@ -15,12 +15,8 @@ import {
 } from '@angular/core';
 
 import {
-  Project
-} from '../project';
-
-import {
-  ProjectService
-} from '../services/project';
+  ProjectStateService
+} from '../services/project-state';
 
 import { CommonModule } from '@angular/common';
 import {
@@ -29,7 +25,8 @@ import {
 } from '@angular/forms';
 
 import {
-  ActivatedRoute
+  ActivatedRoute,
+  Router
 } from '@angular/router';
 
 import {
@@ -75,14 +72,17 @@ type TaskView = 'list' | 'kanban';
 })
 export class Tasks implements OnInit, OnDestroy {
 
-  private readonly projectService =
-    inject(ProjectService);
+  private readonly projectState =
+    inject(ProjectStateService);
 
   readonly projects =
-    signal<Project[]>([]);
+    this.projectState.projects;
 
   private readonly route =
     inject(ActivatedRoute);
+
+  private readonly router =
+    inject(Router);
 
   protected readonly taskState =
     inject(TaskStateService);
@@ -111,6 +111,9 @@ export class Tasks implements OnInit, OnDestroy {
   readonly editingTask =
     signal<Task | null>(null);
 
+  readonly createProjectId =
+    signal<string | null>(null);
+
   readonly taskView =
     signal<TaskView>(
       this.getInitialTaskView()
@@ -127,7 +130,7 @@ export class Tasks implements OnInit, OnDestroy {
 
   readonly pendingMutations =
     signal<Set<string>>(new Set());
-  
+
   get canAssignEditingTask(): boolean {
     const task = this.editingTask();
     const currentUser = this.authService.currentUser();
@@ -284,44 +287,53 @@ export class Tasks implements OnInit, OnDestroy {
       );
 
       this.route.queryParamMap
-  .pipe(
-    takeUntil(this.destroy$)
-  )
-  .subscribe(params => {
-    const projectId =
-      params.get('projectId') ?? '';
+      .pipe(
+        takeUntil(this.destroy$)
+      )
+      .subscribe(params => {
+        const projectId =
+          params.get('projectId') ?? '';
 
-    this.taskState.patchFilters({
-      projectId,
-      page: 1
-    });
+        this.taskState.patchFilters({
+          projectId,
+          page: 1
+        });
 
-    this.loadTasks();
-  });
+        this.createProjectId.set(
+          projectId || null
+        );
+
+        this.loadTasks();
+
+        if (params.get('create') === '1') {
+          this.openCreate(projectId || null);
+
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: {
+              create: null
+            },
+            queryParamsHandling: 'merge',
+            replaceUrl: true
+          });
+        }
+      });
     this.loadUsers();
     this.loadProjects();
   }
   private loadProjects(): void {
-      this.projectService
-        .getProjects()
-        .pipe(
-          takeUntil(this.destroy$)
-        )
-        .subscribe({
-          next: response => {
-            this.projects.set(
-              response.data
-            );
-          },
-
-          error: error => {
-            console.error(
-              'Failed to load projects:',
-              error
-            );
-          }
-        });
-    }
+    this.projectState
+      .load()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        error: error => {
+          console.error(
+            'Failed to load projects:',
+            error
+          );
+        }
+      });
+  }
 
   private getInitialTaskView(): TaskView {
     try {
@@ -530,8 +542,13 @@ export class Tasks implements OnInit, OnDestroy {
     });
   }
 
-  openCreate(): void {
+  openCreate(projectId?: string | null): void {
     this.editingTask.set(null);
+    this.createProjectId.set(
+      projectId ??
+      this.taskState.filters().projectId ??
+      null
+    );
     this.isFormOpen.set(true);
     this.focusTaskModal();
   }
@@ -549,6 +566,7 @@ export class Tasks implements OnInit, OnDestroy {
 
     this.isFormOpen.set(false);
     this.editingTask.set(null);
+    this.createProjectId.set(null);
     this.restoreTaskFormFocus();
   }
 
@@ -1078,6 +1096,7 @@ private updateAndRefresh(
   ): void {
     this.isFormOpen.set(false);
     this.editingTask.set(null);
+    this.createProjectId.set(null);
     this.isSaving.set(false);
 
     this.restoreTaskFormFocus();

@@ -57,6 +57,31 @@
         </div>
       </section>
 
+      <section class="panel dashboard-projects">
+        <div class="panel-heading">
+          <div>
+            <h3>Project overview</h3>
+            <p>Projects available in your workspace.</p>
+          </div>
+          <a routerLink="/projects">View projects</a>
+        </div>
+
+        <div class="project-stats-grid">
+          <article class="project-stat">
+            <span>Total projects</span>
+            <strong>{{ d.projects.total }}</strong>
+          </article>
+          <article class="project-stat project-stat-active">
+            <span>With tasks</span>
+            <strong>{{ d.projects.active }}</strong>
+          </article>
+          <article class="project-stat project-stat-empty">
+            <span>Empty</span>
+            <strong>{{ d.projects.empty }}</strong>
+          </article>
+        </div>
+      </section>
+
       <section class="panel dashboard-activity">
         <div class="panel-heading">
           <div>

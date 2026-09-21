@@ -1,19 +1,9 @@
 <section class="route-view">
-
   <div class="page-heading">
     <div>
-      <p class="eyebrow">
-        Workspace
-      </p>
-
-      <h2>
-        Projects
-      </h2>
-
-      <p>
-        Organize tasks into projects with
-        unique task keys.
-      </p>
+      <p class="eyebrow">Workspace</p>
+      <h2>Projects</h2>
+      <p>Organize tasks into projects with unique task keys.</p>
     </div>
 
     <button
@@ -30,17 +20,23 @@
     </p>
   }
 
-  @if (showCreateForm()) {
+  @if (showProjectForm()) {
     <section class="project-form-section">
+      <div class="project-form-heading">
+        <div>
+          <p class="eyebrow">
+            {{ isEditing ? 'Edit project' : 'New project' }}
+          </p>
+          <h3>
+            {{ isEditing ? 'Update project' : 'Create a project' }}
+          </h3>
+        </div>
 
-      <div>
-        <p class="eyebrow">
-          New project
-        </p>
-
-        <h3>
-          Create a project
-        </h3>
+        @if (isEditing) {
+          <span class="project-form-note">
+            Project key cannot be changed after creation.
+          </span>
+        }
       </div>
 
       <form
@@ -48,12 +44,9 @@
         (ngSubmit)="submit()"
         novalidate
       >
-
         <div class="project-form-grid">
-
           <label>
             <span>Name</span>
-
             <input
               type="text"
               formControlName="name"
@@ -61,19 +54,13 @@
               placeholder="Website Redesign"
             />
 
-            @if (
-              name.invalid &&
-              name.touched
-            ) {
-              <small>
-                Project name is required.
-              </small>
+            @if (name.invalid && name.touched) {
+              <small>Project name is required.</small>
             }
           </label>
 
           <label>
             <span>Key</span>
-
             <input
               type="text"
               formControlName="key"
@@ -81,40 +68,34 @@
               placeholder="WEB"
             />
 
-            <small>
-              Used to generate task keys such as
-              WEB-1, WEB-2 and WEB-3.
-            </small>
-
-            @if (
-              key.invalid &&
-              key.touched
-            ) {
+            @if (!isEditing) {
               <small>
-                Use letters/numbers with optional
-                hyphens.
+                Used to generate task keys such as WEB-1, WEB-2 and WEB-3.
+              </small>
+            }
+
+            @if (key.invalid && key.touched) {
+              <small>
+                Use letters/numbers with optional hyphens.
               </small>
             }
           </label>
 
           <label class="wide-field">
             <span>Description</span>
-
             <textarea
               rows="3"
               maxlength="500"
               formControlName="description"
             ></textarea>
           </label>
-
         </div>
 
         <div class="modal-actions">
-
           <button
             type="button"
             class="button-secondary"
-            (click)="closeCreate()"
+            (click)="closeForm()"
           >
             Cancel
           </button>
@@ -124,94 +105,79 @@
             [disabled]="isSaving()"
           >
             @if (isSaving()) {
-              Creating...
+              Saving...
             } @else {
-              Create Project
+              {{ isEditing ? 'Save Changes' : 'Create Project' }}
             }
           </button>
-
         </div>
-
       </form>
     </section>
   }
 
   @if (isLoading()) {
-
-    <p class="state-message">
-      Loading projects...
-    </p>
-
+    <p class="state-message">Loading projects...</p>
   } @else if (!projects().length) {
-
-    <p class="empty-state">
-      No projects available.
-    </p>
-
+    <p class="empty-state">No projects available.</p>
   } @else {
-
     <section class="projects-grid">
-
-      @for (
-        project of projects();
-        track project._id
-      ) {
-
+      @for (project of projects(); track project._id) {
         <article class="project-card">
-
           <div class="project-card-header">
-
             <div>
-              <span class="project-key">
-                {{ project.key }}
-              </span>
-
-              <h3>
-                {{ project.name }}
-              </h3>
+              <span class="project-key">{{ project.key }}</span>
+              <h3>{{ project.name }}</h3>
             </div>
 
             <span class="project-sequence">
-                {{ project.taskCount }}
-                {{ project.taskCount === 1 ? 'task' : 'tasks' }}
+              {{ project.taskCount }}
+              {{ project.taskCount === 1 ? 'task' : 'tasks' }}
             </span>
-
           </div>
 
           <p>
-            {{
-              project.description ||
-              'No project description.'
-            }}
+            {{ project.description || 'No project description.' }}
           </p>
 
           <div class="project-card-meta">
+            <span>Owner: {{ project.owner.name }}</span>
             <span>
-              Owner:
-              {{ project.owner.name }}
-            </span>
-
-            <span>
-            Next key:
-            {{ project.key }}-{{ project.taskSequence + 1 }}
+              Next key:
+              {{ project.key }}-{{ project.taskSequence + 1 }}
             </span>
           </div>
 
           <div class="project-card-actions">
-
             <a
-              class="button-secondary"
+              class="project-action button-secondary"
               routerLink="/tasks"
-              [queryParams]="{
-                projectId: project._id
-              }"
+              [queryParams]="{ projectId: project._id }"
             >
               View Tasks
             </a>
 
+            <a
+              class="project-action project-add-task"
+              routerLink="/tasks"
+              [queryParams]="{
+                projectId: project._id,
+                create: '1'
+              }"
+            >
+              + Add Task
+            </a>
+
             <button
               type="button"
-              class="delete-button"
+              class="project-action button-secondary"
+              (click)="openEdit(project)"
+            >
+              Edit
+            </button>
+
+            <button
+              type="button"
+              class="delete-button project-action"
               [disabled]="project.taskCount > 0"
               [title]="
                 project.taskCount > 0
@@ -222,15 +188,9 @@
             >
               Delete
             </button>
-
           </div>
-
         </article>
-
       }
-
     </section>
-
   }
-
 </section>

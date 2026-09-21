@@ -24,12 +24,19 @@ export interface DashboardActivity {
   task?: DashboardActivityTask;
 }
 
+export interface DashboardProjectStats {
+  total: number;
+  active: number;
+  empty: number;
+}
+
 export interface DashboardData {
   total: number;
   completed: number;
   pending: number;
   overdue: number;
   byPriority: { low: number; medium: number; high: number };
+  projects: DashboardProjectStats;
   recentActivity: DashboardActivity[];
 }
 
