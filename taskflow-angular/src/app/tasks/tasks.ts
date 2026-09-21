@@ -14,11 +14,23 @@ import {
   signal
 } from '@angular/core';
 
+import {
+  Project
+} from '../project';
+
+import {
+  ProjectService
+} from '../services/project';
+
 import { CommonModule } from '@angular/common';
 import {
   FormControl,
   ReactiveFormsModule
 } from '@angular/forms';
+
+import {
+  ActivatedRoute
+} from '@angular/router';
 
 import {
   debounceTime,
@@ -62,6 +74,16 @@ type TaskView = 'list' | 'kanban';
   styleUrl: './tasks.css'
 })
 export class Tasks implements OnInit, OnDestroy {
+
+  private readonly projectService =
+    inject(ProjectService);
+
+  readonly projects =
+    signal<Project[]>([]);
+
+  private readonly route =
+    inject(ActivatedRoute);
+
   protected readonly taskState =
     inject(TaskStateService);
 
@@ -243,9 +265,45 @@ export class Tasks implements OnInit, OnDestroy {
         this.applyAllFilters()
       );
 
-    this.loadUsers();
+      this.route.queryParamMap
+  .pipe(
+    takeUntil(this.destroy$)
+  )
+  .subscribe(params => {
+    const projectId =
+      params.get('projectId') ?? '';
+
+    this.taskState.patchFilters({
+      projectId,
+      page: 1
+    });
+
     this.loadTasks();
+  });
+    this.loadUsers();
+    this.loadProjects();
   }
+  private loadProjects(): void {
+      this.projectService
+        .getProjects()
+        .pipe(
+          takeUntil(this.destroy$)
+        )
+        .subscribe({
+          next: response => {
+            this.projects.set(
+              response.data
+            );
+          },
+
+          error: error => {
+            console.error(
+              'Failed to load projects:',
+              error
+            );
+          }
+        });
+    }
 
   private getInitialTaskView(): TaskView {
     try {
@@ -503,7 +561,8 @@ export class Tasks implements OnInit, OnDestroy {
           status: value.status,
           priority: value.priority,
           dueDate: value.dueDate,
-          tags: value.tags
+          tags: value.tags,
+          projectId: value.projectId
         });
 
     request

@@ -1,5 +1,6 @@
 import Task from "../models/task_model.js";
 import User from "../models/user_model.js";
+import mongoose from "mongoose";
 
 import {
   resolveTaskProject,
@@ -161,6 +162,7 @@ class TaskService {
       priority,
       search,
       tag,
+      projectId,
       fromDate,
       toDate,
       sortBy = "createdAt",
@@ -186,6 +188,26 @@ class TaskService {
       Object.keys(accessQuery).length > 0
     ) {
       conditions.push(accessQuery);
+    }
+
+    // --------------------------------
+    // PROJECT FILTER
+    // --------------------------------
+
+    if (projectId) {
+      if (
+        !mongoose.Types.ObjectId.isValid(
+          projectId,
+        )
+      ) {
+        throw new ValidationError(
+          "projectId must be a valid project ID",
+        );
+      }
+
+      conditions.push({
+        project: projectId,
+      });
     }
 
     // --------------------------------

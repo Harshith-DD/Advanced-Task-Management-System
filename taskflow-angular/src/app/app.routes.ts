@@ -7,6 +7,7 @@ import { Activity } from './activity/activity';
 import { Notifications } from './notifications/notifications';
 import { Reports } from './reports/reports';
 import { AppShell } from './layout/app-shell/app-shell';
+import { Projects } from './projects/projects';
 
 import { authGuard, guestGuard } from './guards/auth.guard';
 
@@ -35,6 +36,10 @@ export const routes: Routes = [
       {
         path: 'tasks',
         component: Tasks
+      },
+      {
+        path: 'projects',
+        component: Projects
       },
       {
         path: 'activity',

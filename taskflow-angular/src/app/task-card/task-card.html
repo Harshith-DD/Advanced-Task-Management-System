@@ -22,7 +22,16 @@
 
       <h3>{{ task().title }}</h3>
     </div>
+    <div class="task-identity">
+  <span class="task-key">
+    {{ task().taskKey }}
+  </span>
 
+  <span class="task-project">
+    {{ task().project.key }} ·
+    {{ task().project.name }}
+  </span>
+</div>
     <span class="priority-badge">
       Priority: {{ task().priority }}
     </span>

@@ -1,0 +1,106 @@
+.project-form-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--surface-color);
+}
+
+.project-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.project-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.project-form-grid .wide-field {
+  grid-column: 1 / -1;
+}
+
+.project-form-grid input,
+.project-form-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.project-form-grid small {
+  opacity: 0.7;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(280px, 1fr)
+  );
+  gap: 1rem;
+}
+
+.project-card {
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--surface-color);
+}
+
+.project-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.project-card-header h3 {
+  margin: 0.35rem 0 0;
+}
+
+.project-key {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.project-sequence {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.project-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.project-card-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.project-card-actions a {
+  text-decoration: none;
+}
+
+@media (max-width: 700px) {
+  .project-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .project-form-grid .wide-field {
+    grid-column: auto;
+  }
+
+  .project-card-actions {
+    flex-direction: column;
+  }
+}

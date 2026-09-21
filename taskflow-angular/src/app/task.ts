@@ -1,5 +1,14 @@
-export type TaskStatus = 'pending' | 'in-progress' | 'completed';
-export type TaskPriority = 'low' | 'medium' | 'high';
+import { Project } from './project';
+
+export type TaskStatus =
+  'pending' |
+  'in-progress' |
+  'completed';
+
+export type TaskPriority =
+  'low' |
+  'medium' |
+  'high';
 
 export interface TaskUser {
   _id: string;
@@ -16,20 +25,35 @@ export interface Task {
   priority: TaskPriority;
   dueDate?: string | null;
   tags: string[];
+
+  project: Project;
+
+  taskKey: string;
+
   owner?: TaskUser;
   assignedTo?: TaskUser | null;
+
   reminderSentAt?: string | null;
   isOverdue: boolean;
+
   createdAt: string;
   updatedAt: string;
 }
 
-export type TaskSortBy = 'createdAt' | 'updatedAt' | 'dueDate' | 'priority';
-export type SortOrder = 'asc' | 'desc';
+export type TaskSortBy =
+  'createdAt' |
+  'updatedAt' |
+  'dueDate' |
+  'priority';
+
+export type SortOrder =
+  'asc' |
+  'desc';
 
 export interface TaskFilters {
   status?: TaskStatus | '';
   priority?: TaskPriority | '';
+  projectId?: string;
   search?: string;
   tag?: string;
   fromDate?: string;
@@ -60,6 +84,7 @@ export interface CreateTaskRequest {
   priority: TaskPriority;
   dueDate: string | null;
   tags: string[];
+  projectId: string;
 }
 
 export interface UpdateTaskRequest {

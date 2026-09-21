@@ -1,0 +1,238 @@
+<section class="route-view">
+
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">
+        Workspace
+      </p>
+
+      <h2>
+        Projects
+      </h2>
+
+      <p>
+        Organize tasks into projects with
+        unique task keys.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      (click)="openCreate()"
+    >
+      + New Project
+    </button>
+  </div>
+
+  @if (errorMessage()) {
+    <p class="state-message error">
+      {{ errorMessage() }}
+    </p>
+  }
+
+  @if (showCreateForm()) {
+    <section class="project-form-section">
+
+      <div>
+        <p class="eyebrow">
+          New project
+        </p>
+
+        <h3>
+          Create a project
+        </h3>
+      </div>
+
+      <form
+        [formGroup]="projectForm"
+        (ngSubmit)="submit()"
+        novalidate
+      >
+
+        <div class="project-form-grid">
+
+          <label>
+            <span>Name</span>
+
+            <input
+              type="text"
+              formControlName="name"
+              maxlength="100"
+              placeholder="Website Redesign"
+            />
+
+            @if (
+              name.invalid &&
+              name.touched
+            ) {
+              <small>
+                Project name is required.
+              </small>
+            }
+          </label>
+
+          <label>
+            <span>Key</span>
+
+            <input
+              type="text"
+              formControlName="key"
+              maxlength="20"
+              placeholder="WEB"
+            />
+
+            <small>
+              Used to generate task keys such as
+              WEB-1, WEB-2 and WEB-3.
+            </small>
+
+            @if (
+              key.invalid &&
+              key.touched
+            ) {
+              <small>
+                Use letters/numbers with optional
+                hyphens.
+              </small>
+            }
+          </label>
+
+          <label class="wide-field">
+            <span>Description</span>
+
+            <textarea
+              rows="3"
+              maxlength="500"
+              formControlName="description"
+            ></textarea>
+          </label>
+
+        </div>
+
+        <div class="modal-actions">
+
+          <button
+            type="button"
+            class="button-secondary"
+            (click)="closeCreate()"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            [disabled]="isSaving()"
+          >
+            @if (isSaving()) {
+              Creating...
+            } @else {
+              Create Project
+            }
+          </button>
+
+        </div>
+
+      </form>
+    </section>
+  }
+
+  @if (isLoading()) {
+
+    <p class="state-message">
+      Loading projects...
+    </p>
+
+  } @else if (!projects().length) {
+
+    <p class="empty-state">
+      No projects available.
+    </p>
+
+  } @else {
+
+    <section class="projects-grid">
+
+      @for (
+        project of projects();
+        track project._id
+      ) {
+
+        <article class="project-card">
+
+          <div class="project-card-header">
+
+            <div>
+              <span class="project-key">
+                {{ project.key }}
+              </span>
+
+              <h3>
+                {{ project.name }}
+              </h3>
+            </div>
+
+            <span class="project-sequence">
+              {{ project.taskSequence }}
+              tasks
+            </span>
+
+          </div>
+
+          <p>
+            {{
+              project.description ||
+              'No project description.'
+            }}
+          </p>
+
+          <div class="project-card-meta">
+            <span>
+              Owner:
+              {{ project.owner.name }}
+            </span>
+
+            <span>
+              Next key:
+              {{ project.key }}-{{
+                project.taskSequence + 1
+              }}
+            </span>
+          </div>
+
+          <div class="project-card-actions">
+
+            <a
+              class="button-secondary"
+              routerLink="/tasks"
+              [queryParams]="{
+                projectId: project._id
+              }"
+            >
+              View Tasks
+            </a>
+
+            <button
+              type="button"
+              class="delete-button"
+              [disabled]="project.taskSequence > 0"
+              [title]="
+                project.taskSequence > 0
+                  ? 'Projects containing tasks cannot be deleted.'
+                  : 'Delete project'
+              "
+              (click)="deleteProject(project)"
+            >
+              Delete
+            </button>
+
+          </div>
+
+        </article>
+
+      }
+
+    </section>
+
+  }
+
+</section>

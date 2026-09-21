@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
+import projectRoutes from "./routes/project_routes.js";
 import taskRoutes from "./routes/task_routes.js";
 import authRoutes from "./routes/auth_routes.js";
 import userRoutes from "./routes/user_routes.js";
@@ -63,6 +64,8 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 
 app.use("/api/users", userRoutes);
+
+app.use("/api/projects", projectRoutes);
 
 app.use("/api/tasks", taskRoutes);
 

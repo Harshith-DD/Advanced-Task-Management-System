@@ -14,7 +14,37 @@
         <label for="search-input">Search</label>
         <input id="search-input" type="search" placeholder="Search by title or description" [formControl]="searchControl" />
       </div>
+      <div class="control-group">
+  <label for="project-filter">
+    Project
+  </label>
 
+  <select
+    id="project-filter"
+    [value]="taskState.filters().projectId ?? ''"
+    (change)="
+      taskState.patchFilters({
+        projectId:
+          $any($event.target).value,
+        page: 1
+      });
+      loadTasks()
+    "
+  >
+    <option value="">
+      All Projects
+    </option>
+
+    @for (
+      project of projects();
+      track project._id
+    ) {
+      <option [value]="project._id">
+        {{ project.key }} — {{ project.name }}
+      </option>
+    }
+  </select>
+</div>
       <div class="control-group">
         <label for="status-filter">Status</label>
         <select id="status-filter" [formControl]="statusControl">
@@ -253,6 +283,7 @@
 
         <app-task-form
           [users]="users()"
+          [projects]="projects()"
           [task]="editingTask()"
           [canAssign]="!editingTask() || authService.isAdmin() || authService.currentUser()?.id === editingTask()?.owner?._id"
           [isSaving]="isSaving()"

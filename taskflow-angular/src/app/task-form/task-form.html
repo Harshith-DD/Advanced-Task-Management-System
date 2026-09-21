@@ -1,72 +1,218 @@
-<form class="task-form" [formGroup]="taskForm" (ngSubmit)="submit()" novalidate>
+<form
+  class="task-form"
+  [formGroup]="taskForm"
+  (ngSubmit)="submit()"
+  novalidate
+>
   <div class="form-grid">
+
     <div class="form-group form-group-wide">
-      <label for="task-title">Title</label>
-      <input id="task-title" type="text" formControlName="title" maxlength="100" autocomplete="off" />
+      <label for="task-title">
+        Title
+      </label>
+
+      <input
+        id="task-title"
+        type="text"
+        formControlName="title"
+        maxlength="100"
+        autocomplete="off"
+      />
+
       @if (title.invalid && title.touched) {
         <p class="field-error">
-          @if (title.hasError('required')) { Title is required. }
-          @else if (title.hasError('maxlength')) { Title must be 100 characters or fewer. }
+          @if (title.hasError('required')) {
+            Title is required.
+          }
+          @else if (title.hasError('maxlength')) {
+            Title must be 100 characters or fewer.
+          }
         </p>
       }
     </div>
 
     <div class="form-group form-group-wide">
-      <label for="task-description">Description</label>
-      <textarea id="task-description" rows="4" maxlength="500" formControlName="description"></textarea>
-      @if (description.invalid && description.touched) {
+      <label for="task-description">
+        Description
+      </label>
+
+      <textarea
+        id="task-description"
+        rows="4"
+        maxlength="500"
+        formControlName="description"
+      ></textarea>
+
+      @if (
+        description.invalid &&
+        description.touched
+      ) {
         <p class="field-error">
-          @if (description.hasError('required')) { Description is required. }
-          @else if (description.hasError('maxlength')) { Description must be 500 characters or fewer. }
+          @if (description.hasError('required')) {
+            Description is required.
+          }
+          @else if (
+            description.hasError('maxlength')
+          ) {
+            Description must be 500 characters or fewer.
+          }
         </p>
       }
     </div>
 
     <div class="form-group">
-      <label for="task-status">Status</label>
-      <select id="task-status" formControlName="status">
-        <option value="pending">Pending</option>
-        <option value="in-progress">In Progress</option>
-        <option value="completed">Completed</option>
+      <label for="task-project">
+        Project
+      </label>
+
+      <select
+        id="task-project"
+        formControlName="projectId"
+      >
+        @for (
+          project of projects;
+          track project._id
+        ) {
+          <option [value]="project._id">
+            {{ project.key }} — {{ project.name }}
+          </option>
+        }
+      </select>
+
+      @if (
+        projectId.invalid &&
+        projectId.touched
+      ) {
+        <p class="field-error">
+          Project is required.
+        </p>
+      }
+    </div>
+
+    <div class="form-group">
+      <label for="task-status">
+        Status
+      </label>
+
+      <select
+        id="task-status"
+        formControlName="status"
+      >
+        <option value="pending">
+          Pending
+        </option>
+
+        <option value="in-progress">
+          In Progress
+        </option>
+
+        <option value="completed">
+          Completed
+        </option>
       </select>
     </div>
 
     <div class="form-group">
-      <label for="task-priority">Priority</label>
-      <select id="task-priority" formControlName="priority">
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="high">High</option>
+      <label for="task-priority">
+        Priority
+      </label>
+
+      <select
+        id="task-priority"
+        formControlName="priority"
+      >
+        <option value="low">
+          Low
+        </option>
+
+        <option value="medium">
+          Medium
+        </option>
+
+        <option value="high">
+          High
+        </option>
       </select>
     </div>
 
     <div class="form-group">
-      <label for="task-assignee">Assign To</label>
-      <select id="task-assignee" formControlName="assignedTo" [disabled]="!canAssign">
-        <option value="">Unassigned</option>
-        @for (user of users; track user._id) {
-          <option [value]="user._id">{{ user.name }}</option>
+      <label for="task-assignee">
+        Assign To
+      </label>
+
+      <select
+        id="task-assignee"
+        formControlName="assignedTo"
+        [disabled]="!canAssign"
+      >
+        <option value="">
+          Unassigned
+        </option>
+
+        @for (
+          user of users;
+          track user._id
+        ) {
+          <option [value]="user._id">
+            {{ user.name }}
+          </option>
         }
       </select>
     </div>
 
     <div class="form-group">
-      <label for="task-due-date">Due Date</label>
-      <input id="task-due-date" type="date" formControlName="dueDate" />
+      <label for="task-due-date">
+        Due Date
+      </label>
+
+      <input
+        id="task-due-date"
+        type="date"
+        formControlName="dueDate"
+      />
     </div>
 
     <div class="form-group form-group-wide">
-      <label for="task-tags">Tags</label>
-      <input id="task-tags" type="text" placeholder="node, javascript, backend"
-        autocomplete="off" formControlName="tags" />
-      <p class="form-help">Separate multiple tags with commas.</p>
+      <label for="task-tags">
+        Tags
+      </label>
+
+      <input
+        id="task-tags"
+        type="text"
+        placeholder="node, javascript, backend"
+        autocomplete="off"
+        formControlName="tags"
+      />
+
+      <p class="form-help">
+        Separate multiple tags with commas.
+      </p>
     </div>
+
   </div>
 
   <div class="modal-actions">
-    <button type="button" class="button-secondary" (click)="cancelled.emit()">Cancel</button>
-    <button type="submit" [disabled]="isSaving">
-      @if (isSaving) { Saving... } @else { {{ isEditing ? 'Update Task' : 'Create Task' }} }
+
+    <button
+      type="button"
+      class="button-secondary"
+      (click)="cancelled.emit()"
+    >
+      Cancel
     </button>
+
+    <button
+      type="submit"
+      [disabled]="isSaving"
+    >
+      @if (isSaving) {
+        Saving...
+      }
+      @else {
+        {{ isEditing ? 'Update Task' : 'Create Task' }}
+      }
+    </button>
+
   </div>
 </form>
