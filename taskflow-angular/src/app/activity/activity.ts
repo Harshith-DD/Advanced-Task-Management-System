@@ -1,10 +1,12 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivityItem, ActivityService } from '../services/activity';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
 
 @Component({
   selector: 'app-activity',
-  imports: [DatePipe],
+  imports: [DatePipe, MatIconModule, MatCardModule],
   templateUrl: './activity.html',
   styleUrl: './activity.css'
 })

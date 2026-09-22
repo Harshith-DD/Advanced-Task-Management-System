@@ -1,196 +1,476 @@
-<section class="route-view">
-  <div class="page-heading">
+<section class="route-view projects-page">
+
+  <header class="page-heading">
+
+
+<div>
+  <p class="eyebrow">Workspace</p>
+
+  <h2>Projects</h2>
+
+  <p>
+    Organize work into projects and keep generated task keys consistent.
+  </p>
+</div>
+
+<button
+  mat-flat-button
+  color="primary"
+  type="button"
+  (click)="openCreate()"
+>
+  <mat-icon>create_new_folder</mat-icon>
+  New project
+</button>
+
+
+  </header>
+
+  <!-- Error message -->
+
+@if (errorMessage()) { <div class="state-message error project-error">
+
+
+  <mat-icon>
+    error_outline
+  </mat-icon>
+
+  <span>
+    {{ errorMessage() }}
+  </span>
+
+</div>
+
+
+}
+
+  <!-- Create / Edit project form -->
+
+@if (showProjectForm()) {
+
+
+<mat-card class="project-form-panel">
+
+  <div class="project-form-heading">
+
     <div>
-      <p class="eyebrow">Workspace</p>
-      <h2>Projects</h2>
-      <p>Organize tasks into projects with unique task keys.</p>
+      <p class="eyebrow">
+        {{ isEditing ? 'Edit project' : 'New project' }}
+      </p>
+
+      <h3>
+        {{ isEditing ? 'Update project' : 'Create a project' }}
+      </h3>
     </div>
 
+
+    @if (isEditing) {
+
+      <span class="project-form-note">
+
+        <mat-icon>
+          lock
+        </mat-icon>
+
+        Project key cannot be changed after creation.
+
+      </span>
+
+    }
+
+
     <button
+      mat-icon-button
       type="button"
-      (click)="openCreate()"
+      aria-label="Close project form"
+      (click)="closeForm()"
     >
-      + New Project
+      <mat-icon>
+        close
+      </mat-icon>
     </button>
+
   </div>
 
-  @if (errorMessage()) {
-    <p class="state-message error">
-      {{ errorMessage() }}
-    </p>
-  }
 
-  @if (showProjectForm()) {
-    <section class="project-form-section">
-      <div class="project-form-heading">
-        <div>
-          <p class="eyebrow">
-            {{ isEditing ? 'Edit project' : 'New project' }}
-          </p>
+  <form
+    [formGroup]="projectForm"
+    (ngSubmit)="submit()"
+    novalidate
+  >
+
+    <div class="project-form-grid">
+
+      <!-- Name -->
+      <mat-form-field appearance="outline">
+
+        <mat-label>
+          Name
+        </mat-label>
+
+        <input
+          matInput
+          formControlName="name"
+          maxlength="100"
+          placeholder="Website Redesign"
+        />
+
+        @if (
+          name.hasError('required') &&
+          name.touched
+        ) {
+          <mat-error>
+            Project name is required.
+          </mat-error>
+        }
+
+        @if (name.hasError('maxlength')) {
+          <mat-error>
+            Project name must be 100 characters or fewer.
+          </mat-error>
+        }
+
+      </mat-form-field>
+
+
+      <!-- Key -->
+      <mat-form-field appearance="outline">
+
+        <mat-label>
+          Key
+        </mat-label>
+
+        <input
+          matInput
+          formControlName="key"
+          maxlength="20"
+          placeholder="WEB"
+        />
+
+        <mat-hint>
+          Used for task keys such as WEB-1.
+        </mat-hint>
+
+        @if (
+          key.hasError('required') &&
+          key.touched
+        ) {
+          <mat-error>
+            Project key is required.
+          </mat-error>
+        } @else if (key.hasError('pattern')) {
+          <mat-error>
+            Use letters/numbers with optional hyphens.
+          </mat-error>
+        } @else if (key.hasError('maxlength')) {
+          <mat-error>
+            Project key must be 20 characters or fewer.
+          </mat-error>
+        }
+
+      </mat-form-field>
+
+
+      <!-- Description -->
+      <mat-form-field
+        class="wide-field"
+        appearance="outline"
+      >
+
+        <mat-label>
+          Description
+        </mat-label>
+
+        <textarea
+          matInput
+          rows="3"
+          maxlength="500"
+          formControlName="description"
+          placeholder="Describe what this project is for"
+        ></textarea>
+
+        <mat-hint align="end">
+          {{ projectForm.controls.description.value.length }}/500
+        </mat-hint>
+
+        @if (
+          projectForm.controls.description.hasError('maxlength')
+        ) {
+          <mat-error>
+            Description must be 500 characters or fewer.
+          </mat-error>
+        }
+
+      </mat-form-field>
+
+    </div>
+
+
+    <!-- Form actions -->
+    <div class="modal-actions">
+
+      <button
+        mat-stroked-button
+        type="button"
+        [disabled]="isSaving()"
+        (click)="closeForm()"
+      >
+        Cancel
+      </button>
+
+
+<button
+  mat-flat-button
+  color="primary"
+  type="submit"
+  [disabled]="isSaving()"
+>
+  <mat-icon>
+    {{
+      isSaving()
+        ? 'progress_activity'
+        : (isEditing ? 'save' : 'create_new_folder')
+    }}
+  </mat-icon>
+
+  <span>
+    {{
+      isSaving()
+        ? 'Saving...'
+        : (isEditing ? 'Save changes' : 'Create project')
+    }}
+  </span>
+</button>
+
+    </div>
+
+  </form>
+
+</mat-card>
+
+
+}
+
+  <!-- Loading state -->
+
+@if (isLoading()) {
+
+
+<div class="state-message">
+
+  <mat-icon class="state-spinner">
+    progress_activity
+  </mat-icon>
+
+  <span>
+    Loading projects...
+  </span>
+
+</div>
+
+
+}
+
+  <!-- Empty state -->
+
+@else if (!projects().length) {
+
+
+<div class="empty-state">
+
+  <mat-icon>
+    folder_off
+  </mat-icon>
+
+  <strong>
+    No projects yet
+  </strong>
+
+  <span>
+    Create your first project to organize tasks.
+  </span>
+
+  <button
+    mat-flat-button
+    color="primary"
+    type="button"
+    (click)="openCreate()"
+  >
+    <mat-icon>
+      create_new_folder
+    </mat-icon>
+
+    Create project
+  </button>
+
+</div>
+
+
+}
+
+  <!-- Projects -->
+
+@else {
+
+
+<section class="projects-grid">
+
+  @for (
+    project of projects();
+    track project._id
+  ) {
+
+    <mat-card class="project-card">
+
+      <!-- Card header -->
+      <div class="project-card-header">
+
+        <div class="project-card-title">
+
+          <span class="project-key">
+            {{ project.key }}
+          </span>
+
           <h3>
-            {{ isEditing ? 'Update project' : 'Create a project' }}
+            {{ project.name }}
           </h3>
+
         </div>
 
-        @if (isEditing) {
-          <span class="project-form-note">
-            Project key cannot be changed after creation.
-          </span>
-        }
+
+        <span class="project-sequence">
+
+          {{ project.taskCount }}
+
+          {{ project.taskCount === 1 ? 'task' : 'tasks' }}
+
+        </span>
+
       </div>
 
-      <form
-        [formGroup]="projectForm"
-        (ngSubmit)="submit()"
-        novalidate
-      >
-        <div class="project-form-grid">
-          <label>
-            <span>Name</span>
-            <input
-              type="text"
-              formControlName="name"
-              maxlength="100"
-              placeholder="Website Redesign"
-            />
 
-            @if (name.invalid && name.touched) {
-              <small>Project name is required.</small>
-            }
-          </label>
+      <!-- Description -->
+      <p class="project-description">
 
-          <label>
-            <span>Key</span>
-            <input
-              type="text"
-              formControlName="key"
-              maxlength="20"
-              placeholder="WEB"
-            />
+        {{
+          project.description ||
+          'No project description.'
+        }}
 
-            @if (!isEditing) {
-              <small>
-                Used to generate task keys such as WEB-1, WEB-2 and WEB-3.
-              </small>
-            }
+      </p>
 
-            @if (key.invalid && key.touched) {
-              <small>
-                Use letters/numbers with optional hyphens.
-              </small>
-            }
-          </label>
 
-          <label class="wide-field">
-            <span>Description</span>
-            <textarea
-              rows="3"
-              maxlength="500"
-              formControlName="description"
-            ></textarea>
-          </label>
-        </div>
+      <!-- Metadata -->
+      <div class="project-card-meta">
 
-        <div class="modal-actions">
-          <button
-            type="button"
-            class="button-secondary"
-            (click)="closeForm()"
-          >
-            Cancel
-          </button>
+        <span>
 
-          <button
-            type="submit"
-            [disabled]="isSaving()"
-          >
-            @if (isSaving()) {
-              Saving...
-            } @else {
-              {{ isEditing ? 'Save Changes' : 'Create Project' }}
-            }
-          </button>
-        </div>
-      </form>
-    </section>
+          <mat-icon>
+            person
+          </mat-icon>
+
+          {{ project.owner.name }}
+
+        </span>
+
+
+        <span>
+
+          <mat-icon>
+            key
+          </mat-icon>
+
+          Next
+          {{ project.key }}-{{ project.taskSequence + 1 }}
+
+        </span>
+
+      </div>
+
+
+      <!-- Actions -->
+      <div class="project-card-actions">
+
+        <a
+          mat-stroked-button
+          routerLink="/tasks"
+          [queryParams]="{
+            projectId: project._id
+          }"
+        >
+
+          <mat-icon>
+            checklist
+          </mat-icon>
+
+          Tasks
+
+        </a>
+
+
+        <a
+          mat-flat-button
+          color="primary"
+          routerLink="/tasks"
+          [queryParams]="{
+            projectId: project._id,
+            create: '1'
+          }"
+        >
+
+          <mat-icon>
+            add_task
+          </mat-icon>
+
+          Add task
+
+        </a>
+
+
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="openEdit(project)"
+        >
+
+          <mat-icon>
+            edit
+          </mat-icon>
+
+          Edit
+
+        </button>
+
+
+        <button
+          mat-icon-button
+          class="project-delete"
+          type="button"
+          [disabled]="project.taskCount > 0"
+          [matTooltip]="
+            project.taskCount > 0
+              ? 'Projects containing tasks cannot be deleted.'
+              : 'Delete project'
+          "
+          aria-label="Delete project"
+          (click)="deleteProject(project)"
+        >
+
+          <mat-icon>
+            delete_outline
+          </mat-icon>
+
+        </button>
+
+      </div>
+
+    </mat-card>
+
   }
 
-  @if (isLoading()) {
-    <p class="state-message">Loading projects...</p>
-  } @else if (!projects().length) {
-    <p class="empty-state">No projects available.</p>
-  } @else {
-    <section class="projects-grid">
-      @for (project of projects(); track project._id) {
-        <article class="project-card">
-          <div class="project-card-header">
-            <div>
-              <span class="project-key">{{ project.key }}</span>
-              <h3>{{ project.name }}</h3>
-            </div>
+</section>
 
-            <span class="project-sequence">
-              {{ project.taskCount }}
-              {{ project.taskCount === 1 ? 'task' : 'tasks' }}
-            </span>
-          </div>
 
-          <p>
-            {{ project.description || 'No project description.' }}
-          </p>
+}
 
-          <div class="project-card-meta">
-            <span>Owner: {{ project.owner.name }}</span>
-            <span>
-              Next key:
-              {{ project.key }}-{{ project.taskSequence + 1 }}
-            </span>
-          </div>
-
-          <div class="project-card-actions">
-            <a
-              class="project-action button-secondary"
-              routerLink="/tasks"
-              [queryParams]="{ projectId: project._id }"
-            >
-              View Tasks
-            </a>
-
-            <a
-              class="project-action project-add-task"
-              routerLink="/tasks"
-              [queryParams]="{
-                projectId: project._id,
-                create: '1'
-              }"
-            >
-              + Add Task
-            </a>
-
-            <button
-              type="button"
-              class="project-action button-secondary"
-              (click)="openEdit(project)"
-            >
-              Edit
-            </button>
-
-            <button
-              type="button"
-              class="delete-button project-action"
-              [disabled]="project.taskCount > 0"
-              [title]="
-                project.taskCount > 0
-                  ? 'Projects containing tasks cannot be deleted.'
-                  : 'Delete project'
-              "
-              (click)="deleteProject(project)"
-            >
-              Delete
-            </button>
-          </div>
-        </article>
-      }
-    </section>
-  }
 </section>

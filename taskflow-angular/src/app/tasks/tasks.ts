@@ -51,6 +51,15 @@ import {
   TaskFormSubmit
 } from '../task-form/task-form';
 
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDividerModule } from '@angular/material/divider';
+
 import { TaskService } from '../services/task';
 import { TaskStateService } from '../services/task-state';
 import { NotificationService } from '../services/notifications';
@@ -65,7 +74,15 @@ type TaskView = 'list' | 'kanban';
     ReactiveFormsModule,
     DragDropModule,
     TaskCard,
-    TaskForm
+    TaskForm,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatMenuModule,
+    MatTooltipModule,
+    MatDividerModule
   ],
   templateUrl: './tasks.html',
   styleUrl: './tasks.css'
@@ -109,6 +126,9 @@ export class Tasks implements OnInit, OnDestroy {
     signal(false);
 
   readonly editingTask =
+    signal<Task | null>(null);
+
+  readonly viewingTask =
     signal<Task | null>(null);
 
   readonly createProjectId =
@@ -553,7 +573,16 @@ export class Tasks implements OnInit, OnDestroy {
     this.focusTaskModal();
   }
 
+  openView(task: Task): void {
+    this.viewingTask.set(task);
+  }
+
+  closeView(): void {
+    this.viewingTask.set(null);
+  }
+
   openEdit(task: Task): void {
+    this.viewingTask.set(null);
     this.editingTask.set(task);
     this.isFormOpen.set(true);
     this.focusTaskModal();
@@ -567,6 +596,7 @@ export class Tasks implements OnInit, OnDestroy {
     this.isFormOpen.set(false);
     this.editingTask.set(null);
     this.createProjectId.set(null);
+    this.viewingTask.set(null);
     this.restoreTaskFormFocus();
   }
 
@@ -1084,6 +1114,8 @@ private updateAndRefresh(
   handleEscape(): void {
     if (this.isFormOpen()) {
       this.closeForm();
+    } else if (this.viewingTask()) {
+      this.closeView();
     } else if (
       this.isKanbanMaximized()
     ) {

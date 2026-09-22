@@ -13,10 +13,13 @@ import {
   NotificationItem,
   NotificationService
 } from '../services/notifications';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
 
 @Component({
   selector: 'app-notifications',
-  imports: [DatePipe],
+  imports: [DatePipe, MatButtonModule, MatIconModule, MatCardModule],
   templateUrl: './notifications.html',
   styleUrl: './notifications.css'
 })

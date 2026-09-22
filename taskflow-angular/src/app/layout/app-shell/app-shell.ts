@@ -1,105 +1,137 @@
 import {
-  Component,
-  OnDestroy,
-  OnInit,
-  inject
+Component,
+OnDestroy,
+OnInit,
+inject
 } from '@angular/core';
 
 import {
-  Router,
-  RouterLink,
-  RouterLinkActive,
-  RouterOutlet
+TitleCasePipe
+} from '@angular/common';
+
+import {
+Router,
+RouterLink,
+RouterLinkActive,
+RouterOutlet
 } from '@angular/router';
 
 import {
-  Subject,
-  takeUntil
+Subject,
+takeUntil
 } from 'rxjs';
 
-import { AuthService } from '../../services/auth';
+import {
+MatIconModule
+} from '@angular/material/icon';
 
 import {
-  NotificationService
+MatButtonModule
+} from '@angular/material/button';
+
+import {
+MatTooltipModule
+} from '@angular/material/tooltip';
+
+import {
+AuthService
+} from '../../services/auth';
+
+import {
+NotificationService
 } from '../../services/notifications';
 
 import {
-  TaskStateService
+TaskStateService
 } from '../../services/task-state';
 
 @Component({
-  selector: 'app-shell',
-  imports: [
-    RouterLink,
-    RouterLinkActive,
-    RouterOutlet
-  ],
-  templateUrl: './app-shell.html',
-  styleUrl: './app-shell.css'
+selector: 'app-shell',
+
+imports: [
+RouterLink,
+RouterLinkActive,
+RouterOutlet,
+TitleCasePipe,
+MatIconModule,
+MatButtonModule,
+MatTooltipModule
+],
+
+templateUrl: './app-shell.html',
+styleUrl: './app-shell.css'
 })
 export class AppShell
-  implements OnInit, OnDestroy
+implements OnInit, OnDestroy
 {
-  protected readonly authService =
-    inject(AuthService);
+protected readonly authService =
+inject(AuthService);
 
-  protected readonly notificationService =
-    inject(NotificationService);
+protected readonly notificationService =
+inject(NotificationService);
 
-  private readonly taskState =
-    inject(TaskStateService);
+private readonly taskState =
+inject(TaskStateService);
 
-  private readonly router =
-    inject(Router);
+private readonly router =
+inject(Router);
 
-  private readonly destroy$ =
-    new Subject<void>();
+private readonly destroy$ =
+new Subject<void>();
 
-  ngOnInit(): void {
-    this.notificationService
-      .loadIfNeeded()
-      .pipe(
-        takeUntil(this.destroy$)
-      )
-      .subscribe({
-        error: error => {
-          console.error(
-            'Failed to load notifications:',
-            error
-          );
-        }
-      });
-  }
+ngOnInit(): void {
+this.notificationService
+.loadIfNeeded()
+.pipe(
+takeUntil(this.destroy$)
+)
+.subscribe({
+error: error => {
+console.error(
+'Failed to load notifications:',
+error
+);
+}
+});
+}
 
-  logout(): void {
-    this.authService
-      .logout()
-      .pipe(
-        takeUntil(this.destroy$)
-      )
-      .subscribe({
-        next: () => this.finishLogout(),
+logout(): void {
+this.authService
+.logout()
+.pipe(
+takeUntil(this.destroy$)
+)
+.subscribe({
+next: () => {
+this.finishLogout();
+},
 
-        error: error => {
-          console.error(
-            'Logout request failed:',
-            error
-          );
 
-          this.finishLogout();
-        }
-      });
-  }
+    error: error => {
+      console.error(
+        'Logout request failed:',
+        error
+      );
 
-  private finishLogout(): void {
-    this.notificationService.clear();
-    this.taskState.reset();
+      this.finishLogout();
+    }
+  });
 
-    this.router.navigate(['/login']);
-  }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
+}
+
+private finishLogout(): void {
+this.notificationService.clear();
+this.taskState.reset();
+
+
+this.router.navigate(['/login']);
+
+
+}
+
+ngOnDestroy(): void {
+this.destroy$.next();
+this.destroy$.complete();
+}
 }

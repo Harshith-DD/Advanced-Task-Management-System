@@ -2,10 +2,14 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { DashboardData, DashboardService } from '../services/dashboard';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatCardModule } from '@angular/material/card';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, MatCardModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })

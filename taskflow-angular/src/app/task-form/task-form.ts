@@ -1,215 +1,254 @@
 import {
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-  inject
+Component,
+EventEmitter,
+Input,
+OnChanges,
+Output,
+SimpleChanges,
+inject
 } from '@angular/core';
 
 import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators
+FormBuilder,
+ReactiveFormsModule,
+Validators
 } from '@angular/forms';
 
 import {
-  Task,
-  TaskPriority,
-  TaskStatus,
-  TaskUser
+Task,
+TaskPriority,
+TaskStatus,
+TaskUser
 } from '../task';
 
-import {
-  Project
-} from '../project';
+import { Project } from '../project';
+
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 export interface TaskFormSubmit {
-  title: string;
-  description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  dueDate: string | null;
-  tags: string[];
-  assignedTo: string | null;
-  projectId: string;
+title: string;
+description: string;
+status: TaskStatus;
+priority: TaskPriority;
+dueDate: string | null;
+tags: string[];
+assignedTo: string | null;
+projectId: string;
 }
 
 @Component({
-  selector: 'app-task-form',
-  imports: [ReactiveFormsModule],
-  templateUrl: './task-form.html',
-  styleUrl: './task-form.css'
+selector: 'app-task-form',
+imports: [
+ReactiveFormsModule,
+MatButtonModule,
+MatIconModule,
+MatFormFieldModule,
+MatInputModule,
+MatSelectModule
+],
+templateUrl: './task-form.html',
+styleUrl: './task-form.css'
 })
-export class TaskForm {
-  private readonly fb =
-    inject(FormBuilder);
+export class TaskForm implements OnChanges {
+private readonly fb = inject(FormBuilder);
 
-  @Input()
-  users: TaskUser[] = [];
+@Input()
+users: TaskUser[] = [];
 
-  @Input()
-  projects: Project[] = [];
+@Input()
+projects: Project[] = [];
 
-  @Input()
-  isSaving = false;
+@Input()
+isSaving = false;
 
-  @Input()
-  task: Task | null = null;
+@Input()
+task: Task | null = null;
 
-  @Input()
-  initialProjectId: string | null = null;
+@Input()
+initialProjectId: string | null = null;
 
-  @Input()
-  canAssign = true;
+@Input()
+canAssign = true;
 
-  @Output()
-  submitted =
-    new EventEmitter<TaskFormSubmit>();
+@Output()
+submitted = new EventEmitter<TaskFormSubmit>();
 
-  @Output()
-  cancelled =
-    new EventEmitter<void>();
+@Output()
+cancelled = new EventEmitter<void>();
 
-  readonly taskForm =
-    this.fb.nonNullable.group({
-      title: [
-        '',
-        [
-          Validators.required,
-          Validators.maxLength(100)
-        ]
-      ],
+readonly taskForm = this.fb.nonNullable.group({
+title: [
+'',
+[
+Validators.required,
+Validators.maxLength(100)
+]
+],
 
-      description: [
-        '',
-        [
-          Validators.required,
-          Validators.maxLength(500)
-        ]
-      ],
 
-      status: [
-        'pending' as TaskStatus,
-        Validators.required
-      ],
+description: [
+  '',
+  [
+    Validators.required,
+    Validators.maxLength(500)
+  ]
+],
 
-      priority: [
-        'medium' as TaskPriority,
-        Validators.required
-      ],
+status: [
+  'pending' as TaskStatus,
+  Validators.required
+],
 
-      projectId: [
-        '',
-        Validators.required
-      ],
+priority: [
+  'medium' as TaskPriority,
+  Validators.required
+],
 
-      assignedTo: [''],
+projectId: [
+  '',
+  Validators.required
+],
 
-      dueDate: [''],
+assignedTo: [''],
 
-      tags: ['']
-    });
+dueDate: [''],
 
-  get title() {
-    return this.taskForm.controls.title;
-  }
+tags: ['']
 
-  get description() {
-    return this.taskForm.controls.description;
-  }
 
-  get projectId() {
-    return this.taskForm.controls.projectId;
-  }
+});
 
-  get isEditing() {
-    return !!this.task;
-  }
+get title() {
+return this.taskForm.controls.title;
+}
 
-  ngOnChanges(): void {
-    if (this.task) {
-      this.taskForm.patchValue({
-        title: this.task.title,
-        description:
-          this.task.description,
-        status: this.task.status,
-        priority: this.task.priority,
+get description() {
+return this.taskForm.controls.description;
+}
 
-        projectId:
-          this.task.project?._id ?? '',
+get projectId() {
+return this.taskForm.controls.projectId;
+}
 
-        assignedTo:
-          this.task.assignedTo?._id ?? '',
+get isEditing(): boolean {
+return !!this.task;
+}
 
-        dueDate:
-          this.task.dueDate
-            ? this.task.dueDate.slice(0, 10)
-            : '',
+ngOnChanges(_changes: SimpleChanges): void {
+if (this.task) {
+this.taskForm.patchValue({
+title: this.task.title,
 
-        tags:
-          this.task.tags.join(', ')
-      });
 
-      this.taskForm.controls.projectId.disable();
-    } else {
-      this.taskForm.controls.projectId.enable();
-      this.reset();
-    }
-  }
+    description:
+      this.task.description,
 
-  submit(): void {
-    if (
-      this.taskForm.invalid ||
-      this.isSaving
-    ) {
-      this.taskForm.markAllAsTouched();
-      return;
-    }
+    status:
+      this.task.status,
 
-    const value =
-      this.taskForm.getRawValue();
+    priority:
+      this.task.priority,
 
-    this.submitted.emit({
-      title: value.title.trim(),
+    projectId:
+      this.task.project?._id ?? '',
 
-      description:
-        value.description.trim(),
+    assignedTo:
+      this.task.assignedTo?._id ?? '',
 
-      status: value.status,
+    dueDate:
+      this.task.dueDate
+        ? this.task.dueDate.slice(0, 10)
+        : '',
 
-      priority: value.priority,
+    tags:
+      this.task.tags.join(', ')
+  });
 
-      dueDate:
-        value.dueDate || null,
+  this.taskForm.controls.projectId.disable();
+} else {
+  this.taskForm.controls.projectId.enable();
 
-      tags:
-        value.tags
-          .split(',')
-          .map(value => value.trim())
-          .filter(Boolean),
+  this.reset();
+}
 
-      assignedTo:
-        value.assignedTo || null,
 
-      projectId:
-        value.projectId
-    });
-  }
+}
 
-  reset(): void {
-    const defaultProject =
-      this.initialProjectId ??
-      this.projects[0]?._id ?? '';
+submit(): void {
+if (
+this.taskForm.invalid ||
+this.isSaving
+) {
+this.taskForm.markAllAsTouched();
+return;
+}
 
-    this.taskForm.reset({
-      title: '',
-      description: '',
-      status: 'pending',
-      priority: 'medium',
-      projectId: defaultProject,
-      assignedTo: '',
-      dueDate: '',
-      tags: ''
-    });
-  }
+
+const value =
+  this.taskForm.getRawValue();
+
+this.submitted.emit({
+  title:
+    value.title.trim(),
+
+  description:
+    value.description.trim(),
+
+  status:
+    value.status,
+
+  priority:
+    value.priority,
+
+  dueDate:
+    value.dueDate || null,
+
+  tags:
+    value.tags
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(Boolean),
+
+  assignedTo:
+    value.assignedTo || null,
+
+  projectId:
+    value.projectId
+});
+
+
+}
+
+reset(): void {
+const defaultProject =
+this.initialProjectId ??
+this.projects[0]?._id ??
+'';
+
+
+this.taskForm.reset({
+  title: '',
+
+  description: '',
+
+  status: 'pending',
+
+  priority: 'medium',
+
+  projectId:
+    defaultProject,
+
+  assignedTo: '',
+
+  dueDate: '',
+
+  tags: ''
+});
+
+
+}
 }

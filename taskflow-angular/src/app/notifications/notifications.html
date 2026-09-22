@@ -1,64 +1,212 @@
-<section class="route-view">
-  <div class="page-heading">
+<section class="route-view notifications-page">
+
+  <header class="page-heading">
+
+
+<div>
+  <p class="eyebrow">Inbox</p>
+
+  <h2>Notifications</h2>
+
+  <p>
+    Important task assignments, changes and reminders in one place.
+  </p>
+</div>
+
+<button
+  mat-stroked-button
+  type="button"
+  [disabled]="
+    !service.notifications().length ||
+    service.unreadCount() === 0
+  "
+  (click)="markAll()"
+>
+  <mat-icon>done_all</mat-icon>
+  Mark all as read
+</button>
+
+
+  </header>
+
+  <mat-card class="notification-panel">
+
+
+<div class="notification-head">
+
+  <div class="notification-summary">
+
+    <span class="inbox-count">
+      {{ service.unreadCount() }}
+    </span>
+
     <div>
-      <p class="eyebrow">Inbox</p>
-      <h2>Notifications</h2>
-      <p>Stay up to date with task assignments and changes.</p>
+      <strong>
+        Unread notifications
+      </strong>
+
+      <small>
+        Keep your workspace up to date.
+      </small>
     </div>
-    <button
-      type="button"
-      class="button-secondary"
-      (click)="markAll()"
-      [disabled]="!service.notifications().length || service.unreadCount() === 0"
-    >
-      Mark all as read
-    </button>
+
   </div>
 
-  <section class="panel">
-    <div class="notification-summary">
-      <span class="notification-dot" aria-hidden="true"></span>
-      <strong><span>{{ service.unreadCount() }}</span> unread</strong>
-    </div>
 
-    @if (loading()) {
-      <p class="state-message">Loading notifications...</p>
-    } @else if (error()) {
-      <p class="state-message error">{{ error() }}</p>
-    } @else if (service.notifications().length) {
-      <div class="notification-list" aria-live="polite">
-        @for (notification of service.notifications(); track notification._id) {
-          <article class="notification-item" [class.unread]="!notification.read">
-            <div class="notification-content">
-              <p class="notification-message">{{ notification.message }}</p>
-              <div class="notification-meta">
-                <span>
-                  Task:
-                  {{ notification.task?.taskKey ?? 'Unknown task' }}
-                  ·
-                  {{ notification.task?.title ?? 'Unknown task' }}
-                </span>
-                @if (notification.task?.project) {
-                  <span>Project: {{ notification.task.project.key }}</span>
-                }
-                <span>{{ notification.createdAt | date:'medium' }}</span>
-              </div>
-            </div>
+  <mat-icon>
+    notifications
+  </mat-icon>
+
+</div>
+
+
+@if (loading()) {
+
+  <div class="notification-state">
+
+    <mat-icon class="spin">
+      progress_activity
+    </mat-icon>
+
+    <span>
+      Loading notifications...
+    </span>
+
+  </div>
+
+}
+
+
+@else if (error()) {
+
+  <div class="notification-state error">
+
+    <mat-icon>
+      error_outline
+    </mat-icon>
+
+    <span>
+      {{ error() }}
+    </span>
+
+  </div>
+
+}
+
+
+@else if (service.notifications().length) {
+
+  <div class="notification-list">
+
+    @for (
+      notification of service.notifications();
+      track notification._id
+    ) {
+
+      <article
+        class="notification-item"
+        [class.unread]="!notification.read"
+      >
+
+        <span class="notification-icon">
+
+          <mat-icon>
+            {{
+              notification.read
+                ? 'notifications_none'
+                : 'notifications_active'
+            }}
+          </mat-icon>
+
+        </span>
+
+
+        <div class="notification-content">
+
+          <div class="notification-title-row">
+
+            <p>
+              {{ notification.message }}
+            </p>
 
             @if (!notification.read) {
-              <button
-                type="button"
-                class="mark-read-button"
-                (click)="markRead(notification)"
-              >
-                Mark as read
-              </button>
+
+              <span class="unread-label">
+                Unread
+              </span>
+
             }
-          </article>
+
+          </div>
+
+
+          <div class="notification-meta">
+
+            <span>
+              {{ notification.task?.taskKey ?? 'Task' }}
+            </span>
+
+            @if (notification.task?.project) {
+
+              <span>
+                {{ notification.task.project.key }}
+              </span>
+
+            }
+
+            <time>
+              {{ notification.createdAt | date:'medium' }}
+            </time>
+
+          </div>
+
+        </div>
+
+
+        @if (!notification.read) {
+
+          <button
+            mat-button
+            type="button"
+            (click)="markRead(notification)"
+          >
+
+            <mat-icon>
+              done
+            </mat-icon>
+
+            Read
+
+          </button>
+
         }
-      </div>
-    } @else {
-      <p class="notification-empty">No notifications yet.</p>
+
+      </article>
+
     }
-  </section>
+
+  </div>
+
+}
+
+
+@else {
+
+  <div class="notification-state">
+
+    <mat-icon>
+      notifications_off
+    </mat-icon>
+
+    <span>
+      No notifications yet.
+    </span>
+
+  </div>
+
+}
+
+
+  </mat-card>
+
 </section>

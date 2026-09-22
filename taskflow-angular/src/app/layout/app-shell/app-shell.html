@@ -1,48 +1,86 @@
 <header class="app-header">
-  <div class="container app-header-inner">
 
-    <div class="brand">
-      <div
-        class="brand-mark"
-        aria-hidden="true"
-      >
-        ✓
-      </div>
+  <div class="app-header-inner">
 
-      <div>
-        <h1>TaskFlow</h1>
-        <p>Task Management System</p>
-      </div>
+
+<a
+  class="brand"
+  routerLink="/dashboard"
+  aria-label="TaskFlow dashboard"
+>
+
+  <span class="brand-mark">
+    <mat-icon>
+      check_circle
+    </mat-icon>
+  </span>
+
+  <span class="brand-copy">
+
+    <strong>
+      TaskFlow
+    </strong>
+
+    <small>
+      Task management workspace
+    </small>
+
+  </span>
+
+</a>
+
+
+@if (authService.currentUser(); as user) {
+
+  <div class="user-container">
+
+    <div
+      class="user-avatar"
+      aria-hidden="true"
+    >
+      {{
+        (user.name || user.email || 'U')
+          .charAt(0)
+          .toUpperCase()
+      }}
     </div>
 
-    <section
-      class="auth-section"
-      aria-label="Account"
+
+    <div class="user-info">
+
+      <strong>
+        {{ user.name || user.email }}
+      </strong>
+
+      <span>
+        {{ user.role | titlecase }}
+      </span>
+
+    </div>
+
+
+    <button
+      mat-icon-button
+      class="header-action"
+      type="button"
+      aria-label="Log out"
+      matTooltip="Log out"
+      (click)="logout()"
     >
-      @if (authService.currentUser(); as user) {
-        <div class="user-container">
-          <div class="user-info">
-            <span class="auth-status">
-              You are logged in.
-            </span>
 
-            <span class="user-details">
-              Logged in as {{ user.name }} ({{ user.email }}) — Role: {{ user.role }}
-            </span>
-          </div>
+      <mat-icon>
+        logout
+      </mat-icon>
 
-          <button
-            type="button"
-            class="button-secondary"
-            (click)="logout()"
-          >
-            Logout
-          </button>
-        </div>
-      }
-    </section>
+    </button>
 
   </div>
+
+}
+
+
+  </div>
+
 </header>
 
 <div class="app-layout">
@@ -51,123 +89,186 @@
     class="sidebar"
     aria-label="Primary navigation"
   >
-    <div class="sidebar-heading">
-      Workspace
-    </div>
 
-    <nav class="main-nav">
 
-      <a
-        routerLink="/dashboard"
-        routerLinkActive="is-active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="nav-link"
-      >
-        <span
-          class="nav-icon"
-          aria-hidden="true"
-        >
-          ⌂
+<div class="sidebar-nav">
+
+  <!-- Workspace navigation -->
+  <div class="sidebar-section-label">
+    Workspace
+  </div>
+
+
+  <nav class="main-nav">
+
+    <a
+      routerLink="/dashboard"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-link"
+    >
+
+      <mat-icon>
+        space_dashboard
+      </mat-icon>
+
+      <span>
+        Dashboard
+      </span>
+
+    </a>
+
+
+    <a
+      routerLink="/tasks"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-link"
+    >
+
+      <mat-icon>
+        checklist
+      </mat-icon>
+
+      <span>
+        Tasks
+      </span>
+
+    </a>
+
+
+    <a
+      routerLink="/projects"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-link"
+    >
+
+      <mat-icon>
+        folder_open
+      </mat-icon>
+
+      <span>
+        Projects
+      </span>
+
+    </a>
+
+  </nav>
+
+
+  <div class="sidebar-divider"></div>
+
+
+  <!-- Activity navigation -->
+  <div class="sidebar-section-label">
+    Workspace activity
+  </div>
+
+
+  <nav class="main-nav">
+
+    <a
+      routerLink="/activity"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-link"
+    >
+
+      <mat-icon>
+        history
+      </mat-icon>
+
+      <span>
+        Activity
+      </span>
+
+    </a>
+
+
+    <a
+      routerLink="/notifications"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-link"
+    >
+
+      <mat-icon>
+        notifications
+      </mat-icon>
+
+      <span>
+        Notifications
+      </span>
+
+
+      @if (notificationService.unreadCount() > 0) {
+
+        <span class="nav-badge">
+          {{ notificationService.unreadCount() }}
         </span>
 
-        <span>Dashboard</span>
-      </a>
+      }
 
-      <a
-        routerLink="/tasks"
-        routerLinkActive="is-active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="nav-link"
-      >
-        <span
-          class="nav-icon"
-          aria-hidden="true"
-        >
-          ☷
-        </span>
+    </a>
 
-        <span>Tasks</span>
-      </a>
-      <a
-  routerLink="/projects"
-  routerLinkActive="is-active"
-  [routerLinkActiveOptions]="{ exact: true }"
-  class="nav-link"
->
-  <span
-    class="nav-icon"
-    aria-hidden="true"
-  >
-    ▦
-  </span>
 
-  <span>Projects</span>
-</a>
+    <a
+      routerLink="/reports"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-link"
+    >
 
-      <a
-        routerLink="/activity"
-        routerLinkActive="is-active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="nav-link"
-      >
-        <span
-          class="nav-icon"
-          aria-hidden="true"
-        >
-          ◷
-        </span>
+      <mat-icon>
+        analytics
+      </mat-icon>
 
-        <span>Activity</span>
-      </a>
+      <span>
+        Reports
+      </span>
 
-      <a
-        routerLink="/notifications"
-        routerLinkActive="is-active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="nav-link"
-      >
-        <span
-          class="nav-icon"
-          aria-hidden="true"
-        >
-          ♢
-        </span>
+    </a>
 
-        <span>Notifications</span>
+  </nav>
 
-        @if (notificationService.unreadCount() > 0) {
-          <span
-            class="nav-badge"
-            aria-label="Unread notifications"
-          >
-            {{ notificationService.unreadCount() }}
-          </span>
-        }
-      </a>
+</div>
 
-      <a
-        routerLink="/reports"
-        routerLinkActive="is-active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="nav-link"
-      >
-        <span
-          class="nav-icon"
-          aria-hidden="true"
-        >
-          ▤
-        </span>
 
-        <span>Reports</span>
-      </a>
+<!-- Sidebar footer -->
+<div class="sidebar-footer">
 
-    </nav>
+  <mat-icon>
+    verified_user
+  </mat-icon>
+
+  <div>
+
+    <strong>
+      Secure workspace
+    </strong>
+
+    <span>
+      Protected task data
+    </span>
+
+  </div>
+
+</div>
+
+
   </aside>
 
   <main class="main-content">
-    <div class="container content-container">
-      <router-outlet></router-outlet>
-    </div>
+
+
+<div class="container content-container">
+
+  <router-outlet></router-outlet>
+
+</div>
+
+
   </main>
 
 </div>

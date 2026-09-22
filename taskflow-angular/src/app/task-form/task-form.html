@@ -2,217 +2,220 @@
   class="task-form"
   [formGroup]="taskForm"
   (ngSubmit)="submit()"
-  novalidate
 >
-  <div class="form-grid">
+  <div class="task-form-grid">
 
-    <div class="form-group form-group-wide">
-      <label for="task-title">
-        Title
-      </label>
 
-      <input
-        id="task-title"
-        type="text"
-        formControlName="title"
-        maxlength="100"
-        autocomplete="off"
-      />
+<mat-form-field
+  appearance="outline"
+  class="full-width"
+>
+  <mat-label>Task title</mat-label>
 
-      @if (title.invalid && title.touched) {
-        <p class="field-error">
-          @if (title.hasError('required')) {
-            Title is required.
-          }
-          @else if (title.hasError('maxlength')) {
-            Title must be 100 characters or fewer.
-          }
-        </p>
+  <input
+    matInput
+    formControlName="title"
+    maxlength="100"
+    autocomplete="off"
+    placeholder="Enter a clear task title"
+  />
+
+  <mat-hint align="end">
+    {{ title.value.length }}/100
+  </mat-hint>
+
+  @if (title.hasError('required') && title.touched) {
+    <mat-error>
+      Title is required.
+    </mat-error>
+  } @else if (title.hasError('maxlength')) {
+    <mat-error>
+      Title must be 100 characters or fewer.
+    </mat-error>
+  }
+</mat-form-field>
+
+
+<mat-form-field
+  appearance="outline"
+  class="full-width"
+>
+  <mat-label>Description</mat-label>
+
+  <textarea
+    matInput
+    formControlName="description"
+    maxlength="500"
+    rows="4"
+    placeholder="Describe what needs to be done"
+  ></textarea>
+
+  <mat-hint align="end">
+    {{ description.value.length }}/500
+  </mat-hint>
+
+  @if (
+    description.hasError('required') &&
+    description.touched
+  ) {
+    <mat-error>
+      Description is required.
+    </mat-error>
+  } @else if (description.hasError('maxlength')) {
+    <mat-error>
+      Description must be 500 characters or fewer.
+    </mat-error>
+  }
+</mat-form-field>
+
+
+<mat-form-field appearance="outline">
+  <mat-label>Project</mat-label>
+
+  <mat-select formControlName="projectId">
+    @for (project of projects; track project._id) {
+      <mat-option [value]="project._id">
+        {{ project.key }} · {{ project.name }}
+      </mat-option>
+    }
+  </mat-select>
+
+  @if (
+    projectId.hasError('required') &&
+    projectId.touched
+  ) {
+    <mat-error>
+      Project is required.
+    </mat-error>
+  }
+</mat-form-field>
+
+
+<mat-form-field appearance="outline">
+  <mat-label>Status</mat-label>
+
+  <mat-select formControlName="status">
+    <mat-option value="pending">
+      Pending
+    </mat-option>
+
+    <mat-option value="in-progress">
+      In progress
+    </mat-option>
+
+    <mat-option value="completed">
+      Completed
+    </mat-option>
+  </mat-select>
+</mat-form-field>
+
+
+<mat-form-field appearance="outline">
+  <mat-label>Priority</mat-label>
+
+  <mat-select formControlName="priority">
+    <mat-option value="low">
+      Low
+    </mat-option>
+
+    <mat-option value="medium">
+      Medium
+    </mat-option>
+
+    <mat-option value="high">
+      High
+    </mat-option>
+  </mat-select>
+</mat-form-field>
+
+
+@if (canAssign) {
+  <mat-form-field appearance="outline">
+    <mat-label>Assign to</mat-label>
+
+    <mat-select formControlName="assignedTo">
+      <mat-option value="">
+        Unassigned
+      </mat-option>
+
+      @for (user of users; track user._id) {
+        <mat-option [value]="user._id">
+          {{ user.name || user.email }}
+        </mat-option>
       }
-    </div>
+    </mat-select>
+  </mat-form-field>
+}
 
-    <div class="form-group form-group-wide">
-      <label for="task-description">
-        Description
-      </label>
 
-      <textarea
-        id="task-description"
-        rows="4"
-        maxlength="500"
-        formControlName="description"
-      ></textarea>
+<mat-form-field appearance="outline">
+  <mat-label>Due date</mat-label>
 
-      @if (
-        description.invalid &&
-        description.touched
-      ) {
-        <p class="field-error">
-          @if (description.hasError('required')) {
-            Description is required.
-          }
-          @else if (
-            description.hasError('maxlength')
-          ) {
-            Description must be 500 characters or fewer.
-          }
-        </p>
-      }
-    </div>
+  <input
+    matInput
+    type="date"
+    formControlName="dueDate"
+  />
+</mat-form-field>
 
-    <div class="form-group">
-      <label for="task-project">
-        Project
-      </label>
 
-      <select
-        id="task-project"
-        formControlName="projectId"
-      >
-        @for (
-          project of projects;
-          track project._id
-        ) {
-          <option [value]="project._id">
-            {{ project.key }} — {{ project.name }}
-          </option>
-        }
-      </select>
+<mat-form-field
+  appearance="outline"
+  class="full-width"
+>
+  <mat-label>Tags</mat-label>
 
-      @if (
-        projectId.invalid &&
-        projectId.touched
-      ) {
-        <p class="field-error">
-          Project is required.
-        </p>
-      }
-    </div>
+  <input
+    matInput
+    formControlName="tags"
+    placeholder="e.g. frontend, urgent, backend"
+    autocomplete="off"
+  />
 
-    <div class="form-group">
-      <label for="task-status">
-        Status
-      </label>
+  <mat-hint>
+    Separate multiple tags with commas.
+  </mat-hint>
+</mat-form-field>
 
-      <select
-        id="task-status"
-        formControlName="status"
-      >
-        <option value="pending">
-          Pending
-        </option>
-
-        <option value="in-progress">
-          In Progress
-        </option>
-
-        <option value="completed">
-          Completed
-        </option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label for="task-priority">
-        Priority
-      </label>
-
-      <select
-        id="task-priority"
-        formControlName="priority"
-      >
-        <option value="low">
-          Low
-        </option>
-
-        <option value="medium">
-          Medium
-        </option>
-
-        <option value="high">
-          High
-        </option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label for="task-assignee">
-        Assign To
-      </label>
-
-      <select
-        id="task-assignee"
-        formControlName="assignedTo"
-        [disabled]="!canAssign"
-      >
-        <option value="">
-          Unassigned
-        </option>
-
-        @for (
-          user of users;
-          track user._id
-        ) {
-          <option [value]="user._id">
-            {{ user.name }}
-          </option>
-        }
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label for="task-due-date">
-        Due Date
-      </label>
-
-      <input
-        id="task-due-date"
-        type="date"
-        formControlName="dueDate"
-      />
-    </div>
-
-    <div class="form-group form-group-wide">
-      <label for="task-tags">
-        Tags
-      </label>
-
-      <input
-        id="task-tags"
-        type="text"
-        placeholder="node, javascript, backend"
-        autocomplete="off"
-        formControlName="tags"
-      />
-
-      <p class="form-help">
-        Separate multiple tags with commas.
-      </p>
-    </div>
 
   </div>
 
-  <div class="modal-actions">
+  <div class="task-form-actions">
 
-    <button
-      type="button"
-      class="button-secondary"
-      (click)="cancelled.emit()"
-    >
-      Cancel
-    </button>
 
-    <button
-      type="submit"
-      [disabled]="isSaving"
-    >
-      @if (isSaving) {
-        Saving...
-      }
-      @else {
-        {{ isEditing ? 'Update Task' : 'Create Task' }}
-      }
-    </button>
+<button
+  mat-stroked-button
+  type="button"
+  [disabled]="isSaving"
+  (click)="cancelled.emit()"
+>
+  Cancel
+</button>
+
+
+<button
+  mat-flat-button
+  color="primary"
+  type="submit"
+  [disabled]="isSaving"
+>
+  <mat-icon [class.button-spinner]="isSaving">
+    {{
+      isSaving
+        ? 'progress_activity'
+        : (isEditing ? 'edit' : 'add_task')
+    }}
+  </mat-icon>
+
+  <span>
+    {{
+      isSaving
+        ? (isEditing ? 'Saving...' : 'Creating...')
+        : (isEditing ? 'Update task' : 'Create task')
+    }}
+  </span>
+</button>
+
 
   </div>
 </form>

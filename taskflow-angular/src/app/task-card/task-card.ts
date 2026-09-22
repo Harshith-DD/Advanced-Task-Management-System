@@ -7,6 +7,10 @@ import {
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatFormFieldModule } from '@angular/material/form-field';
 
 import { AuthService } from '../services/auth';
 
@@ -19,7 +23,7 @@ import {
 
 @Component({
   selector: 'app-task-card',
-  imports: [CommonModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, MatTooltipModule, MatFormFieldModule],
   templateUrl: './task-card.html',
   styleUrl: './task-card.css'
 })
@@ -28,6 +32,9 @@ export class TaskCard {
 
   readonly task = input.required<Task>();
   readonly users = input<TaskUser[]>([]);
+
+  @Output()
+  view = new EventEmitter<Task>();
 
   @Output()
   edit = new EventEmitter<Task>();

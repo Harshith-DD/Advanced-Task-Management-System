@@ -1,119 +1,47 @@
-<section class="route-view">
-  <div class="page-heading">
-    <div>
-      <p class="eyebrow">Overview</p>
-      <h2>Dashboard</h2>
-      <p>See what needs your attention and how your work is progressing.</p>
-    </div>
-    <a routerLink="/tasks" class="button-link">View tasks</a>
-  </div>
+<section class="route-view dashboard-page">
+  <header class="page-heading dashboard-heading">
+    <div><p class="eyebrow">Workspace overview</p><h2>Good work starts with visibility.</h2><p>See workload, progress and the latest changes without digging through tasks.</p></div>
+    <a mat-flat-button color="primary" routerLink="/tasks"><mat-icon>checklist</mat-icon> View tasks</a>
+  </header>
+  @if (loading()) { <div class="state-message"><mat-icon>progress_activity</mat-icon> Loading dashboard...</div> }
+  @else if (error()) { <div class="state-message error"><mat-icon>error_outline</mat-icon>{{ error() }}</div> }
+  @else if (dashboard(); as d) {
+    <section class="stats" aria-label="Task statistics">
+      <mat-card class="stat-card"><div class="stat-icon teal"><mat-icon>task_alt</mat-icon></div><div><span>Total tasks</span><strong>{{ d.total }}</strong></div><small>Across your workspace</small></mat-card>
+      <mat-card class="stat-card"><div class="stat-icon green"><mat-icon>check_circle</mat-icon></div><div><span>Completed</span><strong>{{ d.completed }}</strong></div><small>Finished work</small></mat-card>
+      <mat-card class="stat-card"><div class="stat-icon blue"><mat-icon>pending_actions</mat-icon></div><div><span>Incomplete</span><strong>{{ d.pending }}</strong></div><small>Still needs attention</small></mat-card>
+      <mat-card class="stat-card"><div class="stat-icon red"><mat-icon>warning</mat-icon></div><div><span>Overdue</span><strong>{{ d.overdue }}</strong></div><small>Past the due date</small></mat-card>
+    </section>
 
-  @if (loading()) {
-    <p class="state-message">Loading dashboard...</p>
-  } @else if (error()) {
-    <p class="state-message error">{{ error() }}</p>
-  } @else if (dashboard(); as d) {
-    <div class="stats" aria-label="Task Statistics">
-      <article class="stat-card stat-card-total">
-        <span class="stat-label">Total tasks</span>
-        <strong>{{ d.total }}</strong>
-      </article>
-      <article class="stat-card">
-        <span class="stat-label">Completed</span>
-        <strong>{{ d.completed }}</strong>
-      </article>
-      <article class="stat-card">
-        <span class="stat-label">Incomplete</span>
-        <strong>{{ d.pending }}</strong>
-      </article>
-      <article class="stat-card">
-        <span class="stat-label">Overdue</span>
-        <strong>{{ d.overdue }}</strong>
-      </article>
-    </div>
-
-    <div class="dashboard-grid">
-      <section class="panel dashboard-priority">
-        <div class="panel-heading">
-          <div>
-            <h3>Tasks by priority</h3>
-            <p>Current workload by priority.</p>
-          </div>
+    <div class="dashboard-layout">
+      <mat-card class="dashboard-panel priority-panel">
+        <div class="panel-heading"><div><h3>Priority workload</h3><p>Live distribution of the tasks currently visible to you.</p></div><mat-icon>flag</mat-icon></div>
+        <div class="priority-list">
+          <div class="priority-row"><div class="priority-row-head"><span><i class="dot low"></i>Low</span><strong>{{ d.byPriority.low }}</strong></div><mat-progress-bar mode="determinate" [value]="d.total ? (d.byPriority.low / d.total) * 100 : 0"></mat-progress-bar></div>
+          <div class="priority-row"><div class="priority-row-head"><span><i class="dot medium"></i>Medium</span><strong>{{ d.byPriority.medium }}</strong></div><mat-progress-bar mode="determinate" [value]="d.total ? (d.byPriority.medium / d.total) * 100 : 0"></mat-progress-bar></div>
+          <div class="priority-row"><div class="priority-row-head"><span><i class="dot high"></i>High</span><strong>{{ d.byPriority.high }}</strong></div><mat-progress-bar mode="determinate" [value]="d.total ? (d.byPriority.high / d.total) * 100 : 0"></mat-progress-bar></div>
         </div>
+      </mat-card>
 
-        <div class="priority-grid">
-          <article class="priority-stat priority-low">
-            <span>Low</span>
-            <strong>{{ d.byPriority.low }}</strong>
-          </article>
-          <article class="priority-stat priority-medium">
-            <span>Medium</span>
-            <strong>{{ d.byPriority.medium }}</strong>
-          </article>
-          <article class="priority-stat priority-high">
-            <span>High</span>
-            <strong>{{ d.byPriority.high }}</strong>
-          </article>
+      <mat-card class="dashboard-panel project-panel">
+        <div class="panel-heading"><div><h3>Project overview</h3><p>A quick view of how your workspace is organized.</p></div><a routerLink="/projects">View projects</a></div>
+        <div class="project-overview-grid">
+          <div><span class="mini-icon"><mat-icon>folder</mat-icon></span><div><span>Total projects</span><strong>{{ d.projects.total }}</strong></div></div>
+          <div><span class="mini-icon active"><mat-icon>folder_open</mat-icon></span><div><span>With tasks</span><strong>{{ d.projects.active }}</strong></div></div>
+          <div><span class="mini-icon empty"><mat-icon>folder_off</mat-icon></span><div><span>Empty</span><strong>{{ d.projects.empty }}</strong></div></div>
         </div>
-      </section>
+      </mat-card>
 
-      <section class="panel dashboard-projects">
-        <div class="panel-heading">
-          <div>
-            <h3>Project overview</h3>
-            <p>Projects available in your workspace.</p>
-          </div>
-          <a routerLink="/projects">View projects</a>
-        </div>
-
-        <div class="project-stats-grid">
-          <article class="project-stat">
-            <span>Total projects</span>
-            <strong>{{ d.projects.total }}</strong>
-          </article>
-          <article class="project-stat project-stat-active">
-            <span>With tasks</span>
-            <strong>{{ d.projects.active }}</strong>
-          </article>
-          <article class="project-stat project-stat-empty">
-            <span>Empty</span>
-            <strong>{{ d.projects.empty }}</strong>
-          </article>
-        </div>
-      </section>
-
-      <section class="panel dashboard-activity">
-        <div class="panel-heading">
-          <div>
-            <h3>Recent activity</h3>
-            <p>Recent activity on tasks you can access.</p>
-          </div>
-          <a routerLink="/activity">View all</a>
-        </div>
-
-        <div id="dashboard-activity">
+      <mat-card class="dashboard-panel activity-panel">
+        <div class="panel-heading"><div><h3>Recent activity</h3><p>The latest changes across tasks you can access.</p></div><a routerLink="/activity">View all</a></div>
+        <div class="activity-feed">
           @if (d.recentActivity.length) {
             @for (item of d.recentActivity; track item._id) {
-              <div class="dashboard-activity-item">
-                <p>{{ item.message ?? item.action ?? 'Task activity' }}</p>
-                @if (item.task) {
-                  <small>
-                    {{ item.task.taskKey }}
-                    @if (item.task.project) {
-                      · {{ item.task.project.key }}
-                    }
-                  </small>
-                }
-                <small>{{ item.createdAt | date:'medium' }}</small>
-              </div>
+              <article class="feed-item"><span class="feed-icon"><mat-icon>history</mat-icon></span><div><p>{{ item.message ?? item.action ?? 'Task activity' }}</p><div><span>{{ item.task?.taskKey ?? 'Workspace' }}@if(item.task?.project){ · {{ item.task.project.key }}}</span><time>{{ item.createdAt | date:'medium' }}</time></div></div></article>
             }
-          } @else {
-            <p>No recent activity</p>
-          }
+          } @else { <div class="feed-empty"><mat-icon>history_toggle_off</mat-icon><span>No recent activity.</span></div> }
         </div>
-      </section>
+      </mat-card>
     </div>
-  } @else {
-    <p class="state-message">No dashboard data available.</p>
-  }
+  } @else { <div class="state-message"><mat-icon>dashboard</mat-icon>No dashboard data available.</div> }
 </section>

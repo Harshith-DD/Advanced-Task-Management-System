@@ -22,6 +22,13 @@ import {
   takeUntil
 } from 'rxjs';
 
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatCardModule } from '@angular/material/card';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
 import {
   Project
 } from '../project';
@@ -34,7 +41,13 @@ import {
   selector: 'app-projects',
   imports: [
     ReactiveFormsModule,
-    RouterLink
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatCardModule,
+    MatTooltipModule
   ],
   templateUrl: './projects.html',
   styleUrl: './projects.css'
