@@ -109,9 +109,9 @@ a {
 
 .page-heading h2 {
   margin: 3px 0 5px;
-  font-size: clamp(1.65rem, 2.6vw, 2.15rem);
+  font-size: clamp(1.55rem, 2.2vw, 1.95rem);
   line-height: 1.15;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
 }
 
 .page-heading p:not(.eyebrow) {
@@ -181,12 +181,12 @@ a {
 }
 
 .mat-mdc-form-field .mat-mdc-floating-label {
-  font-size: 0.82rem;
+  font-size: 0.82rem !important;
 }
 
 .mat-mdc-form-field .mat-mdc-input-element,
 .mat-mdc-form-field .mat-mdc-select-value-text {
-  font-size: 0.82rem;
+  font-size: 0.82rem !important;
 }
 
 .mat-mdc-form-field .mat-mdc-form-field-hint,

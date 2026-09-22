@@ -36,9 +36,20 @@
 .sort-button {
   flex: 0 0 auto;
 }
-
+.sort-button {
+  width: 40px;
+  height: 40px;
+}
 .filter-button {
-  min-width: 104px;
+  min-width: 120px;
+  height: 40px;
+}
+
+.filter-button mat-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 5px;
+  font-size: 18px;
 }
 
 .menu-filter-content {
@@ -106,7 +117,8 @@
 .workspace-heading h3 {
   margin: 0;
   color: #1f2937;
-  font-size: 1rem;
+  font-size: 0.98rem;
+  font-weight: 700;
   letter-spacing: -0.015em;
 }
 
@@ -242,7 +254,7 @@
   z-index: 900;
   height: 100vh;
   min-height: 0;
-  padding: 74px 18px 18px;
+  padding: 18px 18px 18px;
   background: #f4f7fa;
 }
 
