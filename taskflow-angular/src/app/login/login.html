@@ -1,81 +1,225 @@
-<main class="login-page">
-  <div class="login-container">
-    <div class="login-auth-header">
-      <h1>Account</h1>
-      <p>
-        @if (mode() === 'login') {
-          You are not logged in.
-        } @else {
-          Create your TaskFlow account.
-        }
-      </p>
+<main class="auth-page">
+  <section class="auth-layout">
+    <div class="auth-intro">
+      <a class="auth-brand" routerLink="/login" aria-label="TaskFlow login">
+        <span class="auth-brand-mark">
+          <mat-icon>check_circle</mat-icon>
+        </span>
+        <span>
+          <strong>TaskFlow</strong>
+          <small>Task management workspace</small>
+        </span>
+      </a>
+
+      <div class="auth-copy">
+        <p class="auth-eyebrow">Secure workspace</p>
+        <h1>
+          Organize work without losing sight of what matters.
+        </h1>
+        <p>
+          Manage projects, tasks and progress from one focused workspace.
+        </p>
+
+        <div class="auth-highlights">
+          <div>
+            <mat-icon>view_kanban</mat-icon>
+            <span>Move work visually with Kanban.</span>
+          </div>
+          <div>
+            <mat-icon>notifications</mat-icon>
+            <span>Stay informed about important changes.</span>
+          </div>
+          <div>
+            <mat-icon>security</mat-icon>
+            <span>Keep workspace data protected.</span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    @if (mode() === 'login') {
-      <section class="auth-card">
-        <h2>Welcome back</h2>
+    <mat-card class="auth-card">
+      <div class="auth-card-heading">
+        <span class="auth-card-icon">
+          <mat-icon>
+            {{ mode() === 'login' ? 'lock_open' : 'person_add' }}
+          </mat-icon>
+        </span>
+        <div>
+          <p class="auth-card-kicker">Account</p>
+          <h2>
+            {{ mode() === 'login' ? 'Welcome back' : 'Create your account' }}
+          </h2>
+          <p>
+            {{
+              mode() === 'login'
+                ? 'Sign in to continue to your workspace.'
+                : 'Set up your TaskFlow account in a few steps.'
+            }}
+          </p>
+        </div>
+      </div>
 
-        <form [formGroup]="loginForm" (ngSubmit)="login()" novalidate>
-          <div class="form-group">
-            <label for="login-email">Email</label>
-            <input id="login-email" type="email" autocomplete="email" formControlName="email" />
-          </div>
+      @if (mode() === 'login') {
+        <form
+          class="auth-form"
+          [formGroup]="loginForm"
+          (ngSubmit)="login()"
+          novalidate
+        >
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <mat-icon matPrefix>mail_outline</mat-icon>
+            <input
+              matInput
+              type="email"
+              autocomplete="email"
+              formControlName="email"
+            />
+            @if (loginForm.controls.email.hasError('required')) {
+              <mat-error>Email is required.</mat-error>
+            } @else if (loginForm.controls.email.hasError('email')) {
+              <mat-error>Enter a valid email address.</mat-error>
+            }
+          </mat-form-field>
 
-          <div class="form-group">
-            <label for="login-password">Password</label>
-            <input id="login-password" type="password" autocomplete="current-password" formControlName="password" />
-          </div>
-
-          <button type="submit" [disabled]="loginForm.invalid || isLoginLoading()">
-            {{ isLoginLoading() ? 'Logging in...' : 'Login' }}
-          </button>
-
-          <button type="button" class="auth-switch" (click)="showRegister()">
-            Create an account
-          </button>
+          <mat-form-field appearance="outline">
+            <mat-label>Password</mat-label>
+            <mat-icon matPrefix>lock_outline</mat-icon>
+            <input
+              matInput
+              type="password"
+              autocomplete="current-password"
+              formControlName="password"
+            />
+            @if (loginForm.controls.password.hasError('required')) {
+              <mat-error>Password is required.</mat-error>
+            }
+          </mat-form-field>
 
           @if (loginError()) {
-            <p class="form-error" aria-live="polite">{{ loginError() }}</p>
+            <div class="auth-message error" role="alert">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ loginError() }}</span>
+            </div>
           }
 
           @if (registrationSuccess()) {
-            <p class="form-success" aria-live="polite">{{ registrationSuccess() }}</p>
+            <div class="auth-message success" role="status">
+              <mat-icon>check_circle</mat-icon>
+              <span>{{ registrationSuccess() }}</span>
+            </div>
           }
+
+          <button
+            mat-flat-button
+            color="primary"
+            class="auth-submit"
+            type="submit"
+            [disabled]="loginForm.invalid || isLoginLoading()"
+          >
+            <mat-icon>
+              {{ isLoginLoading() ? 'progress_activity' : 'login' }}
+            </mat-icon>
+            {{ isLoginLoading() ? 'Logging in...' : 'Login' }}
+          </button>
+
+          <div class="auth-switch-row">
+            <span>Don't have an account?</span>
+            <button
+              mat-button
+              type="button"
+              (click)="showRegister()"
+            >
+              Create an account
+            </button>
+          </div>
         </form>
-      </section>
-    } @else {
-      <section class="auth-card">
-        <h2>Create your account</h2>
+      } @else {
+        <form
+          class="auth-form"
+          [formGroup]="registerForm"
+          (ngSubmit)="register()"
+          novalidate
+        >
+          <mat-form-field appearance="outline">
+            <mat-label>Name</mat-label>
+            <mat-icon matPrefix>person_outline</mat-icon>
+            <input
+              matInput
+              type="text"
+              autocomplete="name"
+              maxlength="100"
+              formControlName="name"
+            />
+            @if (registerForm.controls.name.hasError('required')) {
+              <mat-error>Name is required.</mat-error>
+            } @else if (registerForm.controls.name.hasError('maxlength')) {
+              <mat-error>Name must be 100 characters or fewer.</mat-error>
+            }
+          </mat-form-field>
 
-        <form [formGroup]="registerForm" (ngSubmit)="register()" novalidate>
-          <div class="form-group">
-            <label for="register-name">Name</label>
-            <input id="register-name" type="text" autocomplete="name" maxlength="100" formControlName="name" />
-          </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <mat-icon matPrefix>mail_outline</mat-icon>
+            <input
+              matInput
+              type="email"
+              autocomplete="email"
+              formControlName="email"
+            />
+            @if (registerForm.controls.email.hasError('required')) {
+              <mat-error>Email is required.</mat-error>
+            } @else if (registerForm.controls.email.hasError('email')) {
+              <mat-error>Enter a valid email address.</mat-error>
+            }
+          </mat-form-field>
 
-          <div class="form-group">
-            <label for="register-email">Email</label>
-            <input id="register-email" type="email" autocomplete="email" formControlName="email" />
-          </div>
-
-          <div class="form-group">
-            <label for="register-password">Password</label>
-            <input id="register-password" type="password" autocomplete="new-password" formControlName="password" />
-          </div>
-
-          <button type="submit" [disabled]="registerForm.invalid || isRegisterLoading()">
-            {{ isRegisterLoading() ? 'Registering...' : 'Register' }}
-          </button>
-
-          <button type="button" class="auth-switch" (click)="showLogin()">
-            Already have an account? Login
-          </button>
+          <mat-form-field appearance="outline">
+            <mat-label>Password</mat-label>
+            <mat-icon matPrefix>lock_outline</mat-icon>
+            <input
+              matInput
+              type="password"
+              autocomplete="new-password"
+              formControlName="password"
+            />
+            @if (registerForm.controls.password.hasError('required')) {
+              <mat-error>Password is required.</mat-error>
+            }
+          </mat-form-field>
 
           @if (registerError()) {
-            <p class="form-error" aria-live="polite">{{ registerError() }}</p>
+            <div class="auth-message error" role="alert">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ registerError() }}</span>
+            </div>
           }
+
+          <button
+            mat-flat-button
+            color="primary"
+            class="auth-submit"
+            type="submit"
+            [disabled]="registerForm.invalid || isRegisterLoading()"
+          >
+            <mat-icon>
+              {{ isRegisterLoading() ? 'progress_activity' : 'person_add' }}
+            </mat-icon>
+            {{ isRegisterLoading() ? 'Creating account...' : 'Create account' }}
+          </button>
+
+          <div class="auth-switch-row">
+            <span>Already have an account?</span>
+            <button
+              mat-button
+              type="button"
+              (click)="showLogin()"
+            >
+              Sign in
+            </button>
+          </div>
         </form>
-      </section>
-    }
-  </div>
+      }
+    </mat-card>
+  </section>
 </main>

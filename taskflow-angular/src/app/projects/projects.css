@@ -1,1 +1,234 @@
-.project-error{margin-bottom:14px}.project-form-panel{margin-bottom:16px;padding:0 !important;overflow:hidden}.project-form-heading{display:flex;align-items:flex-start;gap:14px;padding:18px 20px;border-bottom:1px solid var(--border)}.project-form-heading h3{margin:3px 0 0;font-size:1rem}.project-form-heading>button{margin-left:auto}.project-form-note{display:flex;align-items:center;gap:5px;margin:2px 0 0 auto;color:#64748b;font-size:.66rem}.project-form-note mat-icon{font-size:15px;width:15px;height:15px}.project-form-panel form{padding:20px}.project-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}.wide-field{grid-column:1/-1}.projects-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.project-card{padding:18px !important;display:flex;flex-direction:column;min-width:0}.project-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.project-key{display:inline-flex;padding:4px 7px;border-radius:6px;background:var(--primary-soft);color:var(--primary-dark);font-size:.62rem;font-weight:800;letter-spacing:.05em}.project-card h3{margin:7px 0 0;font-size:.95rem;letter-spacing:-.015em}.project-sequence{padding:4px 7px;border-radius:999px;background:#f1f5f9;color:#64748b;font-size:.62rem;font-weight:750;white-space:nowrap}.project-card>p{margin:14px 0;min-height:42px;color:#64748b;font-size:.73rem;line-height:1.55}.project-card-meta{display:grid;gap:6px;padding:11px 0;border-top:1px solid #edf1f4;border-bottom:1px solid #edf1f4;color:#64748b;font-size:.64rem}.project-card-meta span{display:flex;align-items:center;gap:5px}.project-card-meta mat-icon{font-size:14px;width:14px;height:14px;color:#94a3b8}.project-card-actions{display:flex;align-items:center;gap:6px;margin-top:13px;flex-wrap:wrap}.project-card-actions a,.project-card-actions button:not(.project-delete){font-size:.68rem}.project-card-actions mat-icon{font-size:15px;width:15px;height:15px;margin-right:3px}.project-delete{margin-left:auto;color:#94a3b8}.project-delete:hover{color:var(--danger);background:var(--danger-soft)}@media(max-width:1050px){.projects-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.projects-grid,.project-form-grid{grid-template-columns:1fr}.wide-field{grid-column:auto}.project-form-note{display:none}}@media(max-width:520px){.project-card-actions a,.project-card-actions button:not(.project-delete){flex:1;justify-content:center}}
+.projects-heading {
+  margin-bottom: 18px;
+}
+
+.projects-heading button mat-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  font-size: 18px;
+}
+
+.project-error {
+  margin-bottom: 14px;
+}
+
+.project-form-panel {
+  margin-bottom: 16px;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.project-form-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.project-form-heading h3 {
+  margin: 3px 0 0;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.project-form-heading > button {
+  margin-left: auto;
+}
+
+.project-form-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 2px 0 0 auto;
+  color: #64748b;
+  font-size: 0.66rem;
+}
+
+.project-form-note mat-icon {
+  width: 15px;
+  height: 15px;
+  font-size: 15px;
+}
+
+.project-form-panel form {
+  padding: 20px;
+}
+
+.project-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.project-form-grid .mat-mdc-form-field {
+  width: 100%;
+}
+
+.wide-field {
+  grid-column: 1 / -1;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.modal-actions mat-icon {
+  width: 17px;
+  height: 17px;
+  margin-right: 4px;
+  font-size: 17px;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.project-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px !important;
+}
+
+.project-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.project-card-title {
+  min-width: 0;
+}
+
+.project-key {
+  display: inline-flex;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.project-card h3 {
+  margin: 7px 0 0;
+  color: #1f2937;
+  font-size: 0.96rem;
+  letter-spacing: -0.015em;
+}
+
+.project-sequence {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.62rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.project-description {
+  min-height: 44px;
+  margin: 14px 0;
+  color: #64748b;
+  font-size: 0.74rem;
+  line-height: 1.55;
+}
+
+.project-card-meta {
+  display: grid;
+  gap: 6px;
+  padding: 11px 0;
+  border-top: 1px solid #edf1f4;
+  border-bottom: 1px solid #edf1f4;
+  color: #64748b;
+  font-size: 0.65rem;
+}
+
+.project-card-meta span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.project-card-meta mat-icon {
+  width: 14px;
+  height: 14px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.project-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 13px;
+  flex-wrap: wrap;
+}
+
+.project-card-actions a,
+.project-card-actions button:not(.project-delete) {
+  min-height: 34px;
+  font-size: 0.68rem;
+}
+
+.project-card-actions mat-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 3px;
+  font-size: 15px;
+}
+
+.project-delete {
+  margin-left: auto;
+  color: #94a3b8;
+}
+
+.project-delete:hover:not(:disabled) {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.project-delete mat-icon {
+  margin-right: 0;
+}
+
+@media (max-width: 1050px) {
+  .projects-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .projects-grid,
+  .project-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wide-field {
+    grid-column: auto;
+  }
+
+  .project-form-note {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .project-card-actions a,
+  .project-card-actions button:not(.project-delete) {
+    flex: 1;
+    justify-content: center;
+  }
+}

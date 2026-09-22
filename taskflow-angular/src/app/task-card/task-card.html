@@ -1,8 +1,101 @@
-<article class="task-card" [class.overdue]="task().isOverdue">
+<article
+  class="task-card"
+  [class.overdue]="task().isOverdue"
+>
   <div class="task-card-main">
-    <div class="task-card-top"><div class="task-identity"><span class="task-key">{{task().taskKey}}</span>@if(task().project){<span class="task-project">{{task().project.key}}</span>}</div><div class="task-actions"><button mat-icon-button type="button" matTooltip="View details" aria-label="View task details" (click)="view.emit(task())"><mat-icon>visibility</mat-icon></button>@if(canEdit){<button mat-icon-button type="button" matTooltip="Edit task" aria-label="Edit task" (click)="edit.emit(task())"><mat-icon>edit</mat-icon></button>}@if(canDelete){<button mat-icon-button type="button" class="delete-action" matTooltip="Delete task" aria-label="Delete task" (click)="delete.emit(task())"><mat-icon>delete_outline</mat-icon></button>}</div></div>
-    <h3>{{task().title}}</h3>
-    <div class="task-summary"><span class="status-chip" [class]="'status-'+task().status"><i></i>{{task().status === 'in-progress' ? 'In progress' : (task().status | titlecase)}}</span><span class="priority-chip" [class]="'priority-'+task().priority"><mat-icon>flag</mat-icon>{{task().priority | titlecase}}</span>@if(task().dueDate){<span class="task-date" [class.overdue-date]="task().isOverdue"><mat-icon>event</mat-icon>{{task().dueDate | date:'mediumDate'}}</span>}</div>
-    <div class="task-bottom"><span class="assignee"><mat-icon>person</mat-icon>{{assignedLabel}}</span>@if(task().tags.length){<span class="tag-summary">{{task().tags.slice(0,3).join(' · ')}}@if(task().tags.length > 3){ · +{{task().tags.length - 3}}}</span>}</div>
+    <div class="task-card-top">
+      <div class="task-identity">
+        <span class="task-key">{{ task().taskKey }}</span>
+        @if (task().project) {
+          <span class="task-project">{{ task().project.key }}</span>
+        }
+      </div>
+
+      <div
+        class="task-actions"
+        (pointerdown)="$event.stopPropagation()"
+      >
+        <button
+          mat-icon-button
+          type="button"
+          matTooltip="View details"
+          aria-label="View task details"
+          (click)="view.emit(task())"
+        >
+          <mat-icon>visibility</mat-icon>
+        </button>
+
+        @if (canEdit) {
+          <button
+            mat-icon-button
+            type="button"
+            matTooltip="Edit task"
+            aria-label="Edit task"
+            (click)="edit.emit(task())"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+        }
+
+        @if (canDelete) {
+          <button
+            mat-icon-button
+            type="button"
+            class="delete-action"
+            matTooltip="Delete task"
+            aria-label="Delete task"
+            (click)="delete.emit(task())"
+          >
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+        }
+      </div>
+    </div>
+
+    <h3>{{ task().title }}</h3>
+
+    <div class="task-summary">
+      <span
+        class="status-chip"
+        [class]="'status-' + task().status"
+      >
+        <i></i>
+        {{ task().status === 'in-progress' ? 'In progress' : (task().status | titlecase) }}
+      </span>
+
+      <span
+        class="priority-chip"
+        [class]="'priority-' + task().priority"
+      >
+        <mat-icon>flag</mat-icon>
+        {{ task().priority | titlecase }}
+      </span>
+
+      @if (task().dueDate) {
+        <span
+          class="task-date"
+          [class.overdue-date]="task().isOverdue"
+        >
+          <mat-icon>event</mat-icon>
+          {{ task().dueDate | date:'mediumDate' }}
+        </span>
+      }
+    </div>
+
+    <div class="task-bottom">
+      <span class="assignee">
+        <mat-icon>person</mat-icon>
+        {{ assignedLabel }}
+      </span>
+
+      @if (task().tags.length) {
+        <span class="tag-summary">
+          {{ task().tags.slice(0, 3).join(' · ') }}
+          @if (task().tags.length > 3) {
+            · +{{ task().tags.length - 3 }}
+          }
+        </span>
+      }
+    </div>
   </div>
 </article>

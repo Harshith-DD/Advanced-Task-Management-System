@@ -1,14 +1,31 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { AuthService } from '../services/auth';
 
 type AuthMode = 'login' | 'register';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule
+  ],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
@@ -63,28 +80,28 @@ export class Login {
     }
 
     this.isLoginLoading.set(true);
-
     const { email, password } = this.loginForm.getRawValue();
 
-    this.authService.login({
-      email: email.trim(),
-      password
-    }).pipe(
-      finalize(() => this.isLoginLoading.set(false))
-    ).subscribe({
-      next: () => {
-        this.loginForm.reset();
-        this.router.navigate(['/dashboard']);
-      },
-      error: error => {
-        console.error('Login failed:', error);
-        this.loginError.set(
-          error?.error?.error?.message ??
-          error?.error?.message ??
-          'Login failed. Please check your credentials.'
-        );
-      }
-    });
+    this.authService
+      .login({
+        email: email.trim(),
+        password
+      })
+      .pipe(finalize(() => this.isLoginLoading.set(false)))
+      .subscribe({
+        next: () => {
+          this.loginForm.reset();
+          this.router.navigate(['/dashboard']);
+        },
+        error: error => {
+          console.error('Login failed:', error);
+          this.loginError.set(
+            error?.error?.error?.message ??
+            error?.error?.message ??
+            'Login failed. Please check your credentials.'
+          );
+        }
+      });
   }
 
   register(): void {
@@ -97,30 +114,35 @@ export class Login {
     }
 
     this.isRegisterLoading.set(true);
-
     const { name, email, password } = this.registerForm.getRawValue();
 
-    this.authService.register({
-      name: name.trim(),
-      email: email.trim(),
-      password
-    }).pipe(
-      finalize(() => this.isRegisterLoading.set(false))
-    ).subscribe({
-      next: () => {
-        this.registerForm.reset();
-        this.loginForm.reset({ email: email.trim(), password: '' });
-        this.mode.set('login');
-        this.registrationSuccess.set('Registration successful. Please log in.');
-      },
-      error: error => {
-        console.error('Registration failed:', error);
-        this.registerError.set(
-          error?.error?.error?.message ??
-          error?.error?.message ??
-          'Registration failed. Please try again.'
-        );
-      }
-    });
+    this.authService
+      .register({
+        name: name.trim(),
+        email: email.trim(),
+        password
+      })
+      .pipe(finalize(() => this.isRegisterLoading.set(false)))
+      .subscribe({
+        next: () => {
+          this.registerForm.reset();
+          this.loginForm.reset({
+            email: email.trim(),
+            password: ''
+          });
+          this.mode.set('login');
+          this.registrationSuccess.set(
+            'Registration successful. Please log in.'
+          );
+        },
+        error: error => {
+          console.error('Registration failed:', error);
+          this.registerError.set(
+            error?.error?.error?.message ??
+            error?.error?.message ??
+            'Registration failed. Please try again.'
+          );
+        }
+      });
   }
 }

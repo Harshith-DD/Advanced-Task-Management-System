@@ -1,37 +1,583 @@
 <section class="route-view tasks-page">
-  <header class="page-heading tasks-heading"><div><p class="eyebrow">Workspace</p><h2>Tasks</h2><p>Keep the list focused, then use the board when you need to move work.</p></div><button mat-flat-button color="primary" #openTaskFormButton type="button" (click)="openCreate()"><mat-icon>add</mat-icon> New task</button></header>
+  <header class="page-heading tasks-heading">
+    <div>
+      <p class="eyebrow">Workspace</p>
+      <h2>Tasks</h2>
+      <p>Keep the list focused, then use the board when you need to move work.</p>
+    </div>
 
-  <section class="task-toolbar">
-    <mat-form-field class="search-field" appearance="outline"><mat-label>Search tasks</mat-label><mat-icon matPrefix>search</mat-icon><input matInput type="search" placeholder="Title or description" [formControl]="searchControl" /></mat-form-field>
-    <mat-form-field appearance="outline"><mat-label>Project</mat-label><select matNativeControl [value]="taskState.filters().projectId ?? ''" (change)="taskState.patchFilters({projectId: $any($event.target).value, page: 1}); loadTasks()"><option value="">All projects</option>@for(project of projects(); track project._id){<option [value]="project._id">{{ project.key }} · {{ project.name }}</option>}</select></mat-form-field>
-    <mat-form-field appearance="outline"><mat-label>Status</mat-label><mat-select [formControl]="statusControl"><mat-option value="">All statuses</mat-option><mat-option value="pending">Pending</mat-option><mat-option value="in-progress">In progress</mat-option><mat-option value="completed">Completed</mat-option></mat-select></mat-form-field>
-    <mat-form-field appearance="outline"><mat-label>Priority</mat-label><mat-select [formControl]="priorityControl"><mat-option value="">All priorities</mat-option><mat-option value="high">High</mat-option><mat-option value="medium">Medium</mat-option><mat-option value="low">Low</mat-option></mat-select></mat-form-field>
-    <button mat-stroked-button type="button" [matMenuTriggerFor]="moreFiltersMenu"><mat-icon>tune</mat-icon> Filters</button>
-    <button mat-icon-button type="button" [matMenuTriggerFor]="sortMenu" matTooltip="Sort tasks" aria-label="Sort tasks"><mat-icon>sort</mat-icon></button>
+    <button
+      mat-flat-button
+      color="primary"
+      #openTaskFormButton
+      type="button"
+      (click)="openCreate()"
+    >
+      <mat-icon>add</mat-icon>
+      New task
+    </button>
+  </header>
+
+  <section class="task-toolbar" aria-label="Task filters">
+    <mat-form-field
+      class="search-field"
+      appearance="outline"
+      subscriptSizing="dynamic"
+    >
+      <mat-label>Search tasks</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input
+        matInput
+        type="search"
+        placeholder="Title or description"
+        [formControl]="searchControl"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Project</mat-label>
+      <mat-select [formControl]="projectControl">
+        <mat-option value="">All projects</mat-option>
+        @for (project of projects(); track project._id) {
+          <mat-option [value]="project._id">
+            {{ project.key }} · {{ project.name }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Status</mat-label>
+      <mat-select [formControl]="statusControl">
+        <mat-option value="">All statuses</mat-option>
+        <mat-option value="pending">Pending</mat-option>
+        <mat-option value="in-progress">In progress</mat-option>
+        <mat-option value="completed">Completed</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Priority</mat-label>
+      <mat-select [formControl]="priorityControl">
+        <mat-option value="">All priorities</mat-option>
+        <mat-option value="high">High</mat-option>
+        <mat-option value="medium">Medium</mat-option>
+        <mat-option value="low">Low</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <button
+      mat-stroked-button
+      class="filter-button"
+      type="button"
+      [matMenuTriggerFor]="moreFiltersMenu"
+    >
+      <mat-icon>tune</mat-icon>
+      Filters
+    </button>
+
+    <button
+      mat-icon-button
+      class="sort-button"
+      type="button"
+      [matMenuTriggerFor]="sortMenu"
+      matTooltip="Sort tasks"
+      aria-label="Sort tasks"
+    >
+      <mat-icon>sort</mat-icon>
+    </button>
   </section>
-  <mat-menu #moreFiltersMenu="matMenu"><div class="menu-filter-content" (click)="$event.stopPropagation()"><strong>More filters</strong><mat-form-field appearance="outline"><mat-label>Tag</mat-label><input matInput placeholder="backend" [formControl]="tagControl" (change)="applyTagFilter()" /></mat-form-field><mat-form-field appearance="outline"><mat-label>From date</mat-label><input matInput type="date" [formControl]="fromDateControl" /></mat-form-field><mat-form-field appearance="outline"><mat-label>To date</mat-label><input matInput type="date" [formControl]="toDateControl" /></mat-form-field></div></mat-menu>
-  <mat-menu #sortMenu="matMenu"><button mat-menu-item (click)="sortByControl.setValue('createdAt')"><mat-icon>calendar_add_on</mat-icon>Created date</button><button mat-menu-item (click)="sortByControl.setValue('updatedAt')"><mat-icon>update</mat-icon>Updated date</button><button mat-menu-item (click)="sortByControl.setValue('dueDate')"><mat-icon>event</mat-icon>Due date</button><button mat-menu-item (click)="sortByControl.setValue('priority')"><mat-icon>flag</mat-icon>Priority</button><mat-divider></mat-divider><button mat-menu-item (click)="sortOrderControl.setValue('asc')">Ascending</button><button mat-menu-item (click)="sortOrderControl.setValue('desc')">Descending</button></mat-menu>
+
+  <mat-menu
+    #moreFiltersMenu="matMenu"
+    class="task-filter-menu"
+  >
+    <div
+      class="menu-filter-content"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="menu-filter-heading">
+        <strong>More filters</strong>
+        <span>Refine the tasks shown on the board or list.</span>
+      </div>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Tag</mat-label>
+        <input
+          matInput
+          placeholder="backend"
+          [formControl]="tagControl"
+          (change)="applyTagFilter()"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>From date</mat-label>
+        <input
+          matInput
+          type="date"
+          [formControl]="fromDateControl"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>To date</mat-label>
+        <input
+          matInput
+          type="date"
+          [formControl]="toDateControl"
+        />
+      </mat-form-field>
+    </div>
+  </mat-menu>
+
+  <mat-menu #sortMenu="matMenu">
+    <button
+      mat-menu-item
+      [class.selected-menu-item]="sortByControl.value === 'createdAt'"
+      (click)="sortByControl.setValue('createdAt')"
+    >
+      <mat-icon>calendar_add_on</mat-icon>
+      <span>Created date</span>
+    </button>
+
+    <button
+      mat-menu-item
+      [class.selected-menu-item]="sortByControl.value === 'updatedAt'"
+      (click)="sortByControl.setValue('updatedAt')"
+    >
+      <mat-icon>update</mat-icon>
+      <span>Updated date</span>
+    </button>
+
+    <button
+      mat-menu-item
+      [class.selected-menu-item]="sortByControl.value === 'dueDate'"
+      (click)="sortByControl.setValue('dueDate')"
+    >
+      <mat-icon>event</mat-icon>
+      <span>Due date</span>
+    </button>
+
+    <button
+      mat-menu-item
+      [class.selected-menu-item]="sortByControl.value === 'priority'"
+      (click)="sortByControl.setValue('priority')"
+    >
+      <mat-icon>flag</mat-icon>
+      <span>Priority</span>
+    </button>
+
+    <mat-divider></mat-divider>
+
+    <button
+      mat-menu-item
+      [class.selected-menu-item]="sortOrderControl.value === 'asc'"
+      (click)="sortOrderControl.setValue('asc')"
+    >
+      <mat-icon>arrow_upward</mat-icon>
+      <span>Ascending</span>
+    </button>
+
+    <button
+      mat-menu-item
+      [class.selected-menu-item]="sortOrderControl.value === 'desc'"
+      (click)="sortOrderControl.setValue('desc')"
+    >
+      <mat-icon>arrow_downward</mat-icon>
+      <span>Descending</span>
+    </button>
+  </mat-menu>
 
   <section class="workspace-section">
-    <div class="workspace-heading"><div><div class="workspace-title-row"><h3>{{ taskView() === 'list' ? 'Task list' : 'Kanban board' }}</h3><span class="count-label">{{ taskState.tasks().length }} {{ taskState.tasks().length === 1 ? 'task' : 'tasks' }}</span></div><p>{{ taskView() === 'list' ? 'A compact view with only the information you need at a glance.' : 'Drag work between statuses. Open a card to inspect or edit it.' }}</p></div><div class="view-switch" role="group" aria-label="Task view"><button mat-button type="button" [class.active]="taskView() === 'list'" (click)="setTaskView('list')"><mat-icon>view_list</mat-icon>List</button><button mat-button type="button" [class.active]="taskView() === 'kanban'" (click)="setTaskView('kanban')"><mat-icon>view_kanban</mat-icon>Board</button></div></div>
+    <div class="workspace-heading">
+      <div>
+        <div class="workspace-title-row">
+          <h3>{{ taskView() === 'list' ? 'Task list' : 'Kanban board' }}</h3>
+          <span class="count-label">
+            {{ taskState.pagination().totalTasks }}
+            {{ taskState.pagination().totalTasks === 1 ? 'task' : 'tasks' }}
+          </span>
+        </div>
+        <p>
+          {{
+            taskView() === 'list'
+              ? 'A compact view with only the information you need at a glance.'
+              : 'Drag work between statuses. Open a card to inspect or edit it.'
+          }}
+        </p>
+      </div>
 
-    @if(taskState.isLoading()){<div class="workspace-state"><mat-icon class="spin">progress_activity</mat-icon><strong>Loading tasks</strong><span>Getting the latest workspace data.</span></div>}
-    @else if(taskState.hasError()){<div class="workspace-state error"><mat-icon>error_outline</mat-icon><strong>We couldn't load your tasks</strong><span>{{ taskState.errorMessage() }}</span></div>}
-    @else if(taskView() === 'list'){
-      @if(taskState.tasks().length){<div class="task-list">@for(task of taskState.tasks(); track task._id){<app-task-card [task]="task" [users]="users()" (view)="openView($event)" (edit)="openEdit($event)" (delete)="deleteTask($event)" (statusChange)="changeStatus($event)" (priorityChange)="changePriority($event)" (assignmentChange)="changeAssignment($event)" />}</div>}
-      @else{<div class="empty-workspace"><mat-icon>task_alt</mat-icon><strong>No tasks found</strong><span>Try changing your filters or create a new task.</span></div>}
-    }
-    @else{
-      <div id="kanban-board" class="kanban-board" [class.is-maximized]="isKanbanMaximized()">
-        <div class="kanban-topbar"><div><span>Board view</span><small>Drag cards to change status</small></div><button mat-stroked-button type="button" (click)="toggleKanbanMaximized()"><mat-icon>{{isKanbanMaximized()?'close_fullscreen':'open_in_full'}}</mat-icon>{{isKanbanMaximized()?'Exit board':'Expand'}}</button></div>
-        @for(column of kanbanColumns; track column.status){<section class="kanban-column" [attr.data-status]="column.status"><header class="kanban-column-header"><div><span class="column-dot" [class]="'dot-'+column.status"></span><div><h3>{{column.title}}</h3><p>{{column.description}}</p></div></div><span class="kanban-count">{{tasksForStatus(column.status).length}}</span></header><div [id]="'kanban-'+column.status" class="kanban-drop-zone" cdkDropList [cdkDropListData]="tasksForStatus(column.status)" [cdkDropListConnectedTo]="kanbanDropListIds" (cdkDropListDropped)="onKanbanDrop($event,column.status)">@for(task of tasksForStatus(column.status); track task._id){<div class="kanban-card" cdkDrag [cdkDragData]="task" [cdkDragDisabled]="!canDrag(task)"><div class="drag-handle" cdkDragHandle><mat-icon>drag_indicator</mat-icon></div><app-task-card [task]="task" [users]="users()" (view)="openView($event)" (edit)="openEdit($event)" (delete)="deleteTask($event)" (statusChange)="changeStatus($event)" (priorityChange)="changePriority($event)" (assignmentChange)="changeAssignment($event)" /></div>}@if(!tasksForStatus(column.status).length){<div class="kanban-empty"><mat-icon>inbox</mat-icon><span>Drop tasks here</span></div>}</div></section>}
+      <div
+        class="view-switch"
+        role="group"
+        aria-label="Task view"
+      >
+        <button
+          mat-button
+          type="button"
+          [class.active]="taskView() === 'list'"
+          (click)="setTaskView('list')"
+        >
+          <mat-icon>view_list</mat-icon>
+          List
+        </button>
+        <button
+          mat-button
+          type="button"
+          [class.active]="taskView() === 'kanban'"
+          (click)="setTaskView('kanban')"
+        >
+          <mat-icon>view_kanban</mat-icon>
+          Board
+        </button>
+      </div>
+    </div>
+
+    @if (taskState.isLoading()) {
+      <div class="workspace-state">
+        <mat-icon class="spin">progress_activity</mat-icon>
+        <strong>Loading tasks</strong>
+        <span>Getting the latest workspace data.</span>
+      </div>
+    } @else if (taskState.hasError()) {
+      <div class="workspace-state error">
+        <mat-icon>error_outline</mat-icon>
+        <strong>We couldn't load your tasks</strong>
+        <span>{{ taskState.errorMessage() }}</span>
+      </div>
+    } @else if (taskView() === 'list') {
+      @if (taskState.tasks().length) {
+        <div class="task-list">
+          @for (task of taskState.tasks(); track task._id) {
+            <app-task-card
+              [task]="task"
+              [users]="users()"
+              (view)="openView($event)"
+              (edit)="openEdit($event)"
+              (delete)="deleteTask($event)"
+              (statusChange)="changeStatus($event)"
+              (priorityChange)="changePriority($event)"
+              (assignmentChange)="changeAssignment($event)"
+            />
+          }
+        </div>
+      } @else {
+        <div class="empty-workspace">
+          <mat-icon>task_alt</mat-icon>
+          <strong>No tasks found</strong>
+          <span>Try changing your filters or create a new task.</span>
+        </div>
+      }
+    } @else {
+      <div
+        id="kanban-board"
+        class="kanban-board"
+        [class.is-maximized]="isKanbanMaximized()"
+      >
+        <div class="kanban-topbar">
+          <div>
+            <span>Board view</span>
+            <small>Drag cards to change status</small>
+          </div>
+
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="toggleKanbanMaximized()"
+          >
+            <mat-icon>
+              {{ isKanbanMaximized() ? 'close_fullscreen' : 'open_in_full' }}
+            </mat-icon>
+            {{ isKanbanMaximized() ? 'Exit board' : 'Expand' }}
+          </button>
+        </div>
+
+        @for (column of kanbanColumns; track column.status) {
+          <section
+            class="kanban-column"
+            [attr.data-status]="column.status"
+          >
+            <header class="kanban-column-header">
+              <div>
+                <span
+                  class="column-dot"
+                  [class]="'dot-' + column.status"
+                ></span>
+                <div>
+                  <h3>{{ column.title }}</h3>
+                  <p>{{ column.description }}</p>
+                </div>
+              </div>
+              <span class="kanban-count">
+                {{ tasksForStatus(column.status).length }}
+              </span>
+            </header>
+
+            <div
+              [id]="'kanban-' + column.status"
+              class="kanban-drop-zone"
+              cdkDropList
+              [cdkDropListData]="tasksForStatus(column.status)"
+              [cdkDropListConnectedTo]="kanbanDropListIds"
+              (cdkDropListDropped)="onKanbanDrop($event, column.status)"
+            >
+              @for (task of tasksForStatus(column.status); track task._id) {
+                <div
+                  class="kanban-card"
+                  cdkDrag
+                  [cdkDragData]="task"
+                  [cdkDragDisabled]="!canDrag(task)"
+                >
+                  <app-task-card
+                    [task]="task"
+                    [users]="users()"
+                    (view)="openView($event)"
+                    (edit)="openEdit($event)"
+                    (delete)="deleteTask($event)"
+                    (statusChange)="changeStatus($event)"
+                    (priorityChange)="changePriority($event)"
+                    (assignmentChange)="changeAssignment($event)"
+                  />
+                </div>
+              }
+
+              @if (!tasksForStatus(column.status).length) {
+                <div class="kanban-empty">
+                  <mat-icon>inbox</mat-icon>
+                  <span>Drop tasks here</span>
+                </div>
+              }
+            </div>
+          </section>
+        }
       </div>
     }
   </section>
 
-  @if(taskState.pagination().totalPages > 0 && taskView() === 'list'){<div class="pagination"><button mat-stroked-button [disabled]="taskState.pagination().page <= 1" (click)="goToPage(taskState.pagination().page - 1)"><mat-icon>chevron_left</mat-icon>Previous</button><div class="page-numbers">@for(page of pageNumbers(); track page){<button mat-button [class.current]="taskState.pagination().page === page" [disabled]="taskState.pagination().page === page" (click)="goToPage(page)">{{page}}</button>}</div><button mat-stroked-button [disabled]="taskState.pagination().page >= taskState.pagination().totalPages" (click)="goToPage(taskState.pagination().page + 1)">Next<mat-icon>chevron_right</mat-icon></button><mat-form-field class="page-limit" appearance="outline"><mat-label>Per page</mat-label><select matNativeControl [value]="taskState.pagination().limit" (change)="changeLimit(+$any($event.target).value)"><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option></select></mat-form-field></div>}
+  @if (taskState.pagination().totalPages > 0 && taskView() === 'list') {
+    <div class="pagination">
+      <button
+        mat-stroked-button
+        [disabled]="taskState.pagination().page <= 1"
+        (click)="goToPage(taskState.pagination().page - 1)"
+      >
+        <mat-icon>chevron_left</mat-icon>
+        Previous
+      </button>
 
-  @if(viewingTask(); as task){<div class="modal-backdrop" (click)="closeView()"><section class="task-dialog" role="dialog" aria-modal="true" aria-labelledby="task-view-title" (click)="$event.stopPropagation()"><header class="dialog-header"><div><p class="page-kicker">{{task.taskKey}} · {{task.project?.key}}</p><h2 id="task-view-title">{{task.title}}</h2><p>Task details</p></div><button mat-icon-button type="button" (click)="closeView()" aria-label="Close"><mat-icon>close</mat-icon></button></header><div class="dialog-body"><div class="detail-description"><span class="detail-label">Description</span><p>{{task.description}}</p></div><div class="detail-grid"><div><span>Status</span><strong>{{task.status === 'in-progress' ? 'In progress' : (task.status | titlecase)}}</strong></div><div><span>Priority</span><strong>{{task.priority | titlecase}}</strong></div><div><span>Owner</span><strong>{{task.owner?.name || 'Unknown'}}</strong></div><div><span>Assignee</span><strong>{{task.assignedTo?.name || 'Unassigned'}}</strong></div><div><span>Due date</span><strong [class.danger-text]="task.isOverdue">{{task.dueDate ? (task.dueDate | date:'mediumDate') : 'No due date'}}@if(task.isOverdue){ · Overdue}</strong></div><div><span>Created</span><strong>{{task.createdAt | date:'mediumDate'}}</strong></div><div><span>Last updated</span><strong>{{task.updatedAt | date:'mediumDate'}}</strong></div></div>@if(task.tags.length){<div class="detail-tags"><span class="detail-label">Tags</span><div>@for(tag of task.tags; track tag){<span>{{tag}}</span>}</div></div>}</div><footer class="dialog-footer"><button mat-stroked-button type="button" (click)="closeView()">Close</button>@if(authService.currentUser()?.role === 'admin' || task.owner?._id === authService.currentUser()?.id || task.assignedTo?._id === authService.currentUser()?.id || task.project?.owner?._id === authService.currentUser()?.id){<button mat-flat-button color="primary" type="button" (click)="openEdit(task)"><mat-icon>edit</mat-icon>Edit task</button>}</footer></section></div>}
+      <div class="page-numbers">
+        @for (page of pageNumbers(); track page) {
+          <button
+            mat-button
+            [class.current]="taskState.pagination().page === page"
+            [disabled]="taskState.pagination().page === page"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+        }
+      </div>
 
-  @if(isFormOpen()){<div class="modal-backdrop" (click)="closeForm()"><section #taskFormModal class="task-dialog edit-dialog" role="dialog" aria-modal="true" aria-labelledby="task-form-heading" tabindex="-1" (click)="$event.stopPropagation()"><header class="dialog-header"><div><p class="page-kicker">{{editingTask()?'Edit task':'New task'}}</p><h2 id="task-form-heading">{{editingTask()?'Update task':'Create a task'}}</h2><p>{{editingTask()?'Update the details that control this task.':'Add the essential details and assign the work.'}}</p></div><button mat-icon-button type="button" (click)="closeForm()" aria-label="Close"><mat-icon>close</mat-icon></button></header><div class="dialog-body form-dialog-body"><app-task-form [users]="users()" [projects]="projects()" [task]="editingTask()" [initialProjectId]="createProjectId()" [canAssign]="canAssignEditingTask" [isSaving]="isSaving()" (submitted)="saveTask($event)" (cancelled)="closeForm()" /></div></section></div>}
+      <button
+        mat-stroked-button
+        [disabled]="taskState.pagination().page >= taskState.pagination().totalPages"
+        (click)="goToPage(taskState.pagination().page + 1)"
+      >
+        Next
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+
+      <mat-form-field
+        class="page-limit"
+        appearance="outline"
+        subscriptSizing="dynamic"
+      >
+        <mat-label>Per page</mat-label>
+        <mat-select
+          [value]="taskState.pagination().limit"
+          (selectionChange)="changeLimit($event.value)"
+        >
+          <mat-option [value]="5">5</mat-option>
+          <mat-option [value]="10">10</mat-option>
+          <mat-option [value]="20">20</mat-option>
+          <mat-option [value]="50">50</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  }
+
+  @if (viewingTask(); as task) {
+    <div
+      class="modal-backdrop"
+      (click)="closeView()"
+    >
+      <section
+        class="task-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="task-view-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="dialog-header">
+          <div>
+            <p class="page-kicker">
+              {{ task.taskKey }} · {{ task.project?.key }}
+            </p>
+            <h2 id="task-view-title">{{ task.title }}</h2>
+            <p>Task details</p>
+          </div>
+
+          <button
+            mat-icon-button
+            type="button"
+            (click)="closeView()"
+            aria-label="Close"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <div class="dialog-body">
+          <div class="detail-description">
+            <span class="detail-label">Description</span>
+            <p>{{ task.description }}</p>
+          </div>
+
+          <div class="detail-grid">
+            <div>
+              <span>Status</span>
+              <strong>
+                {{ task.status === 'in-progress' ? 'In progress' : (task.status | titlecase) }}
+              </strong>
+            </div>
+            <div>
+              <span>Priority</span>
+              <strong>{{ task.priority | titlecase }}</strong>
+            </div>
+            <div>
+              <span>Owner</span>
+              <strong>{{ task.owner?.name || 'Unknown' }}</strong>
+            </div>
+            <div>
+              <span>Assignee</span>
+              <strong>{{ task.assignedTo?.name || 'Unassigned' }}</strong>
+            </div>
+            <div>
+              <span>Due date</span>
+              <strong [class.danger-text]="task.isOverdue">
+                {{ task.dueDate ? (task.dueDate | date:'mediumDate') : 'No due date' }}
+                @if (task.isOverdue) {
+                  · Overdue
+                }
+              </strong>
+            </div>
+            <div>
+              <span>Created</span>
+              <strong>{{ task.createdAt | date:'mediumDate' }}</strong>
+            </div>
+            <div>
+              <span>Last updated</span>
+              <strong>{{ task.updatedAt | date:'mediumDate' }}</strong>
+            </div>
+          </div>
+
+          @if (task.tags.length) {
+            <div class="detail-tags">
+              <span class="detail-label">Tags</span>
+              <div>
+                @for (tag of task.tags; track tag) {
+                  <span>{{ tag }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <footer class="dialog-footer">
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="closeView()"
+          >
+            Close
+          </button>
+
+          @if (
+            authService.currentUser()?.role === 'admin' ||
+            task.owner?._id === authService.currentUser()?.id ||
+            task.assignedTo?._id === authService.currentUser()?.id ||
+            task.project?.owner?._id === authService.currentUser()?.id
+          ) {
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              (click)="openEdit(task)"
+            >
+              <mat-icon>edit</mat-icon>
+              Edit task
+            </button>
+          }
+        </footer>
+      </section>
+    </div>
+  }
+
+  @if (isFormOpen()) {
+    <div
+      class="modal-backdrop"
+      (click)="closeForm()"
+    >
+      <section
+        #taskFormModal
+        class="task-dialog edit-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="task-form-heading"
+        tabindex="-1"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="dialog-header">
+          <div>
+            <p class="page-kicker">
+              {{ editingTask() ? 'Edit task' : 'New task' }}
+            </p>
+            <h2 id="task-form-heading">
+              {{ editingTask() ? 'Update task' : 'Create a task' }}
+            </h2>
+            <p>
+              {{
+                editingTask()
+                  ? 'Update the details that control this task.'
+                  : 'Add the essential details and assign the work.'
+              }}
+            </p>
+          </div>
+
+          <button
+            mat-icon-button
+            type="button"
+            (click)="closeForm()"
+            aria-label="Close"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <div class="dialog-body form-dialog-body">
+          <app-task-form
+            [users]="users()"
+            [projects]="projects()"
+            [task]="editingTask()"
+            [initialProjectId]="createProjectId()"
+            [canAssign]="canAssignEditingTask"
+            [isSaving]="isSaving()"
+            (submitted)="saveTask($event)"
+            (cancelled)="closeForm()"
+          />
+        </div>
+      </section>
+    </div>
+  }
 </section>
